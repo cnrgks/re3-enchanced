@@ -3,6 +3,26 @@
 User feedback: `re3 notlar.txt` and Enhanced Options screenshot.
 Status below means implementation, not a claim of in-game verification.
 
+## GPS follow-up — 19 November 2026
+
+- [x] Mission route uses native objective RGBA/dim colour; manual waypoint stays red.
+- [x] Read-only road/ped graph search, disabled-node filtering and native one-way lanes.
+- [x] Nearby target entrances, full-length routes and collision-tested short connectors.
+- [x] Recalculate after entering/exiting vehicles; account for mission target height on arrival.
+- [ ] In-game checks: dark/bright mission colours, closed bridges, one-way turns,
+  moving targets, cross-island routes and manual waypoint override.
+
+## Remaining feedback — not included in the GPS follow-up
+
+- [ ] Pause-map service blips (Pay 'n' Spray, Ammu-Nation and others).
+- [ ] Speed-dependent icon/player scaling; T range reduced to 75% of current range.
+- [ ] Windscreen support across models and occupant hits through broken windows.
+- [ ] Remove Load Autosave; mission passed opens save menu; serialize island safehouse position.
+- [ ] Desktop capture compatibility (Discord full-screen sharing; Ambilight not verified).
+- [ ] Adjustable vehicle and pedestrian draw/spawn/despawn distances.
+- [ ] Map: hide pointer sprite, keep crosshair; remove controls; align Back over blue logo.
+- [ ] Graphics wheel scrolls the viewport rather than changing selection/options.
+
 ## Revision 2 — implemented, build/play-test pending
 
 - [x] Normal Graphics menu font/scales, 20-pixel rows and footer clearance.

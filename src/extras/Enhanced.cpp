@@ -322,7 +322,9 @@ static void UpdateRoute()
         }
     }
     if (!found) { routeCount=0; routeLastUpdate=0; return; }
-    if ((target-start).Magnitude2D() < 12.0f) {
+    const float arrivalDistance = manual || target.z < -90.0f ?
+        (target-start).Magnitude2D() : (target-start).Magnitude();
+    if (arrivalDistance < 12.0f) {
         if (manual) CRadar::ToggleTargetMarker(target.x, target.y);
         routeCount = 0;
         return;
