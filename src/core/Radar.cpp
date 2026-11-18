@@ -6,6 +6,8 @@
 
 #include "RwHelper.h"
 #include "Radar.h"
+#include "Enhanced.h"
+#include "Pad.h"
 #include "Camera.h"
 #include "Hud.h"
 #include "World.h"
@@ -534,6 +536,7 @@ void CRadar::DrawBlips()
 #endif
 
 		CEntity *blipEntity = nil;
+        Enhanced::DrawRoute();
 		for(int blipId = 0; blipId < NUMRADARBLIPS; blipId++) {
 #ifdef MENU_MAP
 			// A little hack to reuse cleared blips in menu map. hehe
@@ -789,6 +792,8 @@ void CRadar::DrawMap()
 		else
 			m_radarRange = RADAR_MIN_RANGE;
 
+        if (Enhanced::RadarZoom == 2) m_radarRange *= 1.5f;
+        if (Enhanced::RadarZoom && CPad::GetPad(0)->GetTab()) m_radarRange *= 2.0f;
 		vec2DRadarOrigin = CVector2D(FindPlayerCentreOfWorld_NoSniperShift());
 		DrawRadarMap();
 	}

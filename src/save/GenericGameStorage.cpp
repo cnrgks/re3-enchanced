@@ -2,6 +2,7 @@
 #include "common.h"
 #include "crossplatform.h"
 #include "main.h"
+#include "Enhanced.h"
 
 #include "DMAudio.h"
 #include "AudioScriptObject.h"
@@ -433,7 +434,7 @@ bool
 CheckSlotDataValid(int32 slot)
 {
 	PcSaveHelper.nErrorCode = SAVESTATUS_SUCCESSFUL;
-	if (CheckDataNotCorrupt(slot, LoadFileName)) {
+	if (slot == -2 ? Enhanced::ValidateAutosave(LoadFileName) : CheckDataNotCorrupt(slot, LoadFileName)) {
 		CStreaming::DeleteAllRwObjects();
 		return true;
 	}

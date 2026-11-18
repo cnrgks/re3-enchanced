@@ -6,6 +6,7 @@
 #include "crossplatform.h"
 #include "platform.h"
 #include "Frontend.h"
+#include "Enhanced.h"
 #include "Font.h"
 #include "Pad.h"
 #include "Text.h"
@@ -3665,12 +3666,17 @@ CMenuManager::LoadAllTextures()
 		if (!menuOptionAdded && (firstTile = RwTextureRead(MapFilenames[i][0], MapFilenames[i][1]))) {
 			RwTextureDestroy(firstTile);
 			FrontendOptionSetCursor(MENUPAGE_PAUSE_MENU, 2, false);
-			FrontendOptionAddBuiltinAction("FEG_MAP", MENUACTION_CHANGEMENU, MENUPAGE_MAP, SAVESLOT_NONE);
+			FrontendOptionAddDynamic("FEG_MAP", Enhanced::MapOptionDraw, nil, Enhanced::OpenMap);
 			menuOptionAdded = true;
 		}
 		m_aMapSprites[i].SetTexture(MapFilenames[i][0], MapFilenames[i][1]);
 		m_aMapSprites[i].SetAddressing(rwTEXTUREADDRESSBORDER);
 	}
+    if (!menuOptionAdded) {
+        FrontendOptionSetCursor(MENUPAGE_PAUSE_MENU, 2, false);
+        FrontendOptionAddDynamic("FEG_MAP", Enhanced::MapOptionDraw, nil, Enhanced::OpenMap);
+        menuOptionAdded = true;
+    }
 	fMapSize = SCREEN_HEIGHT * 2.0f;
 	fMapCenterX = 0.0f;
 	fMapCenterY = 0.0f;
@@ -4187,9 +4193,10 @@ CMenuManager::Process(void)
 		if (m_nCurrScreen == MENUPAGE_SAVING_IN_PROGRESS) {
 			int8 SaveSlot = PcSaveHelper.SaveSlot(m_nCurrSaveSlot);
 			PcSaveHelper.PopulateSlotInfo();
-			if (SaveSlot)
+			if (SaveSlot && PcSaveHelper.nErrorCode == SAVESTATUS_SUCCESSFUL) {
+                Enhanced::AfterSuccessfulSave();
 				ChangeScreen(MENUPAGE_SAVE_SUCCESSFUL, 0, true, false);
-			else
+            } else
 				SaveLoadFileError_SetUpErrorScreen();
 		}
 		if (m_nCurrScreen == MENUPAGE_LOADING_IN_PROGRESS) {
@@ -6451,6 +6458,7 @@ CMenuManager::PrintMap(void)
 			fMapCenterX + fMapSize, fMapCenterY + fMapSize), CRGBA(255, 255, 255, FadeIn(255)));
 	}
 
+	if (!m_aMapSprites[MAPTOP1].m_pTexture) Enhanced::DrawMapFallback();
 	CRadar::DrawBlips();
 	static CVector2D mapCrosshair;
 

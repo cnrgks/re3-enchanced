@@ -30,6 +30,7 @@
 #include "IniFile.h"
 #include "CarCtrl.h"
 #include "Population.h"
+#include "Enhanced.h"
 
 // Menu screens array is at the bottom of the file.
 
@@ -763,6 +764,7 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
 #else
 		MENUACTION_CHANGEMENU,		"FET_CTL", { nil, SAVESLOT_NONE, MENUPAGE_CONTROLLER_PC },
 #endif
+		MENUACTION_CHANGEMENU, "ENHANCE", { nil, SAVESLOT_NONE, MENUPAGE_ENHANCED },
 		MENUACTION_LOADRADIO,		"FET_AUD", { nil, SAVESLOT_NONE, MENUPAGE_SOUND_SETTINGS },
 		MENUACTION_CHANGEMENU,		"FET_DIS", { nil, SAVESLOT_NONE, MENUPAGE_DISPLAY_SETTINGS },
 #ifdef GRAPHICS_MENU_OPTIONS
@@ -928,6 +930,23 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
 		MENUACTION_CHANGEMENU,	"FEDS_TB", { nil, SAVESLOT_NONE, MENUPAGE_NONE },
 	},
 #endif
+
+   // MENUPAGE_ENHANCED
+   { "ENHANCE", MENUPAGE_OPTIONS, MENUPAGE_OPTIONS,
+       new CCustomScreenLayout({MENUSPRITE_MAINMENU, 40, 0, 24, FONT_BANK, FESCREEN_LEFT_ALIGN, true, 0.42f, 0.8f}), nil,
+       MENUACTION_CFO_SELECT, "EN_QSAV", { new CCFOSelect(&Enhanced::QuickSave, "Enhanced", "QuickSave", off_on, 2, false) },
+       MENUACTION_CFO_SELECT, "EN_AUTO", { new CCFOSelect(&Enhanced::AutoSave, "Enhanced", "AutoSave", Enhanced::AutoSaveTimes, 4, false) },
+       MENUACTION_CFO_DYNAMIC, "EN_LOAD", { new CCFODynamic(nil, nil, nil, nil, Enhanced::LoadAutosave) },
+       MENUACTION_CFO_SELECT, "EN_FPS", { new CCFOSelect(&Enhanced::FirstPerson, "Enhanced", "FirstPerson", off_on, 2, false) },
+       MENUACTION_CFO_SELECT, "EN_RADR", { new CCFOSelect(&Enhanced::RadarZoom, "Enhanced", "RadarZoom", Enhanced::RadarZoomModes, 3, false) },
+       MENUACTION_CFO_SELECT, "EN_GPS", { new CCFOSelect(&Enhanced::GPS, "Enhanced", "GPS", off_on, 2, false) },
+       MENUACTION_CFO_SELECT, "EN_MAP", { new CCFOSelect(&Enhanced::MenuMap, "Enhanced", "MenuMap", off_on, 2, false) },
+       MENUACTION_CFO_SELECT, "EN_RAG", { new CCFOSelect(&Enhanced::Ragdoll, "Enhanced", "Ragdoll", off_on, 2, false) },
+       MENUACTION_CFO_SELECT, "EN_VLOD", { new CCFOSelect(&Enhanced::VehicleDetail, "Enhanced", "VehicleDetail", off_on, 2, false) },
+       MENUACTION_CFO_SELECT, "EN_PLOD", { new CCFOSelect(&Enhanced::PedDetail, "Enhanced", "PedDetail", off_on, 2, false) },
+       MENUACTION_CFO_SELECT, "EN_HEAL", { new CCFOSelect(&Enhanced::HealAfterSave, "Enhanced", "HealAfterSave", off_on, 2, false) },
+       MENUACTION_CHANGEMENU, "FEDS_TB", { nil, SAVESLOT_NONE, MENUPAGE_NONE },
+   },
 
    // MENUPAGE_UNK
    { "", MENUPAGE_NONE, MENUPAGE_NONE, nil, nil,

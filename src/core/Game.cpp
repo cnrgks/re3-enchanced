@@ -2,6 +2,7 @@
 #include "platform.h"
 
 #include "Game.h"
+#include "Enhanced.h"
 #include "main.h"
 #include "RwHelper.h"
 #include "Accident.h"
@@ -722,6 +723,7 @@ bool CGame::ShutDown(void)
 
 void CGame::ReInitGameObjectVariables(void)
 {
+    Enhanced::Reset();
 	CGameLogic::InitAtStartOfGame();
 #ifdef PS2_MENU
 	if ( !TheMemoryCard.m_bWantToLoad )
@@ -1108,6 +1110,7 @@ void CGame::Process(void)
 #ifdef GTA_PS2
 	CMemCheck::DoTest();
 #endif
+    Enhanced::Process();
 }
 
 #ifdef USE_CUSTOM_ALLOCATOR

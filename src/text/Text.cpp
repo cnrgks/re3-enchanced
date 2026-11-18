@@ -7,6 +7,7 @@
 #include "Frontend.h"
 #include "Messages.h"
 #include "Text.h"
+#include "Enhanced.h"
 
 wchar WideErrorString[25];
 
@@ -97,6 +98,7 @@ CText::Unload(void)
 wchar*
 CText::Get(const char *key)
 {
+    if (wchar *enhanced = Enhanced::GetText(key)) return enhanced;
 #if defined (FIX_BUGS) || defined(FIX_BUGS_64)
 	return keyArray.Search(key, data.chars);
 #else

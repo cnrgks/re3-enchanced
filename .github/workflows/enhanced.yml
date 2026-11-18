@@ -1,0 +1,64 @@
+name: Build re3 Enhanced
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [enhanced-source]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Get Hezkore source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Download GLFW
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Invoke-WebRequest 'https://github.com/glfw/glfw/releases/download/3.3.2/glfw-3.3.2.bin.WIN64.zip' -OutFile glfw.zip
+          Expand-Archive -LiteralPath glfw.zip -DestinationPath .
+
+      - name: Generate Visual Studio project
+        run: |
+          & ./premake5.exe vs2019 --with-librw --no-full-paths --glfwdir64=glfw-3.3.2.bin.WIN64
+          if ($LASTEXITCODE -ne 0) { throw 'Premake failed' }
+
+      - name: Build matching EXE and full PDB
+        run: |
+          & msbuild build/re3.sln /m /p:Configuration=Release /p:Platform=win-amd64-librw_gl3_glfw-oal /p:PlatformToolset=v143 /p:WindowsTargetPlatformVersion=10.0 /p:DebugSymbols=true /p:DebugType=full /p:GenerateDebugInformation=true
+          if ($LASTEXITCODE -ne 0) { throw 'MSBuild failed' }
+
+      - name: Prepare package
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $outputDir = 'bin/win-amd64-librw_gl3_glfw-oal/Release'
+          foreach ($fileName in @('re3.exe', 're3.pdb')) {
+            $sourceFile = Join-Path $outputDir $fileName
+            if (!(Test-Path -LiteralPath $sourceFile)) { throw "Missing build output: $sourceFile" }
+            Copy-Item -LiteralPath $sourceFile -Destination gamefiles
+          }
+          Copy-Item vendor/mpg123/dist/Win64/libmpg123-0.dll gamefiles
+          Copy-Item vendor/openal-soft/dist/Win64/OpenAL32.dll gamefiles
+          git rev-parse HEAD | Set-Content gamefiles/BUILD-COMMIT.txt
+          Get-FileHash gamefiles/re3.exe,gamefiles/re3.pdb | Format-List | Out-String | Set-Content gamefiles/BUILD-SHA256.txt
+
+      - name: Upload game files with matching PDB
+        uses: actions/upload-artifact@v4
+        with:
+          name: re3-enhanced-x64-exe-pdb
+          path: gamefiles/
+          if-no-files-found: error
+          retention-days: 14

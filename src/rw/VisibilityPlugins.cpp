@@ -1,4 +1,5 @@
 #include "common.h"
+#include "Enhanced.h"
 
 #include "RwHelper.h"
 #include "templates.h"
@@ -251,6 +252,13 @@ CVisibilityPlugins::SetRenderWareCamera(RwCamera *camera)
         ms_pedLod0Dist = sq(25.0f * TheCamera.LODDistMultiplier);
         ms_pedLod1Dist = sq(60.0f * TheCamera.LODDistMultiplier);
         ms_pedFadeDist = sq(70.0f * TheCamera.LODDistMultiplier);
+        // Keep existing streaming/fade distances; only select the detailed mesh.
+        if (Enhanced::VehicleDetail) {
+            ms_vehicleLod0Dist = ms_vehicleLod1Dist + 1.0f;
+            ms_bigVehicleLod0Dist = ms_bigVehicleLod1Dist + 1.0f;
+            ms_cullCompsDist = 100000000.0f;
+        }
+        if (Enhanced::PedDetail) ms_pedLod0Dist = ms_pedLod1Dist + 1.0f;
 }
 
 RpMaterial*
@@ -347,7 +355,7 @@ CVisibilityPlugins::RenderWheelAtomicCB(RpAtomic *atomic)
 	len = RwV3dLength(&view);
 #ifdef FIX_BUGS
 	// from VC
-	lodatm = mi->GetAtomicFromDistance(len * TheCamera.LODDistMultiplier / VEHICLE_LODDIST_MULTIPLIER);
+	lodatm = mi->GetAtomicFromDistance(Enhanced::VehicleDetail ? 0.0f : len * TheCamera.LODDistMultiplier / VEHICLE_LODDIST_MULTIPLIER);
 #else
 	lodatm = mi->GetAtomicFromDistance(len);
 #endif
