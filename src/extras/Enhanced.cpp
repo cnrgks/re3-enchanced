@@ -148,7 +148,7 @@ static bool SaveAutosave()
     char prefix[260], target[300], temporary[304];
     AutosavePrefix(prefix, sizeof(prefix));
     snprintf(target, sizeof(target), "%s1.b", prefix);
-    snprintf(temporary, sizeof(temporary), "%s.tmp", target);
+    snprintf(temporary, sizeof(temporary), "%s-tmp1.b", prefix);
     if (strlen(temporary) >= sizeof(ValidSaveName)) return false;
     char oldValidName[sizeof(ValidSaveName)];
     strcpy(oldValidName, ValidSaveName);
@@ -156,6 +156,7 @@ static bool SaveAutosave()
     // The old autosave is replaced only after writing and closing successfully.
     strncpy(ValidSaveName, temporary, sizeof(ValidSaveName)-1);
     ValidSaveName[sizeof(ValidSaveName)-1] = '\0';
+    CFileMgr::SetDir("");
     int file = CFileMgr::OpenFile(temporary, "wb");
     bool ok = false;
     if (file) {
@@ -166,6 +167,15 @@ static bool SaveAutosave()
         CTimer::Resume();
     }
     strcpy(ValidSaveName, oldValidName);
+    if (ok) {
+        // The original file layer's error accessor tests EOF, not ferror.
+        // Validate the actual bytes on disk before replacing a good autosave.
+        char originalPrefix[sizeof(DefaultPCSaveFileName)], validated[300];
+        strcpy(originalPrefix, DefaultPCSaveFileName);
+        snprintf(DefaultPCSaveFileName, sizeof(DefaultPCSaveFileName), "%s-tmp", prefix);
+        ok = CheckDataNotCorrupt(0, validated);
+        strcpy(DefaultPCSaveFileName, originalPrefix);
+    }
     if (ok) {
 #ifdef _WIN32
         ok = MoveFileExA(temporary, target, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != 0;
