@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: re3-enhanced
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: windows-2022

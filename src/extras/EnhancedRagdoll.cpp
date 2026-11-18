@@ -117,7 +117,7 @@ void BeginPedRender(CPed *ped)
     Body *b=Find(ped);
     if (!b) {
         for (unsigned i=0;i<ARRAY_SIZE(bodies);++i)
-            if (!bodies[i].ped) { b=&bodies[i]; break; }
+            if (!bodies[i].ped || CTimer::GetTimeInMilliseconds()-bodies[i].time > 5000) { b=&bodies[i]; break; }
         if (!b) return;
         b->ped=ped;
         b->applied=false;

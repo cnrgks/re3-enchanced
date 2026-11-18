@@ -1,4 +1,5 @@
 #include "common.h"
+#include "Enhanced.h"
 
 #include "RwHelper.h"
 #include "PlayerPed.h"
@@ -1384,7 +1385,7 @@ CPlayerPed::ProcessControl(void)
 		case PED_FIGHT:
 		case PED_AIM_GUN:
 			if (!RpAnimBlendClumpGetFirstAssociation(GetClump(), ASSOC_BLOCK)) {
-				if (TheCamera.Cams[0].Using3rdPersonMouseCam()
+				if ((TheCamera.Cams[0].Using3rdPersonMouseCam() || Enhanced::UseFirstPerson())
 #ifdef FREE_CAM
 					&& !CCamera::bFreeCam
 #endif

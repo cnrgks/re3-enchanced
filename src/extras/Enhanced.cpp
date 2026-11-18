@@ -144,6 +144,7 @@ bool ValidateAutosave(char *destination)
 
 static bool SaveAutosave()
 {
+    if (!CStats::LastMissionPassedName[0]) return false;
     char prefix[260], target[300], temporary[304];
     AutosavePrefix(prefix, sizeof(prefix));
     snprintf(target, sizeof(target), "%s1.b", prefix);

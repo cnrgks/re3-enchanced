@@ -10,6 +10,8 @@
 #include "GenericGameStorage.h"
 #include "Messages.h"
 #include "PCSave.h"
+#include "Enhanced.h"
+#include "PlayerPed.h"
 #include "Text.h"
 
 const char* _psGetUserFilesFolder();
@@ -41,6 +43,12 @@ C_PcSave::DeleteSlot(int32 slot)
 bool
 C_PcSave::SaveSlot(int32 slot)
 {
+    CPlayerPed *player = FindPlayerPed();
+    const float previousHealth = player ? player->m_fHealth : 0.0f;
+    bool heal = Enhanced::HealAfterSave && player && slot >= 0 && slot < SLOT_COUNT;
+#ifdef MISSION_REPLAY
+    heal = heal && !IsQuickSave;
+#endif
 	MakeValidSaveName(slot);
 	PcSaveHelper.nErrorCode = SAVESTATUS_SUCCESSFUL;
 	_psGetUserFilesFolder();
@@ -50,12 +58,16 @@ C_PcSave::SaveSlot(int32 slot)
 		if (!IsQuickSave)
 #endif
 			DoGameSpecificStuffBeforeSave();
+        if (heal) player->m_fHealth = Max(previousHealth, 100.0f);
 		if (GenericSave(file)) {
-			if (!!CFileMgr::CloseFile(file))
+			if (!!CFileMgr::CloseFile(file)) {
 				nErrorCode = SAVESTATUS_ERR_SAVE_CLOSE;
+                if (heal) player->m_fHealth = previousHealth;
+                return false;
+            }
 			return true;
 		}
-
+        if (heal) player->m_fHealth = previousHealth;
 		return false;
 	}
 	PcSaveHelper.nErrorCode = SAVESTATUS_ERR_SAVE_CREATE;
