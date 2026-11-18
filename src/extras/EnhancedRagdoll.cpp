@@ -160,7 +160,9 @@ void BeginPedRender(CPed *ped)
         RwMatrix parent,inverse;
         CPedIK::GetWorldMatrix(RwFrameGetParent(frame),&parent);
         RwMatrixInvert(&inverse,&parent);
-        RwMatrixMultiply(RwFrameGetMatrix(frame),&desired,&inverse);
+        // librw's re3 shim implements Transform, but not RwMatrixMultiply.
+        RwMatrixTransform(&desired,&inverse,rwCOMBINEPOSTCONCAT);
+        *RwFrameGetMatrix(frame)=desired;
         RwMatrixUpdate(RwFrameGetMatrix(frame));
         RwFrameUpdateObjects(frame);
     }

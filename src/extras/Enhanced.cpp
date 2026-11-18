@@ -333,7 +333,7 @@ void DrawMapFallback()
         snprintf(name,sizeof(name),"radar%02d",x+y*8);
         int slot = CTxdStore::FindTxdSlot(name);
         if (slot < 0) continue;
-        if (!CTxdStore::isTxdLoaded(slot)) missing = true;
+        if (!CTxdStore::GetSlot(slot)->texDict) missing = true;
         CStreaming::RequestTxd(slot, STREAMFLAGS_DONT_REMOVE);
     }
     if (missing) CStreaming::LoadAllRequestedModels(false);
