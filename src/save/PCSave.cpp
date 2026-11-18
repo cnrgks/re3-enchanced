@@ -12,6 +12,7 @@
 #include "PCSave.h"
 #include "Enhanced.h"
 #include "PlayerPed.h"
+#include "PlayerInfo.h"
 #include "Text.h"
 
 const char* _psGetUserFilesFolder();

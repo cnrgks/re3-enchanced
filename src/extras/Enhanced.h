@@ -12,6 +12,7 @@ wchar *GetText(const char *key);
 void Process();
 void Reset();
 void DrawRoute();
+void WaypointChanged();
 void DrawMapFallback();
 bool UseFirstPerson();
 void AfterSuccessfulSave();

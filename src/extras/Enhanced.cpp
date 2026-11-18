@@ -235,6 +235,12 @@ static void UpdateRoute()
 #endif
 }
 
+void WaypointChanged()
+{
+    routeLastUpdate = 0;
+    UpdateRoute();
+}
+
 void Process()
 {
     // Also clamp settings loaded from edited ini files before using as indexes.

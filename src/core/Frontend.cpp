@@ -6487,6 +6487,7 @@ CMenuManager::PrintMap(void)
 				float x = ((mapCrosshair.x - diffX) / (fMapSize * 2)) * 4000.0f - 2000.0f;
 				float y = 2000.0f - ((mapCrosshair.y - diffY) / (fMapSize * 2)) * 4000.0f;
 				CRadar::ToggleTargetMarker(x, y);
+                Enhanced::WaypointChanged();
 				DMAudio.PlayFrontEndSound(SOUND_FRONTEND_MENU_SETTING_CHANGE, 0);
 			}
 		}

@@ -7,6 +7,7 @@
 #include "Ped.h"
 #include "PedIK.h"
 #include "PlayerPed.h"
+#include "PlayerInfo.h"
 #include "Replay.h"
 #include "RwHelper.h"
 #include "Timer.h"
