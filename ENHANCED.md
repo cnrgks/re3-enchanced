@@ -14,9 +14,14 @@ in src/skel/glfw/glfw.cpp. No fixed game addresses or class/save layout changes.
   Load with confirmation from Enhanced Options. Loading never queues an autosave.
 - Hold T for smooth radar zoom. Icons/traces shrink; extra tiles cover wide range.
 - GPS: manual waypoint overrides mission routing. Otherwise prefer the nearest
-  visible coordinate objective, then visible entity objective. Red line below
-  every icon; rotating north-up player arrow. Multi-goal mission selection is a
-  heuristic. No voice navigation or legal traffic-direction guarantee.
+  visible coordinate objective, then visible entity objective. Mission routes
+  use the native objective blip's exact colour, including dim and literal RGBA
+  colours; manual waypoints remain red. Lines draw below every icon.
+  Read-only graph search respects disabled roads and native one-way lane data,
+  considers nearby target entrances and preserves the entire route. Short
+  endpoint connectors require clear building/object line of sight. Walking and
+  driving use separate graphs and recalculate when entering/leaving a vehicle.
+  Multi-goal mission selection remains a heuristic; no voice navigation.
 - Native pause map with radar-tile fallback when menu-map artwork is unavailable.
 - Detailed vehicle/ped models selected directly in render callbacks; low-detail
   variants suppressed. Native spawning, world visibility and streaming retained.

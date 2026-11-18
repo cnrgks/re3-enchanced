@@ -3,6 +3,7 @@
 #include "crossplatform.h"
 #include "Enhanced.h"
 #include "EnhancedMath.h"
+#include "EnhancedRoute.h"
 #include "Frontend.h"
 #include "frontendoption.h"
 #include "Camera.h"
@@ -37,8 +38,11 @@ int8 BreakableWindscreen = 0, Borderless = 0;
 static float radarZoom = 1.0f;
 static uint32 radarTime;
 static bool missionSavePending;
-static CVector route[512];
-static int16 routeCount;
+static std::vector<CVector> route;
+static int routeCount;
+static CRGBA routeColour(230,35,35,230);
+static bool routeStartsAtPlayer;
+static int routeType = -1;
 static uint32 routeLastUpdate;
 static CVector routeTarget;
 static CVector routeStart;
@@ -231,6 +235,44 @@ void OpenMap(int8 action)
         ChangeScreen(MENUPAGE_MAP);
 }
 
+// Lane orientation follows CCarCtrl's native one-way-road checks.
+// Nodes disabled by SCM (including closed roads/bridges) are never traversed.
+struct RouteGraph {
+    struct Goal { int node; float penalty; };
+    int first, last, type;
+    std::vector<Goal> goals;
+    int NodeCount() const { return ThePaths.m_numPathNodes; }
+    float GoalPenalty(int node) const {
+        for (const Goal &goal : goals) if (goal.node == node) return goal.penalty;
+        return std::numeric_limits<float>::infinity();
+    }
+    template<class Visitor> void VisitEdges(int current, Visitor visit) const {
+        const CPathNode &node = ThePaths.m_pathNodes[current];
+        if (node.bDisabled) return;
+        for (int i = 0; i < node.numLinks; ++i) {
+            const int edge = node.firstLink + i;
+            if (edge < 0 || edge >= ThePaths.m_numConnections) continue;
+            const int next = ThePaths.ConnectedNode(edge);
+            if (next < first || next >= last || ThePaths.m_pathNodes[next].bDisabled) continue;
+            if (type == PATH_CAR) {
+                const int linkId = ThePaths.m_carPathConnections[edge];
+                if (linkId < 0 || linkId >= ThePaths.m_numCarPathLinks) continue;
+                const CCarPathLink &link = ThePaths.m_carPathLinks[linkId];
+                if ((link.pathNodeIndex == current ? link.numRightLanes : link.numLeftLanes) <= 0) continue;
+            }
+            visit(next, Max(1.0f, float(ThePaths.m_distances[edge])));
+        }
+    }
+};
+
+static bool ClearRouteConnector(const CVector &a, const CVector &b)
+{
+    // Do not draw a shortcut through a building between the road and marker.
+    return (a-b).Magnitude2D() < 40.0f &&
+        CWorld::GetIsLineOfSightClear(a+CVector(0,0,1), b+CVector(0,0,1),
+            true, false, false, true, true, false);
+}
+
 static void UpdateRoute()
 {
 #ifdef MENU_MAP
@@ -243,6 +285,7 @@ static void UpdateRoute()
     CVector target;
     bool manual = CRadar::TargetMarkerId != -1;
     bool found = manual;
+    routeColour = CRGBA(230,35,35,230);
     if (manual) target = CRadar::TargetMarkerPos;
     else if (CTheScripts::IsPlayerOnAMission()) {
         // SCM has no universal "current GPS objective". Coordinate objectives
@@ -267,7 +310,14 @@ static void UpdateRoute()
                     position = entity->GetPosition();
                 }
                 float distance = (position-start).MagnitudeSqr();
-                if (distance < best) { best=distance; target=position; found=true; }
+                if (distance < best) {
+                    best=distance; target=position; found=true;
+                    // Exactly the native icon colour, including dim variants
+                    // and scripts supplying a literal RGBA rather than palette ID.
+                    const uint32 colour = CRadar::GetRadarTraceColour(blip.m_nColor, blip.m_bDim);
+                    routeColour = CRGBA((colour>>24)&255, (colour>>16)&255,
+                        (colour>>8)&255, colour&255);
+                }
             }
         }
     }
@@ -278,26 +328,47 @@ static void UpdateRoute()
         return;
     }
     const uint32 now = CTimer::GetTimeInMilliseconds();
-    if (routeLastUpdate && now-routeLastUpdate < 1000 &&
+    const int type = FindPlayerVehicle() ? PATH_CAR : PATH_PED;
+    if (type == routeType && routeLastUpdate && now-routeLastUpdate < 750 &&
         (target-routeTarget).MagnitudeSqr() < 1.0f &&
-        (start-routeStart).MagnitudeSqr() < 225.0f) return;
+        (start-routeStart).MagnitudeSqr() < 64.0f) return;
     routeLastUpdate = now;
     routeTarget = target;
     routeStart = start;
     routeCount = 0;
-    const int type = FindPlayerVehicle() ? PATH_CAR : PATH_PED;
-    int startNode = ThePaths.FindNodeClosestToCoors(start, type, 250.0f, true);
-    int targetNode = ThePaths.FindNodeClosestToCoors(target, type, 250.0f, true);
-    if (startNode < 0 || targetNode < 0) return;
-    CPathNode *nodes[ARRAY_SIZE(route)];
-    int16 count = 0;
-    ThePaths.DoPathSearch(type, start, startNode, target, nodes, &count,
-        ARRAY_SIZE(nodes), nil, nil, 999999.0f, targetNode);
-    if (count) route[routeCount++]=start;
-    for (int i = 0; i < count && routeCount < ARRAY_SIZE(route)-1; ++i)
-        route[routeCount++] = nodes[i]->GetPosition();
-    if (routeCount && (route[routeCount-1]-target).Magnitude2D() < 60.0f)
-        route[routeCount++]=target;
+    routeType = type;
+    route.clear();
+    RouteGraph graph;
+    graph.type = type;
+    graph.first = type == PATH_CAR ? 0 : ThePaths.m_numCarPathNodes;
+    graph.last = type == PATH_CAR ? ThePaths.m_numCarPathNodes : ThePaths.m_numPathNodes;
+    int startNode = -1;
+    float nearestStart = 250.0f*250.0f;
+    std::vector<RouteGraph::Goal> candidates;
+    for (int node = graph.first; node < graph.last; ++node) {
+        const CPathNode &path = ThePaths.m_pathNodes[node];
+        if (path.bDisabled || !path.numLinks) continue;
+        const float fromStart = (path.pos-start).MagnitudeSqr();
+        if (fromStart < nearestStart) { nearestStart=fromStart; startNode=node; }
+        const CVector delta = path.pos-target;
+        // A map click has no reliable height outside streamed collision.
+        const float distance = manual || target.z < -90.0f ?
+            delta.Magnitude2D() : delta.Magnitude();
+        if (distance < 120.0f) candidates.push_back({node, distance*2.0f});
+    }
+    std::sort(candidates.begin(), candidates.end(),
+        [](const RouteGraph::Goal &a, const RouteGraph::Goal &b) { return a.penalty < b.penalty; });
+    if (candidates.size() > 8) candidates.resize(8);
+    graph.goals = candidates;
+    if (startNode < 0 || graph.goals.empty()) return;
+    const std::vector<int> nodes = EnhancedRoute::Search(graph, startNode);
+    if (nodes.empty()) return; // Disconnected objectives get no invented straight route.
+    routeStartsAtPlayer = ClearRouteConnector(start, ThePaths.m_pathNodes[nodes.front()].pos);
+    if (routeStartsAtPlayer) route.push_back(start);
+    // Keep the complete path: a fixed-size truncation used to cut across turns.
+    for (int node : nodes) route.push_back(ThePaths.m_pathNodes[node].pos);
+    if (ClearRouteConnector(route.back(), target)) route.push_back(target);
+    routeCount = int(route.size());
 #endif
 }
 
@@ -355,7 +426,7 @@ void DrawRoute()
     if (!GPS || routeCount < 2) return;
     for (int i = 1; i < routeCount; ++i) {
         CVector2D a, b, sa, sb;
-        CRadar::TransformRealWorldPointToRadarSpace(a, CVector2D(i==1 ? FindPlayerCoors() : route[i-1]));
+        CRadar::TransformRealWorldPointToRadarSpace(a, CVector2D(i==1 && routeStartsAtPlayer ? FindPlayerCoors() : route[i-1]));
         CRadar::TransformRealWorldPointToRadarSpace(b, CVector2D(route[i]));
         if (!CMenuManager::bMenuMapActive && !ClipRadarSegment(a,b)) continue;
         CRadar::TransformRadarPointToScreenSpace(sa,a);
@@ -368,7 +439,7 @@ void DrawRoute()
         CSprite2d::Draw2DPolygon(sa.x+perpendicular.x,sa.y+perpendicular.y,
             sb.x+perpendicular.x,sb.y+perpendicular.y,
             sa.x-perpendicular.x,sa.y-perpendicular.y,
-            sb.x-perpendicular.x,sb.y-perpendicular.y, CRGBA(230,35,35,230));
+            sb.x-perpendicular.x,sb.y-perpendicular.y, routeColour);
     }
 #endif
 }
