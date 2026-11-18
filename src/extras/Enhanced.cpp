@@ -149,6 +149,7 @@ static bool SaveAutosave()
     AutosavePrefix(prefix, sizeof(prefix));
     snprintf(target, sizeof(target), "%s1.b", prefix);
     snprintf(temporary, sizeof(temporary), "%s.tmp", target);
+    if (strlen(temporary) >= sizeof(ValidSaveName)) return false;
     char oldValidName[sizeof(ValidSaveName)];
     strcpy(oldValidName, ValidSaveName);
     // Same native serializer, but no safehouse time skip or stamina mutation.
@@ -158,11 +159,11 @@ static bool SaveAutosave()
     int file = CFileMgr::OpenFile(temporary, "wb");
     bool ok = false;
     if (file) {
-        CTimer::Stop();
+        CTimer::Suspend();
         ok = GenericSave(file);
         if (CFileMgr::GetErrorReadWrite(file)) ok = false;
         if (CFileMgr::CloseFile(file) != 0) ok = false;
-        CTimer::Update();
+        CTimer::Resume();
     }
     strcpy(ValidSaveName, oldValidName);
     if (ok) {

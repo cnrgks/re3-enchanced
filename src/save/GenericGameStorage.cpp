@@ -242,9 +242,8 @@ GenericSave(int file)
 	CFileMgr::Write(file, (const char *) &CheckSum, sizeof(CheckSum));
 	if (CFileMgr::GetErrorReadWrite(file)) {
 		PcSaveHelper.nErrorCode = SAVESTATUS_ERR_SAVE_WRITE;
-		if (!CloseFile(file))
-			PcSaveHelper.nErrorCode = SAVESTATUS_ERR_SAVE_CLOSE;
-
+        // GenericSave never owns the handle. All callers close it exactly once,
+        // including failed writes (important for atomic Enhanced autosaves).
 		return false;
 	}
 	

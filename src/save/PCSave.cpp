@@ -68,6 +68,8 @@ C_PcSave::SaveSlot(int32 slot)
             }
 			return true;
 		}
+        if (CFileMgr::CloseFile(file) != 0)
+            nErrorCode = SAVESTATUS_ERR_SAVE_CLOSE;
         if (heal) player->m_fHealth = previousHealth;
 		return false;
 	}
