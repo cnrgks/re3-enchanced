@@ -1,5 +1,6 @@
 #include "common.h"
 #include "Enhanced.h"
+#include "EnhancedMath.h"
 #include "Automobile.h"
 #include "DMAudio.h"
 #include "Glass.h"
@@ -18,27 +19,6 @@ RwObject *FindGlassAtomic(RwObject *object, void *)
     return object;
 }
 
-// Segment/triangle test in the windscreen frame's own coordinates. Test both
-// sides and actual geometry, rather than guessing a generic rectangle per car.
-bool SegmentTriangle(const CVector &start, const CVector &delta,
-    const CVector &a, const CVector &b, const CVector &c, float &best)
-{
-    CVector e1=b-a, e2=c-a;
-    CVector p=CrossProduct(delta,e2);
-    float determinant=DotProduct(e1,p);
-    if (Abs(determinant)<0.000001f) return false;
-    const float inverse=1.0f/determinant;
-    CVector s=start-a;
-    float u=DotProduct(s,p)*inverse;
-    if (u<0.0f || u>1.0f) return false;
-    CVector q=CrossProduct(s,e1);
-    float v=DotProduct(delta,q)*inverse;
-    if (v<0.0f || u+v>1.0f) return false;
-    float t=DotProduct(e2,q)*inverse;
-    if (t<0.0f || t>best) return false;
-    best=t;
-    return true;
-}
 }
 
 void ProcessWindscreenShot(const CVector &source, const CVector &target, CEntity *shooter)
@@ -85,7 +65,7 @@ void ProcessWindscreenShot(const CVector &source, const CVector &target, CEntity
 #endif
             const int vertexCount=RpGeometryGetNumVertices(geometry);
             if (indices[0]>=vertexCount || indices[1]>=vertexCount || indices[2]>=vertexCount) continue;
-            if (SegmentTriangle(start,end-start,vertices[indices[0]],
+            if (EnhancedMath::SegmentTriangle(start,end-start,vertices[indices[0]],
                 vertices[indices[1]],vertices[indices[2]],best)) {
                 nearest=car;
                 glass=FindVisibleGlass;

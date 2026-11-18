@@ -2,6 +2,7 @@
 #include "common.h"
 #include "crossplatform.h"
 #include "Enhanced.h"
+#include "EnhancedMath.h"
 #include "Frontend.h"
 #include "frontendoption.h"
 #include "Camera.h"
@@ -122,7 +123,7 @@ float RadarRange(float nativeRange)
     const float dt = radarTime ? Min(now-radarTime,100u)*0.001f : 0.0f;
     radarTime = now;
     const float target = RadarZoom && CPad::GetPad(0)->GetChar('T') ? 3.0f : 1.0f;
-    radarZoom += (target-radarZoom)*(1.0f-expf(-7.0f*dt));
+    radarZoom = EnhancedMath::SmoothZoom(radarZoom,target,dt);
     return nativeRange*radarZoom;
 }
 
