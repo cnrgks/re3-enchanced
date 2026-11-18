@@ -27,6 +27,7 @@ long _dwOperatingSystemVersion;
 #endif
 
 #include "common.h"
+#include "Enhanced.h"
 #if (defined(_MSC_VER))
 #include <tchar.h>
 #endif /* (defined(_MSC_VER)) */
@@ -79,6 +80,7 @@ static RwBool		  WindowIconified = FALSE;
 static RwBool		  WindowFocused = TRUE;
 
 static RwBool		  RwInitialised = FALSE;
+static bool enhancedWindowResize = false;
 
 static RwSubSystemInfo GsubSysInfo[MAX_SUBSYSTEMS];
 static RwInt32		GnumSubSystems = 0;
@@ -1024,6 +1026,66 @@ long _InputInitialiseMouse()
 	return 0;
 }
 
+void Enhanced::ApplyWindowMode(bool newWindow)
+{
+    GLFWwindow *window = PSGLOBAL(window);
+    if (!window) return;
+    static GLFWwindow *boundWindow;
+    static bool applied, wasExclusive;
+    static int x, y, width, height, decoration;
+    static GLFWmonitor *previousMonitor;
+    if (newWindow || boundWindow != window) {
+        boundWindow = window;
+        applied = false;
+    }
+    if (Borderless && !applied) {
+        glfwGetWindowPos(window,&x,&y);
+        glfwGetWindowSize(window,&width,&height);
+        decoration = glfwGetWindowAttrib(window,GLFW_DECORATED);
+        previousMonitor = glfwGetWindowMonitor(window);
+        wasExclusive = previousMonitor != nil;
+        // Use the monitor containing the centre of the current game window.
+        GLFWmonitor *monitor = previousMonitor;
+        if (!monitor) {
+            int count;
+            GLFWmonitor **monitors = glfwGetMonitors(&count);
+            for (int i=0;i<count;++i) {
+                int mx,my;
+                glfwGetMonitorPos(monitors[i],&mx,&my);
+                const GLFWvidmode *m=glfwGetVideoMode(monitors[i]);
+                if (x+width/2>=mx && x+width/2<mx+m->width &&
+                    y+height/2>=my && y+height/2<my+m->height) { monitor=monitors[i]; break; }
+            }
+        }
+        if (!monitor) monitor=glfwGetPrimaryMonitor();
+        if (!monitor) return;
+        const GLFWvidmode *mode=glfwGetVideoMode(monitor);
+        int mx,my;
+        glfwGetMonitorPos(monitor,&mx,&my);
+        enhancedWindowResize=true;
+        PSGLOBAL(fullScreen)=FALSE;
+        glfwSetWindowAttrib(window,GLFW_DECORATED,GLFW_FALSE);
+        glfwSetWindowMonitor(window,nil,mx,my,mode->width,mode->height,GLFW_DONT_CARE);
+        enhancedWindowResize=false;
+        applied=true;
+    } else if (!Borderless && applied) {
+        enhancedWindowResize=true;
+        glfwSetWindowAttrib(window,GLFW_DECORATED,decoration);
+        // A monitor may have been unplugged while the game was borderless.
+        GLFWmonitor *monitor=nil;
+        if (wasExclusive) {
+            int count;
+            GLFWmonitor **monitors=glfwGetMonitors(&count);
+            for (int i=0;i<count;++i) if (monitors[i]==previousMonitor) monitor=monitors[i];
+            if (!monitor) monitor=glfwGetPrimaryMonitor();
+        }
+        glfwSetWindowMonitor(window,monitor,x,y,width,height,GLFW_DONT_CARE);
+        PSGLOBAL(fullScreen)=monitor!=nil;
+        enhancedWindowResize=false;
+        applied=false;
+    }
+}
+
 void psPostRWinit(void)
 {
 	RwVideoMode vm;
@@ -1047,6 +1109,8 @@ void psPostRWinit(void)
 
 	if(!(vm.flags & rwVIDEOMODEEXCLUSIVE))
 		glfwSetWindowSize(PSGLOBAL(window), RsGlobal.maximumWidth, RsGlobal.maximumHeight);
+
+    Enhanced::ApplyWindowMode(true);
 
 	// Make sure all keys are released
 	CPad::GetPad(0)->Clear(true);
@@ -1365,7 +1429,7 @@ void resizeCB(GLFWwindow* window, int width, int height) {
 	*/
 	/* redraw window */
 
-	if (RwInitialised && gGameState == GS_PLAYING_GAME)
+	if (!enhancedWindowResize && RwInitialised && gGameState == GS_PLAYING_GAME)
 	{
 		RsEventHandler(rsIDLE, (void *)TRUE);
 	}

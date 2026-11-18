@@ -1,4 +1,5 @@
 #include "common.h"
+#include "Enhanced.h"
 
 #include "Weapon.h"
 #include "AnimBlendAssociation.h"
@@ -2380,7 +2381,9 @@ CPed::IsPedDoingDriveByShooting(void)
 bool
 CWeapon::ProcessLineOfSight(CVector const &point1, CVector const &point2, CColPoint &point, CEntity *&entity, eWeaponType type, CEntity *shooter, bool checkBuildings, bool checkVehicles, bool checkPeds, bool checkObjects, bool checkDummies, bool ignoreSeeThrough, bool ignoreSomeObjects)
 {
-	return CWorld::ProcessLineOfSight(point1, point2, point, entity, checkBuildings, checkVehicles, checkPeds, checkObjects, checkDummies, ignoreSeeThrough, ignoreSomeObjects);
+    bool hit=CWorld::ProcessLineOfSight(point1, point2, point, entity, checkBuildings, checkVehicles, checkPeds, checkObjects, checkDummies, ignoreSeeThrough, ignoreSomeObjects);
+    if (checkVehicles) Enhanced::ProcessWindscreenShot(point1,hit ? point.point : point2,shooter);
+    return hit;
 }
 
 #ifdef COMPATIBLE_SAVES

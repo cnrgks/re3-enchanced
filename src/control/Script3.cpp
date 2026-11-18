@@ -1,4 +1,5 @@
 #include "common.h"
+#include "Enhanced.h"
 
 #include "Script.h"
 #include "ScriptCommands.h"
@@ -2297,6 +2298,7 @@ int8 CRunningScript::ProcessCommands700To799(int32 command)
 		m_nIp += KEY_LENGTH_IN_SCRIPT;
 		strncpy(CStats::LastMissionPassedName, name, KEY_LENGTH_IN_SCRIPT);
 		++CStats::MissionsPassed;
+        Enhanced::OnMissionPassed();
 		CStats::CheckPointReachedSuccessfully();
 		return 0;
 	}

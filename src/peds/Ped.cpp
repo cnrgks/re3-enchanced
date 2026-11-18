@@ -1,7 +1,6 @@
 #include "common.h"
 
 #include "main.h"
-#include "Enhanced.h"
 #include "Pools.h"
 #include "Particle.h"
 #include "RpAnimBlend.h"
@@ -288,7 +287,6 @@ CPed::CPed(uint32 pedType) : m_pedIK(this)
 
 CPed::~CPed(void)
 {
-    Enhanced::ForgetPed(this);
 	CWorld::Remove(this);
 	CRadar::ClearBlipForEntity(BLIP_CHAR, CPools::GetPedPool()->GetIndex(this));
 	if (InVehicle()){
@@ -4940,9 +4938,6 @@ CPed::AddPreRenderParticles(void)
 void
 CPed::Render(void)
 {
-    if (this == FindPlayerPed() && Enhanced::UseFirstPerson() &&
-        TheCamera.Cams[TheCamera.ActiveCam].Mode == CCam::MODE_1STPERSON_RUNABOUT)
-        return;
 	if (bInVehicle && m_nPedState != PED_EXIT_CAR && m_nPedState != PED_DRAG_FROM_CAR) {
 		if (!bRenderPedInCar)
 			return;
@@ -4952,7 +4947,6 @@ CPed::Render(void)
 			return;
 	}
 
-    Enhanced::BeginPedRender(this);
 	CEntity::Render();
 
 #ifdef PED_SKIN
@@ -4971,7 +4965,6 @@ CPed::Render(void)
 		RpAtomicRender(m_pWeaponModel);
 	}
 #endif
-    Enhanced::EndPedRender(this);
 }
 
 void

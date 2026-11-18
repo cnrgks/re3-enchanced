@@ -1,4 +1,5 @@
 #include "common.h"
+#include "Enhanced.h"
 #include "main.h"
 
 #include "General.h"
@@ -4422,6 +4423,8 @@ CAutomobile::Fix(void)
 void
 CAutomobile::SetupDamageAfterLoad(void)
 {
+    if (Enhanced::BreakableWindscreen && GetModelIndex()!=MI_RHINO && m_aCarNodes[CAR_WINDSCREEN])
+        SetPanelDamage(CAR_WINDSCREEN,VEHPANEL_WINDSCREEN,true);
 	if(m_aCarNodes[CAR_BUMP_FRONT])
 		SetBumperDamage(CAR_BUMP_FRONT, VEHBUMPER_FRONT);
 	if(m_aCarNodes[CAR_BONNET])

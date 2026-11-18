@@ -557,6 +557,8 @@ bool LoadINISettings()
 					ReadIniIfExists(option.m_CFO->saveCat, option.m_CFO->save, (int8*)option.m_CFO->value);
 
 				if (option.m_Action == MENUACTION_CFO_SELECT) {
+                    if (option.m_CFO->saveCat && strcmp(option.m_CFO->saveCat,"Enhanced") == 0)
+                        *(int8*)option.m_CFO->value = *(int8*)option.m_CFO->value != 0;
 					option.m_CFOSelect->lastSavedValue = option.m_CFOSelect->displayedValue = *(int8*)option.m_CFO->value;
 				}
 			}

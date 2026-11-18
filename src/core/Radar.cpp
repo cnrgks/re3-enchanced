@@ -505,6 +505,7 @@ void CRadar::DrawBlips()
 		RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDINVSRCALPHA);
 		RwRenderStateSet(rwRENDERSTATEFOGENABLE, (void*)FALSE);
 
+        Enhanced::DrawRoute(); // below every blip, including the player arrow
 		CVector2D out;
 		CVector2D in = CVector2D(0.0f, 0.0f);
 		TransformRadarPointToScreenSpace(out, in);
@@ -536,7 +537,6 @@ void CRadar::DrawBlips()
 #endif
 
 		CEntity *blipEntity = nil;
-        Enhanced::DrawRoute();
 		for(int blipId = 0; blipId < NUMRADARBLIPS; blipId++) {
 #ifdef MENU_MAP
 			// A little hack to reuse cleared blips in menu map. hehe
@@ -792,8 +792,7 @@ void CRadar::DrawMap()
 		else
 			m_radarRange = RADAR_MIN_RANGE;
 
-        if (Enhanced::RadarZoom == 2) m_radarRange *= 1.5f;
-        if (Enhanced::RadarZoom && CPad::GetPad(0)->GetTab()) m_radarRange *= 2.0f;
+        m_radarRange = Enhanced::RadarRange(m_radarRange);
 		vec2DRadarOrigin = CVector2D(FindPlayerCentreOfWorld_NoSniperShift());
 		DrawRadarMap();
 	}
@@ -821,15 +820,10 @@ void CRadar::DrawRadarMap()
 	RwRenderStateSet(rwRENDERSTATETEXTUREADDRESS, (void*)rwTEXTUREADDRESSCLAMP);
 	RwRenderStateSet(rwRENDERSTATETEXTUREPERSPECTIVE, (void*)FALSE);
 
-	DrawRadarSection(x - 1, y - 1);
-	DrawRadarSection(x, y - 1);
-	DrawRadarSection(x + 1, y - 1);
-	DrawRadarSection(x - 1, y);
-	DrawRadarSection(x, y);
-	DrawRadarSection(x + 1, y);
-	DrawRadarSection(x - 1, y + 1);
-	DrawRadarSection(x, y + 1);
-	DrawRadarSection(x + 1, y + 1);
+    const int span = Max(1, (int)Ceil(m_radarRange / RADAR_TILE_SIZE));
+    for (int dy=-span; dy<=span; ++dy)
+        for (int dx=-span; dx<=span; ++dx)
+            DrawRadarSection(x+dx,y+dy);
 }
 
 void CRadar::DrawRadarMask() 
@@ -931,7 +925,8 @@ void CRadar::DrawRadarSprite(uint16 sprite, float x, float y, uint8 alpha)
 #ifdef MENU_MAP
 	if(sprite == RADAR_SPRITE_WAYPOINT) alpha = 255;
 #endif
-	RadarSprites[sprite]->Draw(CRect(x - SCREEN_SCALE_X(8.0f), y - SCREEN_SCALE_Y(8.0f), x + SCREEN_SCALE_X(8.0f), y + SCREEN_SCALE_Y(8.0f)), CRGBA(255, 255, 255, alpha));
+    const float size = 8.0f * Enhanced::BlipScale();
+	RadarSprites[sprite]->Draw(CRect(x - SCREEN_SCALE_X(size), y - SCREEN_SCALE_Y(size), x + SCREEN_SCALE_X(size), y + SCREEN_SCALE_Y(size)), CRGBA(255, 255, 255, alpha));
 }
 
 void CRadar::DrawRotatingRadarSprite(CSprite2d* sprite, float x, float y, float angle, int32 alpha)
@@ -1283,6 +1278,7 @@ void CRadar::ShowRadarMarker(CVector pos, uint32 color, float radius) {
 
 void CRadar::ShowRadarTrace(float x, float y, uint32 size, uint8 red, uint8 green, uint8 blue, uint8 alpha)
 {
+    const float scaledSize = size * Enhanced::BlipScale();
 	if ((TheCamera.m_WideScreenOn || !CHud::m_Wants_To_Draw_Hud)
 #ifdef MENU_MAP
 	   && !CMenuManager::bMenuMapActive
@@ -1290,12 +1286,13 @@ void CRadar::ShowRadarTrace(float x, float y, uint32 size, uint8 red, uint8 gree
 	)
 		return;
 
-	CSprite2d::DrawRect(CRect(x - SCREEN_SCALE_X(size + 1.0f), y - SCREEN_SCALE_Y(size + 1.0f), SCREEN_SCALE_X(size + 1.0f) + x, SCREEN_SCALE_Y(size + 1.0f) + y), CRGBA(0, 0, 0, alpha));
-	CSprite2d::DrawRect(CRect(x - SCREEN_SCALE_X(size), y - SCREEN_SCALE_Y(size), SCREEN_SCALE_X(size) + x, SCREEN_SCALE_Y(size) + y), CRGBA(red, green, blue, alpha));
+	CSprite2d::DrawRect(CRect(x - SCREEN_SCALE_X(scaledSize + 1.0f), y - SCREEN_SCALE_Y(scaledSize + 1.0f), SCREEN_SCALE_X(scaledSize + 1.0f) + x, SCREEN_SCALE_Y(scaledSize + 1.0f) + y), CRGBA(0, 0, 0, alpha));
+	CSprite2d::DrawRect(CRect(x - SCREEN_SCALE_X(scaledSize), y - SCREEN_SCALE_Y(scaledSize), SCREEN_SCALE_X(scaledSize) + x, SCREEN_SCALE_Y(scaledSize) + y), CRGBA(red, green, blue, alpha));
 }
 
 void CRadar::ShowRadarTraceWithHeight(float x, float y, uint32 size, uint8 red, uint8 green, uint8 blue, uint8 alpha, uint8 mode)
 {
+    const float scaledSize = size * Enhanced::BlipScale();
 	if ((TheCamera.m_WideScreenOn || !CHud::m_Wants_To_Draw_Hud)
 #ifdef MENU_MAP
 		&& !CMenuManager::bMenuMapActive
@@ -1307,17 +1304,17 @@ void CRadar::ShowRadarTraceWithHeight(float x, float y, uint32 size, uint8 red, 
 	{
 	case BLIP_MODE_TRIANGULAR_UP:
 		// size++; // VC does size + 1 for triangles
-		CSprite2d::Draw2DPolygon(x + SCREEN_SCALE_X(size + 3.0f), y + SCREEN_SCALE_Y(size + 2.0f), x - (SCREEN_SCALE_X(size + 3.0f)), y + SCREEN_SCALE_Y(size + 2.0f), x, y - (SCREEN_SCALE_Y(size + 3.0f)), x, y - (SCREEN_SCALE_Y(size + 3.0f)), CRGBA(0, 0, 0, alpha));
-		CSprite2d::Draw2DPolygon(x + SCREEN_SCALE_X(size + 1.0f), y + SCREEN_SCALE_Y(size + 1.0f), x - (SCREEN_SCALE_X(size + 1.0f)), y + SCREEN_SCALE_Y(size + 1.0f), x, y - (SCREEN_SCALE_Y(size + 1.0f)), x, y - (SCREEN_SCALE_Y(size + 1.0f)), CRGBA(red, green, blue, alpha));
+		CSprite2d::Draw2DPolygon(x + SCREEN_SCALE_X(scaledSize + 3.0f), y + SCREEN_SCALE_Y(scaledSize + 2.0f), x - (SCREEN_SCALE_X(scaledSize + 3.0f)), y + SCREEN_SCALE_Y(scaledSize + 2.0f), x, y - (SCREEN_SCALE_Y(scaledSize + 3.0f)), x, y - (SCREEN_SCALE_Y(scaledSize + 3.0f)), CRGBA(0, 0, 0, alpha));
+		CSprite2d::Draw2DPolygon(x + SCREEN_SCALE_X(scaledSize + 1.0f), y + SCREEN_SCALE_Y(scaledSize + 1.0f), x - (SCREEN_SCALE_X(scaledSize + 1.0f)), y + SCREEN_SCALE_Y(scaledSize + 1.0f), x, y - (SCREEN_SCALE_Y(scaledSize + 1.0f)), x, y - (SCREEN_SCALE_Y(scaledSize + 1.0f)), CRGBA(red, green, blue, alpha));
 		break;
 	case BLIP_MODE_TRIANGULAR_DOWN:
 		// size++; // VC does size + 1 for triangles
-		CSprite2d::Draw2DPolygon(x, y + SCREEN_SCALE_Y(size + 2.0f), x, y + SCREEN_SCALE_Y(size + 3.0f), x + SCREEN_SCALE_X(size + 3.0f), y - (SCREEN_SCALE_Y(size + 2.0f)), x - (SCREEN_SCALE_X(size + 3.0f)), y - (SCREEN_SCALE_Y(size + 2.0f)), CRGBA(0, 0, 0, alpha));
-		CSprite2d::Draw2DPolygon(x, y + SCREEN_SCALE_Y(size + 1.0f), x, y + SCREEN_SCALE_Y(size + 1.0f), x + SCREEN_SCALE_X(size + 1.0f), y - (SCREEN_SCALE_Y(size + 1.0f)), x - (SCREEN_SCALE_X(size + 1.0f)), y - (SCREEN_SCALE_Y(size + 1.0f)), CRGBA(red, green, blue, alpha));
+		CSprite2d::Draw2DPolygon(x, y + SCREEN_SCALE_Y(scaledSize + 2.0f), x, y + SCREEN_SCALE_Y(scaledSize + 3.0f), x + SCREEN_SCALE_X(scaledSize + 3.0f), y - (SCREEN_SCALE_Y(scaledSize + 2.0f)), x - (SCREEN_SCALE_X(scaledSize + 3.0f)), y - (SCREEN_SCALE_Y(scaledSize + 2.0f)), CRGBA(0, 0, 0, alpha));
+		CSprite2d::Draw2DPolygon(x, y + SCREEN_SCALE_Y(scaledSize + 1.0f), x, y + SCREEN_SCALE_Y(scaledSize + 1.0f), x + SCREEN_SCALE_X(scaledSize + 1.0f), y - (SCREEN_SCALE_Y(scaledSize + 1.0f)), x - (SCREEN_SCALE_X(scaledSize + 1.0f)), y - (SCREEN_SCALE_Y(scaledSize + 1.0f)), CRGBA(red, green, blue, alpha));
 		break;
 	case BLIP_MODE_SQUARE:
-		CSprite2d::DrawRect(CRect(x - SCREEN_SCALE_X(size + 1.0f), y - SCREEN_SCALE_Y(size + 1.0f), SCREEN_SCALE_X(size + 1.0f) + x, SCREEN_SCALE_Y(size + 1.0f) + y), CRGBA(0, 0, 0, alpha));
-		CSprite2d::DrawRect(CRect(x - SCREEN_SCALE_X(size), y - SCREEN_SCALE_Y(size), SCREEN_SCALE_X(size) + x, SCREEN_SCALE_Y(size) + y), CRGBA(red, green, blue, alpha));
+		CSprite2d::DrawRect(CRect(x - SCREEN_SCALE_X(scaledSize + 1.0f), y - SCREEN_SCALE_Y(scaledSize + 1.0f), SCREEN_SCALE_X(scaledSize + 1.0f) + x, SCREEN_SCALE_Y(scaledSize + 1.0f) + y), CRGBA(0, 0, 0, alpha));
+		CSprite2d::DrawRect(CRect(x - SCREEN_SCALE_X(scaledSize), y - SCREEN_SCALE_Y(scaledSize), SCREEN_SCALE_X(scaledSize) + x, SCREEN_SCALE_Y(scaledSize) + y), CRGBA(red, green, blue, alpha));
 		break;
 	}
 }
@@ -1357,9 +1354,10 @@ void CRadar::StreamRadarSections(const CVector &posn)
 
 void CRadar::StreamRadarSections(int32 x, int32 y)
 {
+    const int span = Max(1, (int)Ceil(m_radarRange / RADAR_TILE_SIZE));
 	for (int i = 0; i < RADAR_NUM_TILES; ++i) {
 		for (int j = 0; j < RADAR_NUM_TILES; ++j) {
-			if ((i >= x - 1 && i <= x + 1) && (j >= y - 1 && j <= y + 1))
+			if ((i >= x - span && i <= x + span) && (j >= y - span && j <= y + span))
 				RequestMapSection(i, j);
 			else
 				RemoveMapSection(i, j);
@@ -1529,11 +1527,7 @@ CRadar::DrawYouAreHereSprite(float x, float y)
 	}
 
 	if (show) {
-		float left = x - SCREEN_SCALE_X(12.0f);
-		float top = y;
-		float right = SCREEN_SCALE_X(12.0) + x;
-		float bottom = y - SCREEN_SCALE_Y(24.0f);
-		CentreSprite.Draw(CRect(left, top, right, bottom), CRGBA(255, 255, 255, 255));
+        DrawRotatingRadarSprite(&CentreSprite,x,y,PI+FindPlayerHeading(),255);
 	}
 }
 

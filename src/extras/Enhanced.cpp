@@ -12,6 +12,9 @@
 #include "Hud.h"
 #include "Pad.h"
 #include "PathFind.h"
+#include "Pools.h"
+#include "Object.h"
+#include "Vehicle.h"
 #include "PlayerPed.h"
 #include "PlayerInfo.h"
 #include "Radar.h"
@@ -27,14 +30,11 @@
 #include "World.h"
 
 namespace Enhanced {
-int8 QuickSave = 0, AutoSave = 0, FirstPerson = 0, RadarZoom = 0;
-int8 GPS = 0, MenuMap = 1, Ragdoll = 0, VehicleDetail = 0, PedDetail = 0, HealAfterSave = 0;
-const char *AutoSaveTimes[] = { "FEM_OFF", "EN_5MIN", "EN10MIN", "EN15MIN" };
-const char *RadarZoomModes[] = { "FEM_OFF", "EN_ZOOM", "EN_WIDE" };
-
-static bool firstPersonActive;
-static uint32 elapsedSafeTime, previousTime;
-static int32 lastMissions = -1;
+int8 QuickSave = 0, AutoSave = 0, RadarZoom = 0;
+int8 GPS = 0, MenuMap = 1, VehicleDetail = 0, PedDetail = 0, HealAfterSave = 0;
+int8 BreakableWindscreen = 0, Borderless = 0;
+static float radarZoom = 1.0f;
+static uint32 radarTime;
 static bool missionSavePending;
 static CVector route[512];
 static int16 routeCount;
@@ -49,22 +49,19 @@ wchar *GetText(const char *key)
     static Entry strings[] = {
         { "ENHANCE", "ENHANCED OPTIONS" },
         { "EN_QSAV", "F5 SAVE MENU" },
-        { "EN_AUTO", "AUTOSAVE" },
+        { "EN_AUTO", "AUTOSAVE AFTER MISSION" },
         { "EN_LOAD", "LOAD AUTOSAVE" },
-        { "EN_FPS", "FIRST PERSON (F6)" },
-        { "EN_RADR", "RADAR ZOOM" },
+        { "EN_RADR", "SMOOTH RADAR ZOOM (T)" },
         { "EN_GPS", "GPS ROUTE" },
         { "EN_MAP", "PAUSE MAP" },
-        { "EN_RAG", "RAGDOLL (BASIC)" },
         { "EN_VLOD", "HIGH DETAIL VEHICLES" },
         { "EN_PLOD", "HIGH DETAIL PEDESTRIANS" },
         { "EN_HEAL", "HEAL AFTER MANUAL SAVE" },
-        { "EN_5MIN", "5 MIN" }, { "EN10MIN", "10 MIN" }, { "EN15MIN", "15 MIN" },
-        { "EN_ZOOM", "HOLD TAB" }, { "EN_WIDE", "WIDE + TAB" },
+        { "EN_GLSS", "BREAKABLE WINDSHIELDS" },
+        { "EN_BORD", "BORDERLESS FULLSCREEN" },
         { "EN_DONE", "Autosave completed." },
         { "EN_FAIL", "Autosave failed. Previous autosave kept." },
         { "EN_SAFE", "Save unavailable: stand still, outside missions, without a wanted level." },
-        { "EN_HINT", "F6: first person. TAB: radar zoom. Map: right click to set waypoint." },
     };
     for (unsigned i = 0; i < ARRAY_SIZE(strings); ++i) {
         if (strncmp(strings[i].key, key, 8) == 0) {
@@ -100,20 +97,42 @@ static bool SafeToSave()
 
 void Reset()
 {
-    elapsedSafeTime = previousTime = 0;
-    lastMissions = -1;
-    missionSavePending = firstPersonActive = false;
+    missionSavePending = false;
+    radarZoom = 1.0f;
+    radarTime = 0;
     routeCount = 0;
     routeLastUpdate = 0;
 }
 
-bool UseFirstPerson()
+void OnMissionPassed()
 {
-    CPlayerPed *p = FindPlayerPed();
-    return FirstPerson && firstPersonActive && p && !p->InVehicle() &&
-        p->IsPedInControl() && !CCutsceneMgr::IsRunning() &&
-        !CCutsceneMgr::IsCutsceneProcessing() && !TheCamera.m_WideScreenOn &&
-        TheCamera.WhoIsInControlOfTheCamera != CAMCONTROL_SCRIPT;
+    if (AutoSave) missionSavePending = true;
+}
+
+void WindowModeChanged(int8, int8)
+{
+#if defined(RW_GL3) && !defined(LIBRW_SDL2)
+    ApplyWindowMode();
+#endif
+}
+
+float RadarRange(float nativeRange)
+{
+    const uint32 now = CTimer::GetTimeInMillisecondsPauseMode();
+    const float dt = radarTime ? Min(now-radarTime,100u)*0.001f : 0.0f;
+    radarTime = now;
+    const float target = RadarZoom && CPad::GetPad(0)->GetChar('T') ? 3.0f : 1.0f;
+    radarZoom += (target-radarZoom)*(1.0f-expf(-7.0f*dt));
+    return nativeRange*radarZoom;
+}
+
+float BlipScale()
+{
+#ifdef MENU_MAP
+    if (CMenuManager::bMenuMapActive)
+        return Clamp(CMenuManager::fMapSize/(SCREEN_HEIGHT*2.0f),0.55f,1.0f);
+#endif
+    return Clamp(1.0f/Sqrt(radarZoom),0.55f,1.0f);
 }
 
 void AfterSuccessfulSave()
@@ -196,7 +215,7 @@ void LoadAutosave(int8 action)
         return;
     }
     FrontEndMenuManager.m_nCurrSaveSlot = -2; // private sentinel, never an array index
-    ChangeScreen(MENUPAGE_LOAD_SLOT_CONFIRM);
+    ChangeScreen(MENUPAGE_LOAD_SLOT_CONFIRM, 1);
 }
 
 wchar *MapOptionDraw(bool *disabled, bool)
@@ -214,15 +233,46 @@ void OpenMap(int8 action)
 static void UpdateRoute()
 {
 #ifdef MENU_MAP
-    if (!GPS || CRadar::TargetMarkerId == -1 || !FindPlayerPed()) {
+    if (!GPS || !FindPlayerPed()) {
         routeCount = 0;
         routeLastUpdate = 0;
         return;
     }
     const CVector start = FindPlayerCoors();
-    const CVector target = CRadar::TargetMarkerPos;
+    CVector target;
+    bool manual = CRadar::TargetMarkerId != -1;
+    bool found = manual;
+    if (manual) target = CRadar::TargetMarkerPos;
+    else if (CTheScripts::IsPlayerOnAMission()) {
+        // SCM has no universal "current GPS objective". Coordinate objectives
+        // take priority, then the nearest script-visible entity marker.
+        float best = 1.0e20f;
+        for (int pass=0; pass<2 && !found; ++pass) {
+            for (int i=0; i<NUMRADARBLIPS; ++i) {
+                const sRadarTrace &blip = CRadar::ms_RadarTrace[i];
+                if (!blip.m_bInUse || blip.m_eRadarSprite != RADAR_SPRITE_NONE ||
+                    (blip.m_eBlipDisplay != BLIP_DISPLAY_BOTH &&
+                     blip.m_eBlipDisplay != BLIP_DISPLAY_BLIP_ONLY)) continue;
+                CVector position;
+                if (pass == 0) {
+                    if (blip.m_eBlipType != BLIP_COORD) continue;
+                    position = blip.m_vecPos;
+                } else {
+                    CEntity *entity = nil;
+                    if (blip.m_eBlipType == BLIP_CAR) entity = CPools::GetVehiclePool()->GetAt(blip.m_nEntityHandle);
+                    else if (blip.m_eBlipType == BLIP_CHAR) entity = CPools::GetPedPool()->GetAt(blip.m_nEntityHandle);
+                    else if (blip.m_eBlipType == BLIP_OBJECT) entity = CPools::GetObjectPool()->GetAt(blip.m_nEntityHandle);
+                    if (!entity || entity == FindPlayerPed() || entity == FindPlayerVehicle()) continue;
+                    position = entity->GetPosition();
+                }
+                float distance = (position-start).MagnitudeSqr();
+                if (distance < best) { best=distance; target=position; found=true; }
+            }
+        }
+    }
+    if (!found) { routeCount=0; routeLastUpdate=0; return; }
     if ((target-start).Magnitude2D() < 12.0f) {
-        CRadar::ToggleTargetMarker(target.x, target.y);
+        if (manual) CRadar::ToggleTargetMarker(target.x, target.y);
         routeCount = 0;
         return;
     }
@@ -242,7 +292,11 @@ static void UpdateRoute()
     int16 count = 0;
     ThePaths.DoPathSearch(type, start, startNode, target, nodes, &count,
         ARRAY_SIZE(nodes), nil, nil, 999999.0f, targetNode);
-    for (int i = 0; i < count; ++i) route[routeCount++] = nodes[i]->GetPosition();
+    if (count) route[routeCount++]=start;
+    for (int i = 0; i < count && routeCount < ARRAY_SIZE(route)-1; ++i)
+        route[routeCount++] = nodes[i]->GetPosition();
+    if (routeCount && (route[routeCount-1]-target).Magnitude2D() < 60.0f)
+        route[routeCount++]=target;
 #endif
 }
 
@@ -255,32 +309,19 @@ void WaypointChanged()
 void Process()
 {
     // Also clamp settings loaded from edited ini files before using as indexes.
-    AutoSave = Clamp(AutoSave, (int8)0, (int8)3);
-    RadarZoom = Clamp(RadarZoom, (int8)0, (int8)2);
-    const uint32 now = CTimer::GetTimeInMilliseconds();
-    const uint32 dt = previousTime ? Min(now-previousTime, 100u) : 0;
-    previousTime = now;
-    if (!FirstPerson) firstPersonActive = false;
+    AutoSave = AutoSave != 0;
+    RadarZoom = RadarZoom != 0;
     if (!GameReady()) return;
-    if (FirstPerson && CPad::GetPad(0)->GetFJustDown(5))
-        firstPersonActive = !firstPersonActive;
     if (QuickSave && CPad::GetPad(0)->GetFJustDown(4)) {
         if (SafeToSave()) FrontEndMenuManager.m_bSaveMenuActive = true;
         else CHud::SetHelpMessage(GetText("EN_SAFE"), false);
     }
-    if (lastMissions < 0) lastMissions = CStats::MissionsPassed;
-    if (CStats::MissionsPassed > lastMissions) missionSavePending = true;
-    lastMissions = CStats::MissionsPassed;
     if (!AutoSave) {
-        elapsedSafeTime = 0;
         missionSavePending = false;
     } else {
-        elapsedSafeTime += dt;
-        const uint32 intervals[] = {0, 300000, 600000, 900000};
-        if ((elapsedSafeTime >= intervals[AutoSave] || missionSavePending) && SafeToSave()) {
+        if (missionSavePending && SafeToSave()) {
             const bool ok = SaveAutosave();
             CHud::SetHelpMessage(GetText(ok ? "EN_DONE" : "EN_FAIL"), false);
-            elapsedSafeTime = 0;
             missionSavePending = false;
         }
     }
@@ -313,7 +354,7 @@ void DrawRoute()
     if (!GPS || routeCount < 2) return;
     for (int i = 1; i < routeCount; ++i) {
         CVector2D a, b, sa, sb;
-        CRadar::TransformRealWorldPointToRadarSpace(a, CVector2D(route[i-1]));
+        CRadar::TransformRealWorldPointToRadarSpace(a, CVector2D(i==1 ? FindPlayerCoors() : route[i-1]));
         CRadar::TransformRealWorldPointToRadarSpace(b, CVector2D(route[i]));
         if (!CMenuManager::bMenuMapActive && !ClipRadarSegment(a,b)) continue;
         CRadar::TransformRadarPointToScreenSpace(sa,a);
@@ -326,7 +367,7 @@ void DrawRoute()
         CSprite2d::Draw2DPolygon(sa.x+perpendicular.x,sa.y+perpendicular.y,
             sb.x+perpendicular.x,sb.y+perpendicular.y,
             sa.x-perpendicular.x,sa.y-perpendicular.y,
-            sb.x-perpendicular.x,sb.y-perpendicular.y, CRGBA(240,180,40,220));
+            sb.x-perpendicular.x,sb.y-perpendicular.y, CRGBA(230,35,35,230));
     }
 #endif
 }

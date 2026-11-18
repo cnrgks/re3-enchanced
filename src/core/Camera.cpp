@@ -1,7 +1,6 @@
 #include "common.h"
 
 #include "main.h"
-#include "Enhanced.h"
 #include "Draw.h"
 #include "World.h"
 #include "Vehicle.h"
@@ -1446,8 +1445,6 @@ CCamera::CamControl(void)
 		m_vecDoingSpecialInterPolation = false;
 	}
 
-	if (ReqMode == CCam::MODE_FOLLOWPED && Enhanced::UseFirstPerson())
-        ReqMode = CCam::MODE_1STPERSON_RUNABOUT;
 	if(gbModelViewer)
 		ReqMode = CCam::MODE_MODELVIEW;
 
