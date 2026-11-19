@@ -917,3 +917,9 @@ tipografisi, GPS, radar ve trafik davranışı oyun içi doğrulama bekliyor.
 Kaynak a2804901, GitHub Actions run 44474644361. OpenGL x64 derlemesi
 ve üç mevcut birim kontrolü geçti. Paylaşılan 8. slot, yeni autosave,
 F5 yükleme, Alt+Tab ve Restore Defaults oyun içi doğrulama bekliyor.
+
+### v1.17 OpenGL derleme sonucu
+
+Kaynak 6e8320fc, GitHub Actions run 44478094493. OpenGL x64 derlemesi
+ve üç CI birim kontrolü geçti. Trafik üretimi, ayrı ped bütçesi, fiziksel
+havuz sınırları ve yeni tanı sayaçları oyun içi deneme bekliyor.
