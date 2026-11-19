@@ -997,3 +997,9 @@ oyun içinde doğrulanmayı bekliyor.
   Esc/Backspace/F8 davranışını koruyor.
 
 Kaynak değişiklikleri derleme ve oyun içi doğrulama bekliyor.
+
+### v1.21 OpenGL derleme sonucu
+
+Kaynak cf22e796, GitHub Actions run 44625372088. OpenGL x64 derlemesi
+ve mevcut üç CI birim kontrolü geçti. WHEEL-05 ve TRAINER-04 oyun içinde
+doğrulanmayı bekliyor.
