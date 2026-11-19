@@ -3,7 +3,6 @@
 namespace Enhanced {
 #if defined(_WIN32) && defined(RW_GL3) && !defined(LIBRW_SDL2)
 bool DXGIFullscreenRequested();
-void PrimeFullscreenWindow(void *window);
 void UpdateFullscreenFocus(void *window);
 bool PresentFullscreenDXGI(void *window, bool vsync);
 void ShutdownFullscreenDXGI();

@@ -34,6 +34,7 @@ struct Presenter {
     IDXGIOutput *output;
     ID3D11Texture2D *backBuffer, *interopTexture;
     DXGI_MODE_DESC mode;
+    UINT swapFlags;
     HANDLE interopDevice, interopObject;
     GLuint sharedBuffer, sharedFbo, resolveTexture, resolveFbo;
     int width,height;
@@ -48,7 +49,7 @@ void Log(const char *format,...)
 {
     FILE *file=fopen("re3-display.log","a");
     if (!file) return;
-    fputs("v1.6 dxgi: ",file);
+    fputs("v1.7 dxgi: ",file);
     va_list args;
     va_start(args,format);
     vfprintf(file,format,args);
@@ -143,7 +144,7 @@ bool CreateBuffers(int width,int height)
 {
     ReleaseBuffers();
     HRESULT hr=state.chain->ResizeBuffers(1,width,height,DXGI_FORMAT_R8G8B8A8_UNORM,
-        DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
+        state.swapFlags);
     if (FAILED(hr)) { Log("ResizeBuffers hr=0x%08lX",(unsigned long)hr); return false; }
     hr=state.chain->GetBuffer(0,__uuidof(ID3D11Texture2D),(void**)&state.backBuffer);
     if (FAILED(hr)) return false;
@@ -192,10 +193,12 @@ bool EnterFullscreen()
 {
     ResizeGuard guard;
     ReleaseBuffers();
+    if (state.swapFlags & DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH) {
+        const HRESULT hr=state.chain->ResizeTarget(&state.mode);
+        if (hr!=S_OK) { Log("ResizeTarget hr=0x%08lX",(unsigned long)hr); return false; }
+    }
     HRESULT hr=state.chain->SetFullscreenState(TRUE,state.output);
-    if (FAILED(hr)) { Log("SetFullscreenState hr=0x%08lX",(unsigned long)hr); return false; }
-    hr=state.chain->ResizeTarget(&state.mode);
-    if (FAILED(hr)) return false;
+    if (hr!=S_OK) { Log("SetFullscreenState hr=0x%08lX",(unsigned long)hr); return false; }
     BOOL fullscreen=FALSE;
     state.chain->GetFullscreenState(&fullscreen,nil);
     if (!fullscreen) return false; // Never label a windowed fallback as exclusive.
@@ -203,8 +206,8 @@ bool EnterFullscreen()
     glfwGetFramebufferSize(state.window,&width,&height);
     if (width<=0 || height<=0 || !CreateBuffers(width,height)) return false;
     state.suspended=false;
-    Log("active fullscreen=1 transfer=texture-copy framebuffer=%dx%d flipY=%d latencyLimitApplied=%d",
-        width,height,int(FullscreenDXGIFlipY),int(state.latencyLimited));
+    Log("active fullscreen=1 transfer=texture-copy framebuffer=%dx%d modeSwitch=%d flipY=%d latencyLimitApplied=%d",
+        width,height,int(state.swapFlags!=0),int(FullscreenDXGIFlipY),int(state.latencyLimited));
     return true;
 }
 
@@ -232,7 +235,18 @@ bool Initialise(GLFWwindow *window)
     desc.OutputWindow=glfwGetWin32Window(window);
     desc.Windowed=TRUE; // Microsoft recommends an explicit transition after creation.
     desc.SwapEffect=DXGI_SWAP_EFFECT_DISCARD;
-    desc.Flags=DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+    MONITORINFOEXW monitor={};
+    monitor.cbSize=sizeof(monitor);
+    DEVMODEW desktop={};
+    desktop.dmSize=sizeof(desktop);
+    const HMONITOR target=MonitorFromWindow(desc.OutputWindow,MONITOR_DEFAULTTONEAREST);
+    const bool desktopKnown=GetMonitorInfoW(target,reinterpret_cast<MONITORINFO*>(&monitor)) &&
+        EnumDisplaySettingsW(monitor.szDevice,ENUM_CURRENT_SETTINGS,&desktop);
+    if (desktopKnown &&
+        (desktop.dmPelsWidth!=UINT(FrontEndMenuManager.m_nPrefsWidth) ||
+         desktop.dmPelsHeight!=UINT(FrontEndMenuManager.m_nPrefsHeight)))
+        state.swapFlags=DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+    desc.Flags=state.swapFlags;
     D3D_FEATURE_LEVEL level;
     ResizeGuard guard;
     // Optional system component, not a new mandatory DLL import. Machines
@@ -260,18 +274,15 @@ bool Initialise(GLFWwindow *window)
     }
     hr=state.chain->GetContainingOutput(&state.output);
     if (FAILED(hr)) return false;
-    DXGI_OUTPUT_DESC outputDesc={};
-    if (FAILED(state.output->GetDesc(&outputDesc))) return false;
-    DEVMODEW desktop={}; desktop.dmSize=sizeof(desktop);
-    DXGI_MODE_DESC desired={};
-    desired.Width=FrontEndMenuManager.m_nPrefsWidth;
-    desired.Height=FrontEndMenuManager.m_nPrefsHeight;
-    desired.Format=DXGI_FORMAT_R8G8B8A8_UNORM;
-    desired.RefreshRate.Denominator=1;
-    if (EnumDisplaySettingsW(outputDesc.DeviceName,ENUM_CURRENT_SETTINGS,&desktop))
-        desired.RefreshRate.Numerator=desktop.dmDisplayFrequency>1 ? desktop.dmDisplayFrequency : 0;
-    hr=state.output->FindClosestMatchingMode(&desired,&state.mode,state.device);
-    if (FAILED(hr)) return false;
+    if (state.swapFlags) {
+        DXGI_MODE_DESC desired={};
+        desired.Width=FrontEndMenuManager.m_nPrefsWidth;
+        desired.Height=FrontEndMenuManager.m_nPrefsHeight;
+        desired.Format=DXGI_FORMAT_R8G8B8A8_UNORM;
+        hr=state.output->FindClosestMatchingMode(&desired,&state.mode,state.device);
+        if (FAILED(hr)) return false;
+        state.mode.RefreshRate=DXGI_RATIONAL{};
+    }
     return EnterFullscreen();
 }
 
@@ -307,25 +318,6 @@ bool CopyFrame()
 
 bool DXGIFullscreenRequested() { return FullscreenDXGI && ScreenFormat==0; }
 
-void PrimeFullscreenWindow(void *handle)
-{
-    if (!GLAD_GL_VERSION_3_0) return;
-    {
-        GLBindings restore;
-        GLfloat colour[4];
-        GLboolean mask[4];
-        glGetFloatv(GL_COLOR_CLEAR_VALUE,colour);
-        glGetBooleanv(GL_COLOR_WRITEMASK,mask);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER,0);
-        glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
-        glClearColor(0.0f,0.0f,0.0f,1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glClearColor(colour[0],colour[1],colour[2],colour[3]);
-        glColorMask(mask[0],mask[1],mask[2],mask[3]);
-    }
-    glfwSwapBuffers((GLFWwindow*)handle);
-}
-
 void UpdateFullscreenFocus(void *handle)
 {
     GLFWwindow *window=(GLFWwindow*)handle;
@@ -338,10 +330,8 @@ void UpdateFullscreenFocus(void *handle)
     ResizeGuard guard;
     ReleaseBuffers();
     const HRESULT hr=state.chain->SetFullscreenState(FALSE,nil);
-    if (FAILED(hr)) return; // Retry after the next event pump.
+    if (hr!=S_OK) return; // Retry after the next event pump.
     state.suspended=true;
-    if (!iconified)
-        PrimeFullscreenWindow(window);
     Log("suspended fullscreen iconified=%d",int(iconified));
 }
 

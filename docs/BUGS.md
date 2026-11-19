@@ -42,7 +42,7 @@ geri bildirimini kaydeder; burada listelenen maddeler henüz düzeltilmiş sayı
 | MAP-04 | Sarı MAP şeridinin tamamı kaldırılmalı | Açık — önceki istek eksik uygulanmış |
 | MAP-05 | Back kesiliyor / hizası bozuk | Açık — SS3 |
 | INPUT-01 | OpenGL–D3D9 fare hassasiyeti farklı | Açık — kullanıcı bildirdi |
-| CAP-01 | OpenGL fullscreen/borderless yakalama | v1.5 DXGI Fullscreen'de iki Discord paylaşım türü başarılı. Açılış ve Alt-Tab görüntüsü ile Ambilight açık |
+| CAP-01 | OpenGL fullscreen/borderless yakalama | v1.5 Discord paylaşımı başarılı. v1.6 açılış ve Alt-Tab sırasında tüm monitör kararıyor. Ambilight açık |
 | INPUT-02 | Borderless kayıtlıyken yeniden açılışta imleç sola kilitleniyor | v1.4 kaynak düzeltmesi derlendi, oyun içi doğrulama bekliyor |
 | INPUT-03 | Borderless modunda imleç gecikmesi sürüyor | v1.5 kullanıcı gecikmeyi daha düşük hissetti. Kontrollü ölçüm açık |
 | INPUT-04 | Araca binmek bazen ikinci basışı gerektiriyor | v1.5 kullanıcı denemesinde tekrarlanmadı. Eski Borderless koşulunda tekrar kontrol açık |
@@ -481,3 +481,22 @@ seçeneği, native OpenGL fallback'i ve `-safe-display` kurtarması duruyor.
 Kaynak a7ab4d76, GitHub Actions run 44448899982. OpenGL x64
 derlemesi ve mevcut birim kontrolleri geçti. Açılış ve Alt-Tab görüntüsü,
 Discord yakalama regresyonu ve Ambilight oyun içinde doğrulanmayı bekliyor.
+
+### v1.6 kullanıcı sonucu — monitör kararması
+
+Kullanıcı DXGI Fullscreen açılışında ve Alt-Tab sırasında tüm monitörün
+karardığını bildirdi. Kararmanın süresi ve bu sürümdeki yakalama sonucu
+belirtilmedi. v1.5 ekran görüntüsünde pencere içi beyaz ve siyah alanlar vardı.
+
+Sonraki kaynak adayı v1.6'nın geçişte OpenGL üzerinden sunduğu siyah
+kareleri kaldırıyor. Oyun çözünürlüğü masaüstü çözünürlüğüyle eşleşiyorsa
+DXGI mod değiştirme bayrağı kapalı ve `ResizeTarget` çağrılmıyor. Farklı
+çözünürlükte `ResizeTarget` exclusive geçişten önce çağrılıyor ve yenileme
+hızı DXGI'ye bırakılıyor. Günlükte `modeSwitch=0`, uygulamanın çözünürlük
+değiştirmeyi istemediği yolu gösteriyor. Kararmanın nedeni henüz
+doğrulanmadı. [Microsoft DXGI geçiş belgeleri](https://learn.microsoft.com/en-us/windows/win32/direct3darticles/dxgi-best-practices)
+
+İlk deneme monitörün masaüstü çözünürlüğünde soğuk açılış ve Alt-Tab
+olmalı. Ardından iki Discord paylaşım türü tekrar kontrol edilmeli.
+`-safe-display` ile Borderless kurtarması kullanılabilir. Ana Fullscreen
+seçeneğine geçiş, görüntü ve yakalama doğrulamasını bekliyor.
