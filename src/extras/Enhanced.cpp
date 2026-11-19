@@ -1,6 +1,7 @@
 #define WITHWINDOWS
 #include "common.h"
 #include "crossplatform.h"
+#include "platform.h"
 #include "Enhanced.h"
 #include "EnhancedMath.h"
 #include "EnhancedRoute.h"

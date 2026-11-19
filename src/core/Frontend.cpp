@@ -620,7 +620,11 @@ CMenuManager::ProcessList(bool &goBack, bool &optionSelected)
 	if (CPad::GetPad(0)->GetUp() || CPad::GetPad(0)->GetAnaloguePadUp() || CPad::GetPad(0)->GetDPadUpJustDown()) {
 		m_bShowMouse = false;
 		pressed = true;
-	} else if (CPad::GetPad(0)->GetMouseWheelUpJustUp()) {
+	} else if (
+#ifdef SCROLLABLE_PAGES
+        !SCREEN_HAS_AUTO_SCROLLBAR &&
+#endif
+        CPad::GetPad(0)->GetMouseWheelUpJustUp()) {
 		m_bShowMouse = true;
 		pressed = true;
 	}
@@ -642,7 +646,11 @@ CMenuManager::ProcessList(bool &goBack, bool &optionSelected)
 	if (CPad::GetPad(0)->GetDown() || CPad::GetPad(0)->GetAnaloguePadDown() || CPad::GetPad(0)->GetDPadDownJustDown()) {
 		m_bShowMouse = false;
 		pressed = true;
-	} else if (CPad::GetPad(0)->GetMouseWheelDownJustDown()) {
+	} else if (
+#ifdef SCROLLABLE_PAGES
+        !SCREEN_HAS_AUTO_SCROLLBAR &&
+#endif
+        CPad::GetPad(0)->GetMouseWheelDownJustDown()) {
 		m_bShowMouse = true;
 		pressed = true;
 	}
