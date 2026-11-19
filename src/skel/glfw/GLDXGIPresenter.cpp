@@ -49,7 +49,7 @@ void Log(const char *format,...)
 {
     FILE *file=fopen("re3-display.log","a");
     if (!file) return;
-    fputs("v1.7 dxgi: ",file);
+    fputs("v1.8 dxgi: ",file);
     va_list args;
     va_start(args,format);
     vfprintf(file,format,args);
@@ -192,8 +192,9 @@ bool CreateBuffers(int width,int height)
 bool EnterFullscreen()
 {
     ResizeGuard guard;
-    ReleaseBuffers();
+    const double started=glfwGetTime();
     if (state.swapFlags & DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH) {
+        ReleaseBuffers();
         const HRESULT hr=state.chain->ResizeTarget(&state.mode);
         if (hr!=S_OK) { Log("ResizeTarget hr=0x%08lX",(unsigned long)hr); return false; }
     }
@@ -204,10 +205,15 @@ bool EnterFullscreen()
     if (!fullscreen) return false; // Never label a windowed fallback as exclusive.
     int width,height;
     glfwGetFramebufferSize(state.window,&width,&height);
-    if (width<=0 || height<=0 || !CreateBuffers(width,height)) return false;
+    if (width<=0 || height<=0) return false;
+    // This discard-model chain can keep its buffers across a same-size transition.
+    const bool reuse=state.backBuffer && state.interopObject &&
+        width==state.width && height==state.height;
+    if (!reuse && !CreateBuffers(width,height)) return false;
     state.suspended=false;
-    Log("active fullscreen=1 transfer=texture-copy framebuffer=%dx%d modeSwitch=%d flipY=%d latencyLimitApplied=%d",
-        width,height,int(state.swapFlags!=0),int(FullscreenDXGIFlipY),int(state.latencyLimited));
+    Log("active fullscreen=1 transfer=texture-copy framebuffer=%dx%d modeSwitch=%d flipY=%d latencyLimitApplied=%d reusedBuffers=%d enterMs=%.2f",
+        width,height,int(state.swapFlags!=0),int(FullscreenDXGIFlipY),int(state.latencyLimited),
+        int(reuse),1000.0*(glfwGetTime()-started));
     return true;
 }
 
@@ -328,11 +334,13 @@ void UpdateFullscreenFocus(void *handle)
         return;
 
     ResizeGuard guard;
-    ReleaseBuffers();
+    const double started=glfwGetTime();
+    if (state.swapFlags)
+        ReleaseBuffers();
     const HRESULT hr=state.chain->SetFullscreenState(FALSE,nil);
     if (hr!=S_OK) return; // Retry after the next event pump.
     state.suspended=true;
-    Log("suspended fullscreen iconified=%d",int(iconified));
+    Log("suspended fullscreen iconified=%d exitMs=%.2f",int(iconified),1000.0*(glfwGetTime()-started));
 }
 
 void ShutdownFullscreenDXGI()

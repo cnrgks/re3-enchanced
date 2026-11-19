@@ -1198,7 +1198,7 @@ void Enhanced::ApplyWindowMode(bool newWindow)
     glfwGetWindowPos(window,&wx,&wy);
     FILE *displayLog=fopen("re3-display.log","a");
     if (displayLog) {
-        fprintf(displayLog,"v1.7 format=%d probe=%d monitorAttached=%d window=%dx%d framebuffer=%dx%d pos=%d,%d\n",
+        fprintf(displayLog,"v1.8 format=%d probe=%d monitorAttached=%d window=%dx%d framebuffer=%dx%d pos=%d,%d\n",
             int(ScreenFormat),int(BorderlessCaptureProbe),glfwGetWindowMonitor(window)!=nil,ww,wh,fw,fh,wx,wy);
         fclose(displayLog);
     }

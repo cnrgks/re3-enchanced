@@ -1,4 +1,4 @@
-RE3 ENHANCED v1.7 - OPENGL x64 DENEME PAKETI
+RE3 ENHANCED v1.8 - OPENGL x64 DENEME PAKETI
 
 KURULUM
 Oyunu kapat ve mevcut re3.exe/re3.pdb ciftini yedekle. Paketin game
@@ -10,7 +10,9 @@ CAP-01 - FULLSCREEN
 DXGI deneyi yeni ayarlarda varsayilan olarak kapalidir. Denemek icin
 Enhanced Options > Fullscreen Capture (Experimental) secenegini ac,
 Graphics > Screen Format > Fullscreen sec ve Enter ile uygula.
-Bu surum acilis ve Alt-Tab sirasindaki monitor kararmasini hedefler.
+Bu surum ayni cozunurlukte Alt-Tab donusunde GPU tamponlarini korur.
+Gecis sureleri re3-display.log icinde enterMs ve exitMs olarak bulunur.
+Donuste reusedBuffers=1 beklenir.
 Ilk denemede oyun ve masaustu cozunurlugunu esitle.
 re3-display.log icinde modeSwitch=0 kaydini kontrol et.
 Soguk acilisi ve Alt-Tab cikis/donusunu ayri dene.

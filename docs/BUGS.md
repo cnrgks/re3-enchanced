@@ -506,3 +506,16 @@ seçeneğine geçiş, görüntü ve yakalama doğrulamasını bekliyor.
 Kaynak 0ad073c2, GitHub Actions run 44449950521. OpenGL x64
 derlemesi ve mevcut birim kontrolleri geçti. Monitör kararması ve yakalama
 sonuçları oyun içinde doğrulanmayı bekliyor.
+
+### v1.7 kullanıcı sonucu ve v1.8 gecikme adayı
+
+İlk açılışta kararma sürüyor. Kullanıcı bunun önceki beyaz bölmeli
+pencereden farklı göründüğünü ve Alt-Tab geçişinde gecikme hissettiğini
+bildirdi. v1.7 kullanıcı için kabul edilebilir bir geri dönüş sürümü.
+
+Aynı çözünürlükte v1.8, DXGI Alt-Tab çıkışında GPU tamponlarını ve WGL
+interop kaydını tutuyor. Dönüşte framebuffer boyutu aynıysa bunları
+yeniden kullanıyor. Boyut değişirse tamponlar yeniden hazırlanıyor.
+Gerçek fullscreen geçişi sürüyor. Günlükte dönüşte `reusedBuffers=1`
+bekleniyor. `enterMs` ve `exitMs` uygulama içi DXGI geçiş süresidir.
+Monitörün görüntüye dönüş süresi ve ilk açılış kararması ayrı gözlenmeli.
