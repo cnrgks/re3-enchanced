@@ -147,3 +147,7 @@ video desteği eklenmeden OFF seçeneği videolar çalışıyormuş gibi sunulma
 v1.2: yalnızca OpenGL; CAP-01 başlangıç adayı + UI-01 Screen Format üçüncü
 seçeneği. Kullanıcı bu iki değişikliği denemek için build istedi. Sürücü
 ayarlarına müdahale yok. Diğer hata kayıtları açık kalır.
+
+Derleme sonucu: v1.2 için tek OpenGL işi ve mevcut birim kontrolleri geçti.
+CAP-01/UI-01 oyun içi doğrulaması bekleniyor. Sürücü ayarı değiştirmek dağıtım
+çözümü olarak reddedildi; düzeltme oyun kodunda yapılacak. Diğer hata kayıtları açık.

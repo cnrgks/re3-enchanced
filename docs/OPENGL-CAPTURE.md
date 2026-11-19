@@ -1,6 +1,6 @@
 # CAP-01 — OpenGL ekran yakalama incelemesi
 
-Durum: **kaynakta aday değişiklik hazır; derlenmedi, oyun/yakalama testi yapılmadı**.
+Durum: **v1.2 OpenGL adayı derlendi; oyun/yakalama testi bekleniyor**.
 Kesin kök neden veya çözülme iddiası yok. Son kullanıcı kararı: OpenGL ana yol.
 
 ## Bilinenler
@@ -46,18 +46,18 @@ adayını gösterir; Discord/Ambilight'in aynı API'yi kullandığını veya ayn
 nedene sahip olduğunu kanıtlamaz. Kullanıcı Sunshine kullanıyor diye varsayılmadı.
 DXGI üzerinden sunum, oyunun renderer'ını D3D9'a çevirmek değildir.
 
-**Sürücü ayarı uygulanmadı.** İncelemede profil seçeneği mevcutsa yalnızca re3
-uygulama profili kapsamında, önceki değer kaydedilerek ve geri alınabilir şekilde
-değerlendirilmeli. Kontrolsüz global ayar/registry değişikliği yapılmayacak.
+**Kullanıcı kararı:** Sürücü ayarı değiştirmek/önermek dağıtılan ürünün çözümü
+olarak kabul edilmiyor. Profil veya global ayar değiştirilmeyecek. Yukarıdaki
+NVIDIA bulgusu yalnızca sunum yolu araştırmasına referanstır; kurulum adımı değildir.
 
-## Sonraki doğrulama — kullanıcı build istediğinde
+## Sonraki doğrulama — v1.2 kullanıcı denemesi
 
 1. Aynı OpenGL EXE, aynı grafik ayarı ve aynı Discord ekran paylaşımıyla normal
    pencere, borderless ve gerçek fullscreen sonuçlarını ayrı kaydet.
 2. Borderless'ta ilk oluşturulan RW modunun pencere olduğunu ve GLFW'nin son
    monitor değerinin nil olduğunu doğrula; oyun odağı hem açık hem kapalı denensin.
-3. İlk aday yetmezse NVIDIA uygulama profili sunum yöntemini incele. Tek değişken
-   değiştir; Discord ve Ambilight sonuçlarını ayrı değerlendir.
+3. İlk aday yetmezse sunum/kompozisyon yolunu uygulama kodunda araştır; kullanıcıdan
+   sürücü profili değiştirmesini isteme. Discord ve Ambilight sonuçlarını ayrı değerlendir.
 4. Gerekirse gerçek GL renderer/GPU, ekran çıkışı, Discord yakalama yolu ve sürücü
    kompozisyon davranışını izle. Tek GPU envanteriyle GPU eşleşmesi kapatılmaz.
 5. Pencere çözünürlüğü, Alt-Tab, borderless kapatma ve diğer platformların GLFW
@@ -67,4 +67,5 @@ Başvuru: [GLFW pencere/monitor belgeleri](https://www.glfw.org/docs/3.3/window_
 Monitor değiştirmek GL context'ini yeniden oluşturmaz. Bu yüzden sonradan
 kenarlık kaldırmak bütün sunum/yakalama sorunlarının çözümü sayılmaz.
 
-Bu aşamada build, test paketi, sürücü ayarı değişikliği veya CI başlatan push yapılmadı.
+Kullanıcı bu iki değişiklik için build istedi. Tek OpenGL işi derlendi ve mevcut
+birim kontrolleri geçti. Sürücü ayarı değiştirilmedi; D3D9 build başlatılmadı.

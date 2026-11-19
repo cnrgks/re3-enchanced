@@ -18,7 +18,7 @@ $packagingCommit=(git -C $sourceRoot rev-parse HEAD).Trim()
 $commit=(Get-Content (Join-Path $primary 'BUILD-COMMIT.txt') -Raw).Trim()
 if (git -C $sourceRoot status --porcelain) { throw 'Source tree must be clean before packaging' }
 $changes=@(git -C $sourceRoot diff --name-only $commit $packagingCommit)
-$codeChanges=@($changes | Where-Object { $_ -notmatch '^(tools/|ENHANCED\.md$|ROADMAP\.md$|RELEASE-NOTES\.txt$)' })
+$codeChanges=@($changes | Where-Object { $_ -notmatch '^(tools/|docs/|ENHANCED\.md$|ROADMAP\.md$|RELEASE-NOTES\.txt$)' })
 if ($codeChanges.Count) { throw 'Build source differs from current compiler inputs; rebuild first' }
 $staging=Join-Path $WorkspaceRoot ("builds/v$Version/package-"+[Guid]::NewGuid().ToString('N'))
 $release=Join-Path $staging "v$Version"
