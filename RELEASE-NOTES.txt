@@ -1,10 +1,17 @@
-RE3 ENHANCED v1.14 - OPENGL x64
+RE3 ENHANCED v1.15 - OPENGL x64
 
 KURULUM
 Oyunu kapat ve mevcut re3.exe/re3.pdb ciftini yedekle. Paketin game
 klasorunun icerigini GTA III kurulumuna kopyala. Oyun verileri dahil
 degildir. Mevcut ini ve kayitlari koru. x64 ASI Loader, CLEO Redux ve
 runtime kutuphaneleri dahildir.
+
+v1.15 DENEMELERI
+Gorev autosave arac, hareket veya aranma seviyesinden bagimsizdir.
+8. slot evde yaya olarak acilmalidir. F5 ve eski kayitlari da yuklemeyi dene.
+Restore Defaults ekraninda No ve Yes duz yazilir. Alt-Tab sonrasinda
+masaustu imleci gorunur kalmalidir. GPS, trafik ve radar davranisini
+ayni kayit ve rota uzerinden karsilastir.
 
 KAYIT, TRAFIK VE ODAK
 F5 mevcut konumu kaydeder. Mission Autosave aciksa gorevden sonra

@@ -58,7 +58,7 @@ public:
 	static int32 RandomCarLimit(float trafficMultiplier);
 	static bool HasRoomForTraffic();
 	static void GenerateRandomCars(void);
-	static void GenerateOneRandomCar(bool preferDistant, bool warmingUp);
+	static void GenerateOneRandomCar(bool hiddenFeed, bool warmingUp);
 	static int32 CountNearbyTraffic(const CVector &centre);
 	static void GenerateEmergencyServicesCar(void);
 	static int32 ChooseModel(CZoneInfo*, CVector*, int*);

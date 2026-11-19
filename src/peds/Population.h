@@ -78,7 +78,7 @@ public:
 	static float PedCreationDistMultiplier();
 	static CPed *AddPed(ePedType pedType, uint32 mi, CVector const &coors);
 	static int32 AmbientPedSlotsAvailable();
-	static void AddToPopulation(bool preferDistant, bool warmingUp);
+	static void AddToPopulation(bool hiddenFeed, bool warmingUp);
 	static int32 CountNearbyTraffic(const CVector &centre, int32 *total = nil);
 	static void ManagePopulation(void);
 	static void MoveCarsAndPedsOutOfAbandonedZones(void);

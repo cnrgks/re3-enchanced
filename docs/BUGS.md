@@ -31,13 +31,15 @@ sonraki düzeltmeleri ve doğrulama durumlarını kaydeder.
 | SAV-01 | F5 kaydı kendi konumunu korumalı | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
 | SAV-02 | Görev sonrası evde çatıda doğma | Kaynak değişikliği hazır — üç ada oyun doğrulaması bekliyor |
 | SAV-03 | Quicksave engelleme koşulları | Kaynakta koşullar mevcut, uyarı güncellendi — oyun doğrulaması bekliyor |
-| SAV-04 | Görev sonrası 8. slota sessiz autosave ve kayıt sonrası iyileşme | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
+| SAV-04 | Araçta ve aranırken de görev sonrası 8. slota autosave | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
+| SAV-05 | Autosave ve quicksave yüklerken menüde takılma | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
 | VEH-01 | Kırık ön camdan sürücü hasar almıyor | Açık — kullanıcı bildirdi |
 | DIST-01 | Vehicle Distance 1× üzerindeyken araç spawn akışı bozuluyor | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
 | DIST-02 | Pedestrian Distance 1× üzerindeyken yaya spawn akışı bozuluyor | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
 | GPS-01 | Elle waypoint'te üst/alt yol katmanı karışıyor | Kapalı — kullanıcı doğruladı |
 | GPS-02 | Rota görünürlüğü, boşluklar ve anlamsız geri dönüşler | Kapalı — kullanıcı doğruladı |
 | GPS-03 | Haritada su üstünde görünen yer altı yolu | Kapalı — kullanıcı geçişin yer altı yolu olduğunu doğruladı |
+| GPS-04 | Yükseklik farkında ve ara sokaklarda hatalı GPS rotası | Kaynakta değiştirildi — derleme ve oyun testi bekliyor |
 | MAP-01 | Çift ev ikonu | Kaynakta tamamlandı / v1.10'da derlendi / oyun testi bekliyor |
 | MAP-02 | Hizmet ikonlarının keşfi, mesafesi ve hıza göre opaklığı | Kaynakta tamamlandı / son opaklık düzeltmesi derlenmedi |
 | MAP-03 | Telefon ve diğer görev ikonları keşif filtresine takılıyor | Kaynakta tamamlandı / v1.12'de derlendi / son görünürlük kuralı MAP-07'de |
@@ -49,6 +51,7 @@ sonraki düzeltmeleri ve doğrulama durumlarını kaydeder.
 | INPUT-02 | Borderless kayıtlıyken yeniden açılışta imleç sola kilitleniyor | Kapalı — kullanıcı doğruladı |
 | INPUT-03 | Borderless modunda imleç gecikmesi sürüyor | Kapalı — kullanıcı doğruladı |
 | INPUT-04 | Araca binmek bazen ikinci basışı gerektiriyor | Kapalı — kullanıcı doğruladı |
+| INPUT-05 | Alt+Tab sonrası masaüstü imleci bazen görünmüyor | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
 | WIN-01 | Alt-Tab sırasında eski Windows çerçevesi/toolbar parlaması | Kapalı — kullanıcı artık görmediğini bildirdi |
 | WIN-02 | Odak kaybında pause, dönüşte Pause menüsünde kalma | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
 | UI-03 | Restore Defaults onayı ve hizmet blip saydamlığı | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
@@ -93,7 +96,7 @@ kayıt tetiklenmemeli; anlaşılır geri bildirim olmalı. Mevcut sinematik, öl
 replay, açık menü ve güvenli oyun döngüsü kontrolleri korunur.
 
 **Kabul:** Dört engelin her biri ayrı denendiğinde dosya yazılmaz/menü açılmaz;
-güvenli yaya durumda F5 çalışır. Görev-sonu kayıt isteği güvenli ana kadar bekler.
+güvenli yaya durumda F5 çalışır. Görev-sonu autosave koşulları SAV-04'te.
 
 **Kaynak durumu:** Görev, araç, hareket ve aranma kontrolleri mevcut güvenlik
 kapısında korunuyor. F5 uyarısı dört koşulu da söylüyor. F5 ve görev sonrası
@@ -102,11 +105,26 @@ istek aynı karede uygunsa F5 önce açılıyor, görev sonrası istek bekliyor.
 ### SAV-04 — görev sonrası otomatik kayıt
 
 Mission Autosave açıkken görev başarı bildirimi bir kayıt isteği oluşturuyor.
-Güvenli yaya durumuna ve açık menü olmamasına kadar bekliyor. Son slot (8)
-kullanılıyor. Kayıt tamamlanınca sol üstte `Autosaved.` gösteriliyor.
-İşlem hata verirse eski slot korunuyor ve başarısızlık bildiriliyor.
+Görev durumu, açık menü, sinematik, ekran geçişi ve oyuncunun sağ olması
+gibi koşullar uygun olduğunda son slota (8) kaydediyor. Araçta olmak,
+hareket etmek ve aranma seviyesi autosave'i engellemiyor. Araçtaki
+oyuncu da kayda dahil ediliyor ve evde yaya olarak yükleniyor. Kayıt
+tamamlanınca sol üstte `Autosaved.` gösteriliyor. Geçici dosya doğrulanırsa
+eski slot değiştirilir. İşlem hata verirse eski slot korunur ve hata gösterilir.
 `Heal After Saving` hem manuel hem otomatik kayda uygulanıyor.
 Otomatik kayıt manuel kaydın altı saat ilerletme işlemini çağırmıyor.
+
+### SAV-05 — kayıt yüklerken menüde takılma
+
+Kullanıcı autosave yüklerken arayüzün kilitlendiğini, aynı sorunun bir defa
+quicksave'de de olduğunu bildirdi. Sorunlu kayıt örneği henüz incelenmedi.
+
+PC yükleme yolu blok boyutlarını, iç blok sınırlarını, oyuncu kaydını, sahne
+bilgisini ve checksum'u oyun dünyası kapatılmadan önce kontrol ediyor.
+Geçersiz slotta yükleme hata ekranından kayıt listesine dönülebiliyor.
+Geçerli slot yüklemeye geçmeden önce menü kapanıyor. Kabul için ana menüden
+ve Pause menüsünden yeni autosave, F5 kaydı ve eski geçerli kayıt yüklenmeli.
+Eksik veya bozuk slot sonrası başka bir kayıt seçilebilmeli.
 
 ### VEH-01 — cam açıkken sürücüye isabet
 
@@ -154,14 +172,21 @@ Eski 1,5× seçimi 1× olarak açılıyor.
 
 **v1.13 kullanıcı sonucu:** Uzak varlıklar daha kalıcı, ancak yüksek Distance
 ayarında yakındaki trafik seyreliyor ve ilk açılışta sokaklar boş kalabiliyor.
-Yeni kaynakta 1× üretim bandı ve buna ait yakın trafik bütçesi tutuluyor.
-Ek kapasite yüksek Distance ayarlarında uzak banda gidiyor. Başlangıçta 45
-mantık karesi boyunca kare başına en fazla dört yakın üretim denemesi yapılıyor.
-Model, görüş, çarpışma, Density ve havuz kontrolleri geçerli.
+**v1.14 kullanıcı sonucu:** Sürekli 1× yakın üretim bandı pop-up'ı geri
+getirdi. Yeni kaynakta 2×/3× için rutin üretim uzak bantta yapılıyor. Açılışta
+ekran tamamen karanlıkken yakın doluma izin veriliyor. Şehir ve köprü nüfusu,
+yaklaşık 180 birim içinde bağlı ve açık araç şeritleri ile yaya bağlantılarının
+uzunluğundan ayrı ayrı hesaplanıyor. Density ve Distance tavanları ile fiziksel
+havuz korumaları geçerli. Yakın sayım ve bölgeye yeni girişler birlikte düşükse
+üretim hızı sınırlı artırılıyor. 2×/3× ek denemelerinde daha yakın noktalar için
+iki görüş hattının da katı çevre geometrisi tarafından kesilmesi gerekiyor.
+
 `-trace-traffic`, `re3-traffic.log` dosyasına iki saniyelik oyun zamanı
-aralıklarında yakın/uzak başarı ve deneme sayılarını, sahnedeki yakın/toplam
-sayıları, Distance, Density ve konumu yazıyor. Aynı kayıt, ayar ve rotada
-soğuk açılış ile sürüş ayrı karşılaştırılmalı. Oyun ölçümü bekliyor.
+aralıklarında yakın/uzak deneme ve başarı sayılarını, nüfus hedefini, yol
+uzunluğunu, yakın/toplam varlık sayısını, yeni girişleri ve uygun nokta
+bulunamadığında veya açıkta kaldığında elenen adayları yazıyor.
+Aynı Density ile soğuk açılış, şehir rotası ve köprü geçişi
+1×/2×/3× karşılaştırılmalı. Oyun ölçümü bekliyor.
 
 ### GPS-01 — elle işaretlemede üst yol
 
@@ -221,6 +246,26 @@ başka bağlantıları da deniyor.
 birim testleri geçti. Oyun ve kayıt yükleme testi bekliyor.
 [Derleme 44456718827](https://github.com/cnrgks/hezkore-re3-pdb-build/actions/runs/44456718827)
 
+### GPS-04 — yükseklik farkında ve ara sokaklarda hatalı rota
+
+**19 Kasım bildirimi:** GPS bazen yükseklik farkında veya ara mahallelerde
+hatalı yol tarifi veriyor. Paket sürümü, konum ve hedef türü belirtilmedi.
+
+**Kaynak bulgusu:** Tek başlangıç segmenti seçiliyor. Elle hedefte üst yol
+tercihi erişilebilirlik araması sırasında alt kata düşebiliyor. Ara sokak
+girişlerinin engel kontrolü rota seçiminden sonra yapılıyor. Yakınlık tek
+başına görev rotasını gizleyebiliyor veya elle waypoint'i silebiliyor.
+
+**Beklenen:** Doğru yol katmanı korunur, gerçek giriş kullanılır ve komşu
+sokaktan geçmek varış sayılmaz. İnceleme, çözüm sırası ve kabul senaryoları
+[GPS katman ve ara sokak incelemesinde](GPS-ROUTING.md).
+
+**Kaynak değişikliği:** Elle hedefin katmanı waypoint boyunca saklanıyor.
+Başlangıç bağlantılarında yakınlık, yükseklik ve çarpışma kontrolü uygulanıyor.
+Tek yönlü grafikte aynı katmandaki başlangıç ve bitiş adayları birlikte
+karşılaştırılıyor. Doğrulanabilen açık girişler öncelikli. Varış için kalan
+rota mesafesi ve açık son bağlantı aranıyor. Derleme ve oyun testi bekliyor.
+
 ### MAP-01 — çift ev ikonu
 
 **Kanıt:** SS1 ve SS3 aynı ev yakınında iki mor ikon gösteriyor.
@@ -273,6 +318,13 @@ simgesiyle işaretlenmiş hedefler yerleşik davranışı kullanır.
 **Sonraki düzeltme:** Hizmet simgelerinin opaklığı araç hızıyla artar.
 Düşük hızda alfa 160, normal radarın üst hız sınırında alfa 255. Büyük
 haritadaki hizmet simgeleri tam opak çizilir.
+
+**19 Kasım ev keşfi:** İlk görevden önce Portland ev ikonu görülebiliyordu.
+Sabit/SCM konumlarından ev ikonu üretimi kaldırıldı. İlk görev tamamlandıktan
+ve ilgili ada açıldıktan sonra oyun tarafından etkinleştirilen ev blip'i,
+minimap alanına girince keşfediliyor. Keşif mevcut kayıt alanında saklanıyor
+ve etkin blip büyük haritada açık kalıyor. Yeni oyun, görev sonrası ilk ziyaret,
+kapalı ada ve eski kayıt yükleme kontrolleri oyun içinde bekliyor.
 
 ### MAP-03 — görülen payphone kayboluyor
 
@@ -348,6 +400,13 @@ bulunulan adaya göre bir çizim filtresi yok. Telefon, görevi hâlâ
 sunuyorsa ve etkin radar kaydı yoksa özgün SCM simgesi kullanılabilir.
 Minimap oyunun görev sırasında kontakları gizleme kuralını korur.
 
+### INPUT-05 — Alt+Tab sonrası imleç kaybı
+
+GLFW, oyun odak dışındayken veya küçültülmüşken sistem imlecini serbest
+bırakır ve görünür moda döner. Odak dönünce oyun veya menünün istediği imleç
+modu geri uygulanır. Tam ekran, kenarlıksız ve pencereli modda oyun içinden
+ve açık menüden Alt+Tab ile tekrar kontrol edilmeli.
+
 ### WIN-01 — Alt-Tab çerçeve/toolbar parlaması
 
 **Son durum:** Kullanıcı hatanın artık görülmediğini bildirdi. Kayıt kapatıldı.
@@ -381,12 +440,14 @@ Win32 başlangıç yolları bu durumu oyun döngüsüne iletiyor.
 
 Ses, görüntü, grafik ve kontrol ayarlarından Restore Defaults seçildiğinde
 İngilizce onay sayfası açılıyor. İlk seçim No. Yes yalnızca ilgili sayfayı
-sıfırlıyor. No ve geri tuşu ayarlara dönüyor.
+sıfırlıyor. No ve geri tuşu ayarlara dönüyor. No ve Yes seçenekleri dik
+fontla çiziliyor. Görsel doğrulama bekliyor.
+[Ekran görüntüsü](feedback/2026-11-19/restore-defaults-options.png).
 
-Keşfedilmiş hizmet simgeleri görev blip'leriyle aynı radar mesafesi ve alfa
-hesabını kullanıyor. Minimap menzil dışındaki simge kenara sabitleniyor.
-Hız, ortak radar menzili üzerinden mesafe ve alfayı etkiliyor. Tam ekran
-haritada simgeler opak. Oyun doğrulaması bekliyor.
+v1.14 denemesinde hizmet simgelerinin minimap menzili dışında da göründüğü
+bildirildi. Önceki görünürlük sınırı ve doğrudan hız etkisi geri getirildi.
+Menzil içindeki bir hizmet simgesi oyuncuya yaklaştıkça daha opak çiziliyor.
+Tam ekran haritada simgeler opak. Oyun doğrulaması bekliyor.
 
 ### UI-01 — ekran biçiminde üçüncü seçenek
 

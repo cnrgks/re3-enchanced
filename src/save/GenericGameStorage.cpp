@@ -4,8 +4,11 @@
 #include "main.h"
 #include "Enhanced.h"
 
+#include <cmath>
+
 #include "DMAudio.h"
 #include "AudioScriptObject.h"
+#include "BaseModelInfo.h"
 #include "Camera.h"
 #include "CarGen.h"
 #include "Cranes.h"
@@ -35,6 +38,7 @@
 #include "Streaming.h"
 #include "Timer.h"
 #include "TimeStep.h"
+#include "Wanted.h"
 #include "Weather.h"
 #include "World.h"
 #include "Zones.h"
@@ -51,7 +55,7 @@ const int PAUSE_SAVE_SLOT = SLOT_COUNT;
 
 char DefaultPCSaveFileName[260];
 char ValidSaveName[260];
-char LoadFileName[256];
+char LoadFileName[sizeof(ValidSaveName)];
 wchar SlotFileName[SLOT_COUNT][260];
 wchar SlotSaveDate[SLOT_COUNT][70];
 int CheckSum;
@@ -69,13 +73,47 @@ uint32 TimeToStayFadedBeforeFadeOut = 1750;
 #define ReadDataFromBufferPointer(buf, to) memcpy(&to, buf, sizeof(to)); buf += align4bytes(sizeof(to));
 #define WriteDataToBufferPointer(buf, from) memcpy(buf, &from, sizeof(from)); buf += align4bytes(sizeof(from));
 
+static bool InvalidLoad(int32 file)
+{
+	PcSaveHelper.nErrorCode = CloseFile(file) ? SAVESTATUS_ERR_DATA_INVALID : SAVESTATUS_ERR_LOAD_CLOSE;
+	return false;
+}
+
+static bool HasPlayerSaveData(const uint8 *block, uint32 size)
+{
+	const uint32 playerSize = sizeof(uint32) + sizeof(int16) + sizeof(int32) +
+		CPlayerPed::nSaveStructSize + sizeof(CWanted::MaximumWantedLevel) +
+		sizeof(CWanted::nMaximumWantedLevel) + MAX_MODEL_NAME;
+	if (size != uint32(align4bytes(2 * sizeof(uint32) + playerSize)))
+		return false;
+	int32 count;
+	uint32 type;
+	memcpy(&count, block + sizeof(uint32), sizeof(count));
+	memcpy(&type, block + 2 * sizeof(uint32), sizeof(type));
+	return count == 1 && type == PEDTYPE_PLAYER1;
+}
+
+static bool HasSavePayload(const uint8 *block, uint32 size, uint32 offset)
+{
+	if (size < offset + sizeof(uint32))
+		return false;
+	uint32 payloadSize;
+	memcpy(&payloadSize, block + offset, sizeof(payloadSize));
+	const uint32 available = size - offset - sizeof(payloadSize);
+	return payloadSize <= available && uint32(align4bytes(payloadSize)) == available;
+}
+
 #define LoadSaveDataBlock()\
 do {\
 	if (!ReadDataFromFile(file, (uint8 *) &size, 4))\
 		return false;\
+	if (size > sizeof(work_buff))\
+		return InvalidLoad(file);\
 	size = align4bytes(size);\
 	if (!ReadDataFromFile(file, work_buff, size))\
 		return false;\
+	if (!HasSavePayload(work_buff, size, 0))\
+		return InvalidLoad(file);\
 	buf = work_buff;\
 } while (0)
 
@@ -111,7 +149,7 @@ GenericSave(int file)
 	
 	wchar *lastMissionPassed;
 	wchar suffix[6];
-	wchar saveName[24];
+	wchar saveName[24] = {};
 	SYSTEMTIME saveTime;
 	CPad *currPad;
 
@@ -147,8 +185,10 @@ GenericSave(int file)
 #else
 	WriteDataToBufferPointer(buf, SIZE_OF_ONE_GAME_IN_BYTES);
 #endif
-	WriteDataToBufferPointer(buf, CGame::currLevel);
 	const CVector savedCamera = Enhanced::SavePosition(TheCamera.GetPosition());
+	const eLevelName homeLevel = Enhanced::IsSavingAtHome() ? CTheZones::FindZoneForPoint(savedCamera) : LEVEL_GENERIC;
+	const eLevelName savedLevel = homeLevel == LEVEL_GENERIC ? CGame::currLevel : homeLevel;
+	WriteDataToBufferPointer(buf, savedLevel);
 	WriteDataToBufferPointer(buf, savedCamera.x);
 	WriteDataToBufferPointer(buf, savedCamera.y);
 	WriteDataToBufferPointer(buf, savedCamera.z);
@@ -272,9 +312,14 @@ GenericLoad()
 	CPad::ResetCheats();
 	if (!ReadInSizeofSaveFileBuffer(file, size))
 		return false;
+	if (size > sizeof(work_buff))
+		return InvalidLoad(file);
 	size = align4bytes(size);
-	ReadDataFromFile(file, work_buff, size);
-	buf = (work_buff + 0x40);
+	if (!ReadDataFromFile(file, work_buff, size))
+		return false;
+	if (!HasSavePayload(work_buff, size, SIZE_OF_SIMPLEVARS))
+		return InvalidLoad(file);
+	buf = work_buff + 0x40;
 	ReadDataFromBufferPointer(buf, saveSize);
 #ifdef MISSION_REPLAY // a hack to keep compatibility but get new data from save
 	qs = saveSize >> 24;
@@ -330,6 +375,8 @@ GenericLoad()
 
 	// Load the rest
 	LoadSaveDataBlock();
+	if (!HasPlayerSaveData(buf, size))
+		return InvalidLoad(file);
 	ReadDataFromBlock("Loading PedPool \n", CPools::LoadPedPool);
 	LoadSaveDataBlock();
 	ReadDataFromBlock("Loading Garages \n", CGarages::Load);
@@ -399,14 +446,7 @@ ReadInSizeofSaveFileBuffer(int32 &file, uint32 &size)
 		PcSaveHelper.nErrorCode = SAVESTATUS_ERR_LOAD_OPEN;
 		return false;
 	}
-	CFileMgr::Read(file, (const char*)&size, sizeof(size));
-	if (CFileMgr::GetErrorReadWrite(file)) {
-		PcSaveHelper.nErrorCode = SAVESTATUS_ERR_LOAD_READ;
-		if (!CloseFile(file))
-			PcSaveHelper.nErrorCode = SAVESTATUS_ERR_LOAD_CLOSE;
-		return false;
-	}
-	return true;
+	return ReadDataFromFile(file, (uint8*)&size, sizeof(size));
 }
 
 bool
@@ -500,89 +540,106 @@ GetNameOfSavedGame(int32 slot)
 	return SlotFileName[slot];
 }
 
+static constexpr uint32 SavedLevelOffset = 0x44;
+static constexpr uint32 SavedSceneEnd = SavedLevelOffset + sizeof(eLevelName) + 3 * sizeof(float);
+
+static bool ReadSavedScene(const uint8 *data, eLevelName &level, CVector &position)
+{
+	memcpy(&level, data + SavedLevelOffset, sizeof(level));
+	const uint8 *coordinates = data + SavedLevelOffset + sizeof(level);
+	memcpy(&position.x, coordinates, sizeof(float));
+	memcpy(&position.y, coordinates + sizeof(float), sizeof(float));
+	memcpy(&position.z, coordinates + 2 * sizeof(float), sizeof(float));
+	return level >= LEVEL_GENERIC && level < NUM_LEVELS &&
+		std::isfinite(position.x) && std::isfinite(position.y) && std::isfinite(position.z);
+}
+
+static bool ValidateSaveBlocks(int32 file, eLevelName &level)
+{
+	uint32 checksum = 0;
+	for (int block = 0; block <= BLOCK_COUNT + 4; ++block) {
+		uint32 size;
+		if (CFileMgr::Read(file, (const char*)&size, sizeof(size)) != sizeof(size))
+			return false;
+
+		// Legacy saves may end immediately after the game data or include padding.
+		if (block >= BLOCK_COUNT && size == checksum) {
+			char extra;
+			if (CFileMgr::Read(file, &extra, sizeof(extra)) == 0)
+				return true;
+			if (CFileMgr::Seek(file, -1, SEEK_CUR))
+				return false;
+		}
+
+		if (size == 0 || size > sizeof(work_buff))
+			return false;
+		const uint32 alignedSize = align4bytes(size);
+		if (CFileMgr::Read(file, (const char*)work_buff, alignedSize) != alignedSize)
+			return false;
+		if (block < BLOCK_COUNT && !HasSavePayload(work_buff, alignedSize, block == 0 ? SIZE_OF_SIMPLEVARS : 0))
+			return false;
+
+		if (block == 0) {
+			CVector position;
+			if (!ReadSavedScene(work_buff, level, position))
+				return false;
+		} else if (block == 1 && !HasPlayerSaveData(work_buff, alignedSize)) {
+			return false;
+		}
+
+		const uint8 *sizeBytes = reinterpret_cast<const uint8*>(&size);
+		for (uint32 i = 0; i < sizeof(size); ++i)
+			checksum += sizeBytes[i];
+		for (uint32 i = 0; i < alignedSize; ++i)
+			checksum += work_buff[i];
+	}
+	return false;
+}
+
+bool
+ValidateSaveFile(const char *name)
+{
+	const int file = CFileMgr::OpenFile(name, "rb");
+	if (file == 0)
+		return false;
+	eLevelName level = LEVEL_GENERIC;
+	const bool valid = ValidateSaveBlocks(file, level);
+	if (!CloseFile(file) || !valid)
+		return false;
+	m_LevelToLoad = level;
+	return true;
+}
+
 bool
 CheckDataNotCorrupt(int32 slot, char *name)
 {
-#ifdef FIX_BUGS
-	char filename[MAX_PATH];
-#else
-	char filename[100];
-#endif
-
-	int32 blocknum = 0;
-	eLevelName level = LEVEL_GENERIC;
-	CheckSum = 0;
-	uint32 bytes_processed = 0;
-	sprintf(filename, "%s%i%s", DefaultPCSaveFileName, slot + 1, ".b");
-	int file = CFileMgr::OpenFile(filename, "rb");
-	if (file == 0)
+	char filename[sizeof(ValidSaveName)];
+	const int length = snprintf(filename, sizeof(filename), "%s%i.b", DefaultPCSaveFileName, slot + 1);
+	if (length < 0 || size_t(length) >= sizeof(filename) || !ValidateSaveFile(filename))
 		return false;
 	strcpy(name, filename);
-	while (SIZE_OF_ONE_GAME_IN_BYTES - sizeof(uint32) > bytes_processed && blocknum < 40) {
-		int32 blocksize;
-		if (!ReadDataFromFile(file, (uint8*)&blocksize, sizeof(blocksize))) {
-			CloseFile(file);
-			return false;
-		}
-		if (blocksize > align4bytes(sizeof(work_buff)))
-			blocksize = sizeof(work_buff) - sizeof(uint32);
-		if (!ReadDataFromFile(file, work_buff, align4bytes(blocksize))) {
-			CloseFile(file);
-			return false;
-		}
-
-		CheckSum += ((uint8*)&blocksize)[0];
-		CheckSum += ((uint8*)&blocksize)[1];
-		CheckSum += ((uint8*)&blocksize)[2];
-		CheckSum += ((uint8*)&blocksize)[3];
-		uint8 *_work_buf = work_buff;
-		for (int i = 0; i < align4bytes(blocksize); i++) {
-			CheckSum += *_work_buf++;
-			bytes_processed++;
-		}
-
-		if (blocknum == 0)
-			memcpy(&level, work_buff+4, sizeof(level));
-		blocknum++;
-	}
-	int32 _checkSum;
-	if (ReadDataFromFile(file, (uint8*)&_checkSum, sizeof(_checkSum))) {
-		if (CloseFile(file)) {
-			if (CheckSum == _checkSum) {
-				m_LevelToLoad = level;
-				return true;
-			}
-			return false;
-		}
-		return false;
-	}
-
-	CloseFile(file);
-	return false;
+	return true;
 }
 
 bool
 RestoreForStartLoad()
 {
-	uint8 buf[999];
+	uint8 buf[sizeof(uint32) + SavedSceneEnd];
 
 	int file = CFileMgr::OpenFile(LoadFileName, "rb");
 	if (file == 0) {
 		PcSaveHelper.nErrorCode = SAVESTATUS_ERR_LOAD_OPEN;
 		return false;
 	}
-	ReadDataFromFile(file, buf, sizeof(buf));
-	if (CFileMgr::GetErrorReadWrite(file)) {
-		PcSaveHelper.nErrorCode = SAVESTATUS_ERR_LOAD_READ;
-		if (!CloseFile(file))
-			PcSaveHelper.nErrorCode = SAVESTATUS_ERR_LOAD_CLOSE;
+	if (!ReadDataFromFile(file, buf, sizeof(buf)))
 		return false;
-	} else {
-		uint8 *_buf = buf + sizeof(int32) + sizeof(wchar[24]) + sizeof(SYSTEMTIME) + sizeof(SIZE_OF_ONE_GAME_IN_BYTES);
-		ReadDataFromBufferPointer(_buf, CGame::currLevel);
-		ReadDataFromBufferPointer(_buf, TheCamera.GetMatrix().GetPosition().x);
-		ReadDataFromBufferPointer(_buf, TheCamera.GetMatrix().GetPosition().y);
-		ReadDataFromBufferPointer(_buf, TheCamera.GetMatrix().GetPosition().z);
+	{
+		eLevelName level;
+		CVector position;
+		if (!ReadSavedScene(buf + sizeof(uint32), level, position))
+			return InvalidLoad(file);
+		CGame::currLevel = level;
+		TheCamera.GetMatrix().GetPosition() = position;
 		ISLAND_LOADING_IS(LOW)
 		{
 			CStreaming::RemoveUnusedBigBuildings(CGame::currLevel);
@@ -698,7 +755,7 @@ GetSaveType(char *savename)
 	else if (size == 1160)
 		save_type |= SAVE_TYPE_64_BIT;
 	else
-		assert(0); // this should never happen
+		return SAVE_TYPE_NONE;
 
 	buf = work_buff2;
 
@@ -1015,6 +1072,8 @@ FixParticles(uint8 save_type, uint8 *buf, uint8 *buf2, uint32 *size)
 bool
 FixSave(int32 slot, uint8 save_type)
 {
+	if (save_type == SAVE_TYPE_NONE)
+		return false;
 	if (save_type & SAVE_TYPE_32_BIT && save_type & SAVE_TYPE_MSVC)
 		return true;
 

@@ -19,6 +19,7 @@ void MakeValidSaveName(int32 slot);
 wchar *GetSavedGameDateAndTime(int32 slot);
 wchar *GetNameOfSavedGame(int32 slot);
 bool CheckDataNotCorrupt(int32 slot, char *name);
+bool ValidateSaveFile(const char *name);
 bool RestoreForStartLoad();
 int align4bytes(int32 size);
 
@@ -31,7 +32,7 @@ extern class CDate CompileDateAndTime;
 
 extern char DefaultPCSaveFileName[260];
 extern char ValidSaveName[260];
-extern char LoadFileName[256];
+extern char LoadFileName[260];
 extern wchar SlotFileName[SLOT_COUNT][260];
 extern wchar SlotSaveDate[SLOT_COUNT][70];
 extern int CheckSum;

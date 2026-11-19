@@ -896,11 +896,9 @@ void CGame::InitialiseWhenRestarting(void)
 		CStreaming::LoadScene(TheCamera.GetPosition());
 	}
 #else
-	if ( FrontEndMenuManager.m_bWantToLoad == true )
-	{
-		RestoreForStartLoad();
+	const bool loadSceneReady = !FrontEndMenuManager.m_bWantToLoad || RestoreForStartLoad();
+	if (FrontEndMenuManager.m_bWantToLoad && loadSceneReady)
 		CStreaming::LoadScene(TheCamera.GetPosition());
-	}
 #endif
 	
 	ReInitGameObjectVariables();
@@ -981,7 +979,7 @@ void CGame::InitialiseWhenRestarting(void)
 #else
 	if ( FrontEndMenuManager.m_bWantToLoad == true )
 	{
-		if ( GenericLoad() == true )
+		if (loadSceneReady && GenericLoad())
 		{
 			DMAudio.ResetTimers(CTimer::GetTimeInMilliseconds());
 			CTrain::InitTrains();

@@ -25,6 +25,9 @@ extern RwBool psCameraBeginUpdate(RwCamera *camera);
 extern RwImage *psGrabScreen(RwCamera *camera);
 
 extern void psMouseSetPos(RwV2d *pos);
+#ifdef RW_GL3
+extern void psSetGlfwCursorMode(int mode);
+#endif
 
 extern RwBool psSelectDevice();
 

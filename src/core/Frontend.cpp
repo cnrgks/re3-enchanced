@@ -1347,6 +1347,11 @@ CMenuManager::Draw()
 			break;
 	}
 
+	if (m_nCurrScreen == MENUPAGE_RESTORE_DEFAULTS) {
+		CFont::SetFontStyle(FONT_PAGER);
+		CFont::SetSlant(0.0f);
+	}
+
 	float usableLineHeight = lineHeight * 0.9f; // also height of biggest bar in slider
 	float smallestSliderBar = lineHeight * 0.1f;
 	bool foundTheHoveringItem = false;
@@ -4274,6 +4279,8 @@ CMenuManager::Process(void)
 				DMAudio.SetEffectsFadeVol(0);
 				DMAudio.SetMusicFadeVol(0);
 				DMAudio.ResetTimers(CTimer::GetTimeInMilliseconds());
+				SwitchMenuOnAndOff();
+				return;
 			} else
 				SaveLoadFileError_SetUpErrorScreen();
 		}
@@ -5056,7 +5063,10 @@ CMenuManager::ProcessButtonPresses(void)
 
 					if (saveSlot >= 2 && saveSlot <= 9) {
 						m_nCurrSaveSlot = saveSlot - 2;
-						if (Slots[m_nCurrSaveSlot + 1] != SLOT_EMPTY && Slots[m_nCurrSaveSlot + 1] != SLOT_CORRUPTED) {
+						if (m_nCurrScreen == MENUPAGE_CHOOSE_LOAD_SLOT && Slots[m_nCurrSaveSlot + 1] == SLOT_CORRUPTED) {
+							PcSaveHelper.nErrorCode = SAVESTATUS_ERR_DATA_INVALID;
+							SaveLoadFileError_SetUpErrorScreen();
+						} else if (Slots[m_nCurrSaveSlot + 1] == SLOT_OK) {
 							ChangeScreen(aScreens[m_nCurrScreen].m_aEntries[m_nCurrOption].m_TargetMenu, 0, true, true);
 						}
 					}
@@ -5780,7 +5790,7 @@ CMenuManager::ShutdownJustMenu()
 #endif
 	// In case we're windowed, keep mouse centered while in game. Done in main.cpp in other conditions.
 #if defined(RW_GL3) && defined(IMPROVED_VIDEOMODE)
-	glfwSetInputMode(PSGLOBAL(window), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	psSetGlfwCursorMode(GLFW_CURSOR_DISABLED);
 #endif
 	m_bMenuActive = false;
 	CTimer::EndUserPause();
@@ -5889,7 +5899,7 @@ CMenuManager::SwitchMenuOnAndOff()
 		
 		// In case we're windowed, keep mouse centered while in game. Done in main.cpp in other conditions.
 #if defined(RW_GL3) && defined(IMPROVED_VIDEOMODE)
-		glfwSetInputMode(PSGLOBAL(window), GLFW_CURSOR, m_bMenuActive && m_nPrefsWindowed ? GLFW_CURSOR_HIDDEN : GLFW_CURSOR_DISABLED);
+		psSetGlfwCursorMode(m_bMenuActive && m_nPrefsWindowed ? GLFW_CURSOR_HIDDEN : GLFW_CURSOR_DISABLED);
 #endif
 	}
 

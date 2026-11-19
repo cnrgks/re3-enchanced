@@ -73,6 +73,10 @@ C_PcSave::SaveSlot(int32 slot, bool autosave)
 		nErrorCode = SAVESTATUS_ERR_SAVE_CLOSE;
 		saved = false;
 	}
+	if (autosave && saved && !ValidateSaveFile(temporaryName)) {
+		nErrorCode = SAVESTATUS_ERR_SAVE_WRITE;
+		saved = false;
+	}
 	if (autosave && saved) {
 		// Preserve the old slot until the replacement is fully written and closed.
 #ifdef _WIN32
@@ -151,8 +155,11 @@ C_PcSave::PopulateSlotInfo()
 		sprintf(savename, "%s%i%s", DefaultPCSaveFileName, i + 1, ".b");
 		int file = CFileMgr::OpenFile(savename, "rb");
 		if (file != 0) {
-			CFileMgr::Read(file, (char*)&header, sizeof(header));
-			if (strncmp((char*)&header, TopLineEmptyFile, sizeof(TopLineEmptyFile)-1) != 0) {
+			const size_t headerSize = CFileMgr::Read(file, (char*)&header, sizeof(header));
+			if (headerSize != sizeof(header)) {
+				CMessages::InsertNumberInString(TheText.Get("FEC_SLC"), i + 1, -1, -1, -1, -1, -1, SlotFileName[i]);
+				Slots[i + 1] = SLOT_CORRUPTED;
+			} else if (strncmp((char*)&header, TopLineEmptyFile, sizeof(TopLineEmptyFile)-1) != 0) {
 				Slots[i + 1] = SLOT_OK;
 				memcpy(SlotFileName[i], &header.FileName, sizeof(header.FileName));
 				
@@ -186,7 +193,10 @@ C_PcSave::PopulateSlotInfo()
 				case 10: month = "OCT"; break;
 				case 11: month = "NOV"; break;
 				case 12: month = "DEC"; break;
-				default: assert(0);
+				default:
+					CMessages::InsertNumberInString(TheText.Get("FEC_SLC"), i + 1, -1, -1, -1, -1, -1, SlotFileName[i]);
+					Slots[i + 1] = SLOT_CORRUPTED;
+					continue;
 				}
 				char date[70];
 #ifdef MORE_LANGUAGES

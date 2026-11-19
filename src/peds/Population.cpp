@@ -429,12 +429,15 @@ CPopulation::Update()
 	if (CCutsceneMgr::IsRunning())
 		return;
 
-	const bool warmingUp = m_CountDownToPedsAtStart > 0;
-	if (warmingUp) --m_CountDownToPedsAtStart;
-	const bool preferDistant = !warmingUp && (CTimer::GetFrameCounter() & 3) == 0;
-	const int attempts = warmingUp ? 4 : 1;
+	const bool warmingUp = m_CountDownToPedsAtStart > 0 && TheCamera.GetScreenFadeStatus() == FADE_2;
+	if (m_CountDownToPedsAtStart > 0) --m_CountDownToPedsAtStart;
+	const CVector centre = FindPlayerCentreOfWorld(CWorld::PlayerInFocus);
+	const float nearRadius = (MIN_CREATION_DIST + CREATION_RANGE) * TheCamera.GenerationDistMultiplier *
+		PedCreationDistMultiplier() / Enhanced::PedRangeMultiplier();
+	const int attempts = Enhanced::TrafficAttempts(false, centre, nearRadius, warmingUp);
 	for (int i = 0; i < attempts; ++i)
-		AddToPopulation(preferDistant, warmingUp);
+		AddToPopulation(i != 0 && !warmingUp && (CTimer::GetFrameCounter() & 2) == 0 &&
+			Enhanced::PedRangeMultiplier() > 1.0f, warmingUp);
 }
 
 bool
@@ -574,7 +577,7 @@ CPopulation::CountNearbyTraffic(const CVector &centre, int32 *total)
 }
 
 void
-CPopulation::AddToPopulation(bool preferDistant, bool warmingUp)
+CPopulation::AddToPopulation(bool hiddenFeed, bool warmingUp)
 {
 	uint32 pedTypeToAdd;
 	int32 modelToAdd;
@@ -608,28 +611,26 @@ CPopulation::AddToPopulation(bool preferDistant, bool warmingUp)
 
 	const float fullRange = Enhanced::PedRangeMultiplier();
 	const int32 total = int32(ms_nTotalPeds);
-	int32 openBudget = addCop ? 1 : basePedLimit * int32(fullRange) - total;
-	bool distant = false;
-	if (fullRange > 1.0f && !addCop && openBudget > 0) {
-		const int32 nearby = CountNearbyTraffic(playerCentreOfWorld);
-		const int32 nearRoom = basePedLimit - nearby;
-		const int32 distantRoom = basePedLimit * (int32(fullRange) - 1) - (total - nearby);
-		distant = distantRoom > 0 && !warmingUp && (preferDistant || nearRoom <= 0);
-		openBudget = Min(openBudget, distant ? distantRoom : nearRoom);
-	}
+	const int32 target = Enhanced::TrafficTarget(false, basePedLimit * int32(fullRange), warmingUp);
+	const int32 openBudget = addCop ? 1 : target - total;
+	const bool distant = !addCop && !warmingUp && !hiddenFeed && fullRange > 1.0f;
 
 	if (openBudget > 0) {
 		const float nativeRange = PedCreationDistMultiplier() / fullRange;
 		const float creationRange = distant ? nativeRange * fullRange : nativeRange;
 		const float cameraRange = addCop ? 1.0f : TheCamera.GenerationDistMultiplier;
-		const float minDist = creationRange * MIN_CREATION_DIST * cameraRange;
+		const float minDist = warmingUp ? 10.0f : creationRange * MIN_CREATION_DIST * cameraRange;
 		const float maxDist = creationRange * (MIN_CREATION_DIST + CREATION_RANGE) * cameraRange;
 		const float offscreenRange = nativeRange * (MIN_CREATION_DIST + CREATION_RANGE) * OFFSCREEN_CREATION_MULT;
 		float minDistOffScreen = warmingUp ? 10.0f : offscreenRange - nativeRange * CREATION_RANGE;
 		float maxDistOffScreen = warmingUp ? maxDist : offscreenRange;
+		if (hiddenFeed) {
+			minDistOffScreen = minDist;
+			maxDistOffScreen = maxDist;
+		}
 #ifdef EXTENDED_OFFSCREEN_DESPAWN_RANGE
 		if (distant) {
-			minDistOffScreen = nativeRange * PED_REMOVE_DIST * cameraRange;
+			minDistOffScreen = minDist;
 			maxDistOffScreen = maxDist;
 		}
 #else
@@ -688,8 +689,10 @@ CPopulation::AddToPopulation(bool preferDistant, bool warmingUp)
 		bool foundCoors = !!ThePaths.GeneratePedCreationCoors(playerCentreOfWorld.x, playerCentreOfWorld.y, minDist, maxDist, minDistOffScreen, maxDistOffScreen,
 			&generatedCoors, &node1, &node2, &randomPos, nil);
 
-		if (!foundCoors)
+		if (!foundCoors) {
+			if (Enhanced::TraceTraffic) ++Enhanced::PedSpawnStats.noCandidate;
 			return;
+		}
 
 		for (int i = 0; i < pedAmount; ++i) {
 			if (pedTypeToAdd >= PEDTYPE_GANG1 && pedTypeToAdd <= PEDTYPE_GANG9)
@@ -753,6 +756,10 @@ CPopulation::AddToPopulation(bool preferDistant, bool warmingUp)
 			}
 			if (!farEnoughToAdd)
 				break;
+			if (hiddenFeed && !Enhanced::IsTrafficSpawnOccluded(generatedCoors)) {
+				if (Enhanced::TraceTraffic) ++Enhanced::PedSpawnStats.exposed;
+				break;
+			}
 			CPed *newPed = AddPed((ePedType)pedTypeToAdd, modelToAdd, generatedCoors);
 			if (Enhanced::TraceTraffic) ++Enhanced::PedSpawnStats.spawned[distant];
 			newPed->SetWanderPath(CGeneral::GetRandomNumberInRange(0, 8));

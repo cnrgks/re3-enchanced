@@ -154,12 +154,19 @@ void GetTextureCorners(int32 x, int32 y, CVector2D *out)
 	out[3].y = RADAR_TILE_SIZE * (y);
 }
 
-uint8 CRadar::CalculateBlipAlpha(float dist)
+uint8 CRadar::CalculateBlipAlpha(float dist, bool service)
 {
 #ifdef MENU_MAP
 	if (CMenuManager::bMenuMapActive)
 		return 255;
 #endif
+	if (service) {
+		const float speed = FindPlayerVehicle() ? FindPlayerSpeed().Magnitude() : 0.0f;
+		const float speedFade = Clamp((speed - RADAR_MIN_SPEED) / (RADAR_MAX_SPEED - RADAR_MIN_SPEED), 0.0f, 1.0f);
+		const float speedAlpha = 160.0f + 95.0f * speedFade;
+		const float distanceAlpha = 1.0f - 0.35f * Clamp(dist, 0.0f, 1.0f);
+		return uint8(speedAlpha * distanceAlpha);
+	}
 	if (dist <= 1.0f)
 		return 255;
 
@@ -511,7 +518,7 @@ void CRadar::DrawBlips()
         Enhanced::DiscoverServices();
         Enhanced::DrawRoute();
         Enhanced::DrawServices(); // below every blip, including the player arrow
-        Enhanced::DrawHomeAndPhoneBlips();
+        Enhanced::DrawPhoneBlips();
 		bool hideContactPoints = CTheScripts::IsPlayerOnAMission();
 #ifdef MENU_MAP
 		if (CMenuManager::bMenuMapActive)
@@ -633,7 +640,7 @@ void CRadar::DrawBlips()
 							TransformRadarPointToScreenSpace(out, in);
 							if (ms_RadarTrace[blipId].m_eRadarSprite != RADAR_SPRITE_NONE) {
 								DrawRadarSprite(ms_RadarTrace[blipId].m_eRadarSprite, out.x, out.y,
-									CalculateBlipAlpha(dist));
+									CalculateBlipAlpha(dist, Enhanced::IsServiceBlip(ms_RadarTrace[blipId])));
 							} else {
 #ifdef TRIANGULAR_BLIPS
 							    const CVector &pos = FindPlayerCentreOfWorld_NoSniperShift();

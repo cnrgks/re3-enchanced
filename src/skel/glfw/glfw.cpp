@@ -1078,9 +1078,26 @@ void _InputInitialiseJoys()
 	}
 }
 
+static int RequestedCursorMode = GLFW_CURSOR_HIDDEN;
+
+static void ApplyCursorMode(GLFWwindow *window)
+{
+    const bool active = glfwGetWindowAttrib(window, GLFW_FOCUSED) &&
+        !glfwGetWindowAttrib(window, GLFW_ICONIFIED);
+    const int mode = active ? RequestedCursorMode : GLFW_CURSOR_NORMAL;
+    if (glfwGetInputMode(window, GLFW_CURSOR) != mode)
+        glfwSetInputMode(window, GLFW_CURSOR, mode);
+}
+
+void psSetGlfwCursorMode(int mode)
+{
+    RequestedCursorMode = mode;
+    ApplyCursorMode(PSGLOBAL(window));
+}
+
 long _InputInitialiseMouse()
 {
-	glfwSetInputMode(PSGLOBAL(window), GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+	psSetGlfwCursorMode(GLFW_CURSOR_HIDDEN);
 	return 0;
 }
 
@@ -1250,7 +1267,7 @@ void psPostRWinit(void)
         RsEventHandler(rsCAMERASIZE,&finalSize);
     }
     const bool playing=gGameState==GS_PLAYING_GAME && !FrontEndMenuManager.m_bMenuActive;
-    glfwSetInputMode(PSGLOBAL(window),GLFW_CURSOR,playing ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_HIDDEN);
+    psSetGlfwCursorMode(playing ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_HIDDEN);
     SynchroniseWindowInput(PSGLOBAL(window),!playing);
 
 	// Make sure all keys are released
@@ -2064,12 +2081,14 @@ cursorEnterCB(GLFWwindow* window, int entered) {
 void
 windowFocusCB(GLFWwindow* window, int focused) {
 	WindowFocused = !!focused;
+    ApplyCursorMode(window);
     if (focused) SynchroniseWindowInput(window,false);
 }
 
 void
 windowIconifyCB(GLFWwindow* window, int iconified) {
 	WindowIconified = !!iconified;
+    ApplyCursorMode(window);
 }
 
 /*

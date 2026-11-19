@@ -45,6 +45,16 @@ int main()
     city.goals[4]=8;
     require(EnhancedRoute::Search(city,0)==std::vector<int>({0,2,4}),"reachable alternative entrance");
     require(EnhancedRoute::Search(city,-1).empty(),"invalid start");
+
+    Graph entrances(3);
+    entrances.edges[0]={{1,1},{2,100}};
+    entrances.goals[1]=entrances.goals[2]=0;
+    const auto clearEntrance = [](int node) { return node == 2; };
+    require(EnhancedRoute::Search(entrances,0,clearEntrance)==std::vector<int>({0,2}),
+        "clear entrance wins over a closer route ending at a wall");
+    entrances.closed[2]=true;
+    require(EnhancedRoute::Search(entrances,0,clearEntrance)==std::vector<int>({0,1}),
+        "unreachable clear entrance leaves a reachable road endpoint");
     Graph longRoad(1200);
     for (int i=0;i<1199;++i) longRoad.edges[i].push_back({i+1,1});
     longRoad.goals[1199]=0;

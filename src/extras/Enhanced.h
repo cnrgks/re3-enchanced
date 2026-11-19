@@ -13,8 +13,13 @@ extern bool TraceTraffic;
 struct TrafficSpawnStats {
     uint32 attempts[2];
     uint32 spawned[2];
+    uint32 noCandidate;
+    uint32 exposed;
 };
 extern TrafficSpawnStats VehicleSpawnStats, PedSpawnStats;
+int TrafficAttempts(bool vehicles, const CVector &centre, float nearbyRadius, bool warmingUp);
+int TrafficTarget(bool vehicles, int limit, bool warmingUp);
+bool IsTrafficSpawnOccluded(const CVector &position);
 void ApplyScreenFormatSettings();
 extern int8 VehicleDetail, PedDetail, HealAfterSave, BreakableWindscreen, Borderless;
 
@@ -34,11 +39,13 @@ void ApplyWindowMode(bool newWindow = false);
 bool ProcessWindscreenShot(const CVector &source, const CVector &target, CEntity *shooter, bool hit, CColPoint &point, CEntity *&entity, bool hitOccupants = true);
 void ResetServices();
 void DiscoverServices();
+bool IsServiceBlip(const sRadarTrace &trace);
 bool ServiceBlipVisible(const sRadarTrace &trace, float radarDistance);
 void SaveServiceDiscovery(uint8 *buffer, uint32 capacity);
 void LoadServiceDiscovery(const uint8 *buffer, uint32 size);
 void DrawServices();
-void DrawHomeAndPhoneBlips();
+void DrawPhoneBlips();
+bool IsSavingAtHome();
 CVector SavePosition(const CVector &original);
 float VehicleRangeMultiplier();
 float PedRangeMultiplier();

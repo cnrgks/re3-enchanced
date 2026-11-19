@@ -1,4 +1,5 @@
 #include "common.h"
+#include "Enhanced.h"
 
 #include "Pools.h"
 
@@ -451,6 +452,18 @@ INITSAVEBUF
 VALIDATESAVEBUF(size)
 }
 
+static bool ShouldSavePlayerPed(const CPed *ped)
+{
+	if (ped->m_nPedType != PEDTYPE_PLAYER1)
+		return false;
+	bool saveSeatedPlayer = Enhanced::IsSavingAtHome();
+#ifdef MISSION_REPLAY
+	saveSeatedPlayer = saveSeatedPlayer || IsQuickSave;
+#endif
+	return !ped->bInVehicle ||
+		(saveSeatedPlayer && ped == CWorld::Players[CWorld::PlayerInFocus].m_pPed);
+}
+
 void CPools::SavePedPool(uint8* buf, uint32* size)
 {
 INITSAVEBUF
@@ -460,11 +473,7 @@ INITSAVEBUF
 		CPed* pPed = GetPedPool()->GetSlot(i);
 		if (!pPed)
 			continue;
-#ifdef MISSION_REPLAY
-		if ((!pPed->bInVehicle || (pPed == CWorld::Players[CWorld::PlayerInFocus].m_pPed && IsQuickSave)) && pPed->m_nPedType == PEDTYPE_PLAYER1)
-#else
-		if (!pPed->bInVehicle && pPed->m_nPedType == PEDTYPE_PLAYER1)
-#endif
+		if (ShouldSavePlayerPed(pPed))
 			nNumPeds++;
 	}
 	*size = sizeof(int) + nNumPeds * (sizeof(uint32) + sizeof(int16) + sizeof(int) + CPlayerPed::nSaveStructSize +
@@ -474,11 +483,7 @@ INITSAVEBUF
 		CPed* pPed = GetPedPool()->GetSlot(i);
 		if (!pPed)
 			continue;
-#ifdef MISSION_REPLAY
-		if ((!pPed->bInVehicle || (pPed == CWorld::Players[CWorld::PlayerInFocus].m_pPed && IsQuickSave)) && pPed->m_nPedType == PEDTYPE_PLAYER1) {
-#else
-		if (!pPed->bInVehicle && pPed->m_nPedType == PEDTYPE_PLAYER1) {
-#endif
+		if (ShouldSavePlayerPed(pPed)) {
 			CopyToBuf(buf, pPed->m_nPedType);
 			CopyToBuf(buf, pPed->m_modelIndex);
 			int32 ref = GetPedRef(pPed);

@@ -23,7 +23,6 @@ struct Service { int sprite; CVector position; bool fallback = false; };
 Service services[256];
 int serviceCount;
 uint32 lastDiscovery;
-std::vector<CVector> scriptHomes;
 std::vector<Service> scriptPhones;
 bool scanned;
 bool IsServiceSprite(int sprite)
@@ -47,12 +46,6 @@ eLevelName IslandAt(const CVector &position)
     return CTheZones::FindZoneForPoint(CVector(position.x, position.y, 0.0f));
 }
 
-eLevelName PlayerIsland()
-{
-    const eLevelName island = IslandAt(FindPlayerCoors());
-    return island == LEVEL_GENERIC ? CGame::currLevel : island;
-}
-
 bool IsIslandUnlocked(eLevelName island)
 {
     switch (island) {
@@ -65,6 +58,11 @@ bool IsIslandUnlocked(eLevelName island)
 bool IsUnlocked(const CVector &position)
 {
     return IsIslandUnlocked(IslandAt(position));
+}
+
+bool IsHomeUnlocked(const CVector &position)
+{
+    return CStats::MissionsPassed > 0 && IsUnlocked(position);
 }
 
 bool IsPhoneSprite(int sprite)
@@ -102,8 +100,6 @@ void ScanScriptLocations()
             Abs(x)>2000.0f || Abs(y)>2000.0f || z < -101.0f || z>1000.0f ||
             sprite < 0 || sprite >= RADAR_SPRITE_COUNT || sprite != float(int(sprite))) continue;
         const CVector position(x, y, z);
-        if (sprite == RADAR_SPRITE_SAVE)
-            scriptHomes.push_back(position);
         if (command == COMMAND_ADD_SPRITE_BLIP_FOR_CONTACT_POINT && IsPhoneSprite(int(sprite)) &&
             std::none_of(scriptPhones.begin(), scriptPhones.end(), [&](const Service &phone) {
                 return phone.sprite == int(sprite) && (phone.position-position).Magnitude2D() < 1.0f;
@@ -116,7 +112,6 @@ void ResetServices()
 {
     serviceCount = 0;
     lastDiscovery = 0;
-    scriptHomes.clear();
     scriptPhones.clear();
     scanned = false;
 }
@@ -138,7 +133,7 @@ static void RememberService(int sprite, const CVector &position, bool fallback)
     if (serviceCount < int(ARRAY_SIZE(services))) services[serviceCount++] = {sprite, position, fallback};
 }
 
-static bool IsServiceBlip(const sRadarTrace &trace)
+bool IsServiceBlip(const sRadarTrace &trace)
 {
     return IsServiceSprite(trace.m_eRadarSprite) && !CRadar::IsMissionSpriteBlip(trace);
 }
@@ -148,14 +143,19 @@ bool ServiceBlipVisible(const sRadarTrace &trace, float radarDistance)
 #ifdef MENU_MAP
     const int sprite = trace.m_eRadarSprite;
     if (sprite == RADAR_SPRITE_SAVE) {
-        const eLevelName island = IslandAt(trace.m_vecPos);
-        return IsIslandUnlocked(island) &&
-            (CMenuManager::bMenuMapActive || island == PlayerIsland());
+        if (!IsHomeUnlocked(trace.m_vecPos)) return false;
+        if (!CMenuManager::bMenuMapActive) {
+            if (radarDistance > 1.0f) return false;
+            RememberService(sprite, trace.m_vecPos, false);
+        }
+        return FindDiscovered(sprite, trace.m_vecPos) != nil;
     }
     if (!IsServiceBlip(trace)) return true;
     if (!IsUnlocked(trace.m_vecPos)) return false;
-    if (!CMenuManager::bMenuMapActive && radarDistance <= 1.0f)
+    if (!CMenuManager::bMenuMapActive) {
+        if (radarDistance > 1.0f) return false;
         RememberService(sprite, trace.m_vecPos, false);
+    }
     return FindDiscovered(sprite, trace.m_vecPos) != nil;
 #else
     return true;
@@ -199,10 +199,10 @@ void LoadServiceDiscovery(const uint8 *buffer, uint32 size)
         memcpy(&flags, buffer, sizeof(flags));
         memcpy(position, buffer + sizeof(flags), sizeof(position));
         const int sprite = int(flags & 0xffu);
-        if ((flags & ~0x1ffu) || !IsServiceSprite(sprite) ||
+        if ((flags & ~0x1ffu) || (!IsServiceSprite(sprite) && sprite != RADAR_SPRITE_SAVE) ||
             !std::isfinite(position[0]) || !std::isfinite(position[1]) || !std::isfinite(position[2]) ||
             Abs(position[0]) > 2000.0f || Abs(position[1]) > 2000.0f || Abs(position[2]) > 2000.0f) continue;
-        const bool fallback = (flags & 0x100u) != 0;
+        const bool fallback = sprite != RADAR_SPRITE_SAVE && (flags & 0x100u) != 0;
         RememberService(sprite, CVector(position[0], position[1], position[2]), fallback);
     }
 }
@@ -245,7 +245,8 @@ void DrawServices()
         if (!service.fallback || !IsUnlocked(service.position)) continue;
         CVector2D radar, screen;
         CRadar::TransformRealWorldPointToRadarSpace(radar,CVector2D(service.position));
-        const float radarDistance = CRadar::LimitRadarPoint(radar);
+        const float radarDistance = radar.Magnitude();
+        if (!inMap && radarDistance > 1.0f) continue;
         bool hasRadarBlip = false;
         for (const sRadarTrace &trace : CRadar::ms_RadarTrace) {
             if (!trace.m_bInUse || trace.m_eRadarSprite != service.sprite ||
@@ -254,41 +255,20 @@ void DrawServices()
             if ((trace.m_eBlipDisplay != BLIP_DISPLAY_BOTH && trace.m_eBlipDisplay != BLIP_DISPLAY_BLIP_ONLY) ||
                 (trace.m_eBlipType == BLIP_CONTACT_POINT && hideContactPoints) ||
                 !SameService(service, trace.m_eRadarSprite, trace.m_vecPos)) continue;
+            if (!inMap && IsServiceBlip(trace)) {
+                CVector2D nativeRadar;
+                CRadar::TransformRealWorldPointToRadarSpace(nativeRadar, trace.m_vec2DPos);
+                if (nativeRadar.MagnitudeSqr() > 1.0f) continue;
+            }
             hasRadarBlip = true;
             break;
         }
         if (hasRadarBlip) continue;
         CRadar::TransformRadarPointToScreenSpace(screen,radar);
-        CRadar::DrawRadarSprite(service.sprite,screen.x,screen.y,CRadar::CalculateBlipAlpha(radarDistance));
+        CRadar::DrawRadarSprite(service.sprite,screen.x,screen.y,CRadar::CalculateBlipAlpha(radarDistance, true));
     }
 #endif
 }
-static bool FindHomeCoordinates(eLevelName island, CVector &home)
-{
-    ScanScriptLocations();
-    // Original safehouse entrances are world coordinates, not executable
-    // addresses. Prefer SCM metadata, so scripts can relocate the houses.
-    switch (island) {
-    case LEVEL_INDUSTRIAL: home=CVector(893.5f,-306.0625f,0); break;
-    case LEVEL_COMMERCIAL: home=CVector(103.0f,-478.5f,0); break;
-    case LEVEL_SUBURBAN: home=CVector(-665.0f,-6.5f,0); break;
-    default: return false;
-    }
-    const CVector entrance=home;
-    float nearest=1.0e20f;
-    const auto consider = [&](const CVector &position) {
-        if (IslandAt(position) != island) return;
-        const float distance=(position-entrance).Magnitude2D();
-        if (distance < nearest) { nearest=distance; home.x=position.x; home.y=position.y; }
-    };
-    for (const CVector &position : scriptHomes) consider(position);
-    for (const sRadarTrace &trace : CRadar::ms_RadarTrace)
-        if (trace.m_bInUse && trace.m_eRadarSprite == RADAR_SPRITE_SAVE &&
-            (trace.m_eBlipType == BLIP_COORD || trace.m_eBlipType == BLIP_CONTACT_POINT))
-            consider(trace.m_vecPos);
-    return true;
-}
-
 bool FindHomePosition(const CVector &current, CVector &home)
 {
     eLevelName island = CTheZones::FindZoneForPoint(current);
@@ -321,7 +301,7 @@ bool FindHomePosition(const CVector &current, CVector &home)
     return true;
 }
 
-void DrawHomeAndPhoneBlips()
+void DrawPhoneBlips()
 {
 #ifdef MENU_MAP
     const bool inMap = CMenuManager::bMenuMapActive;
@@ -332,17 +312,6 @@ void DrawHomeAndPhoneBlips()
         CRadar::TransformRadarPointToScreenSpace(screen, radar);
         CRadar::DrawRadarSprite(sprite, screen.x, screen.y, CRadar::CalculateBlipAlpha(distance));
     };
-    const eLevelName current = PlayerIsland();
-    for (int level = LEVEL_INDUSTRIAL; level <= LEVEL_SUBURBAN; ++level) {
-        const auto island = eLevelName(level);
-        if (!IsIslandUnlocked(island) || (!inMap && island != current)) continue;
-        if (std::any_of(CRadar::ms_RadarTrace, CRadar::ms_RadarTrace + NUMRADARBLIPS, [&](const sRadarTrace &trace) {
-            return IsVisibleCoordBlip(trace, RADAR_SPRITE_SAVE) && IslandAt(trace.m_vecPos) == island;
-        })) continue;
-        CVector home;
-        if (FindHomeCoordinates(island, home)) draw(RADAR_SPRITE_SAVE, home);
-    }
-
     if (!inMap && CTheScripts::IsPlayerOnAMission()) return;
     ScanScriptLocations();
     for (const Service &marker : scriptPhones) {
