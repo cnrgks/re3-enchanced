@@ -525,3 +525,20 @@ Monitörün görüntüye dönüş süresi ve ilk açılış kararması ayrı gö
 Kaynak 8454bb1d, GitHub Actions run 44450629395. OpenGL x64
 derlemesi ve mevcut birim kontrolleri geçti. Alt-Tab gecikmesi, açılış
 kararması ve Discord yakalaması oyun içinde doğrulanmayı bekliyor.
+
+### v1.8 kullanıcı sonucu — Alt-Tab beklemesi sürüyor
+
+Kullanıcı v1.8 Fullscreen geçişinde yaklaşık 1–1,5 saniye beklediğini
+bildirdi. Tamponları yeniden kullanmak, hissedilen beklemeyi gidermedi.
+Bu denemeye ait geçiş günlüğü henüz mevcut değil.
+
+Yeni kaynak adayı `-dxgi-composed-fullscreen` ile denenebilir.
+Fullscreen Capture açık ve Screen Format Fullscreen iken OpenGL oyunu
+çizmeye devam ediyor. DXGI aynı doku kopyasını monitörü kaplayan
+çerçevesiz pencerede sunuyor. Bu yolda exclusive geçiş yapılmıyor.
+DXGI kurulamazsa OpenGL çerçevesiz pencereyi kullanıyor. Başarılı kurulum
+günlüğünde `composed=1` görülür. Parametresiz açılış mevcut exclusive
+davranışı seçer. `-safe-display` de kullanılabilir.
+
+Soğuk açılış ve Alt-Tab süreleri ile Discord pencere ve tüm ekran
+paylaşımı, ardından Ambilight oyun içinde doğrulanmalı. Derleme bekliyor.

@@ -1,4 +1,4 @@
-RE3 ENHANCED v1.8 - OPENGL x64 DENEME PAKETI
+RE3 ENHANCED v1.9 - OPENGL x64 DENEME PAKETI
 
 KURULUM
 Oyunu kapat ve mevcut re3.exe/re3.pdb ciftini yedekle. Paketin game
@@ -40,3 +40,9 @@ yaklasma konumu ile basarili ve aksayan basisi karsilastir.
 
 Paket yalnizca OpenGL x64'tur. EXE/PDB ve SHA-256 bilgileri
 manifest.json dosyasindadir. Oyun ici sonuclar deneme bekliyor.
+
+v1.9 - CERCEVESIZ DXGI DENEMESI
+Fullscreen Capture acik ve Screen Format Fullscreen iken oyunu
+re3.exe -dxgi-composed-fullscreen ile baslat. re3-display.log icinde
+composed=1 beklenir. Alt-Tab ve Discord pencere/tum ekran paylasimini
+ayri dene. Parametresiz acilis mevcut exclusive yolu kullanir.

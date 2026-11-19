@@ -1132,7 +1132,8 @@ void Enhanced::ApplyWindowMode(bool newWindow)
         boundWindow = window;
         applied = false;
     }
-    if (Borderless && !applied) {
+    const bool coverMonitor=Borderless || DXGIComposedFullscreenRequested();
+    if (coverMonitor && !applied) {
         glfwGetWindowPos(window,&x,&y);
         glfwGetWindowSize(window,&width,&height);
         decoration = glfwGetWindowAttrib(window,GLFW_DECORATED);
@@ -1165,7 +1166,7 @@ void Enhanced::ApplyWindowMode(bool newWindow)
         // Diagnostic only: avoid an exact monitor-sized window that the ICD
         // may promote to fullscreen presentation. One column extends beyond
         // the right edge; framebuffer resizing still uses its actual size.
-        if (BorderlessCaptureProbe) ++targetWidth;
+        if (Borderless && BorderlessCaptureProbe) ++targetWidth;
 #endif
         enhancedWindowResize=true;
         PSGLOBAL(fullScreen)=FALSE;
@@ -1173,7 +1174,7 @@ void Enhanced::ApplyWindowMode(bool newWindow)
         glfwSetWindowMonitor(window,nil,mx,my,targetWidth,mode->height,GLFW_DONT_CARE);
         enhancedWindowResize=false;
         applied=true;
-    } else if (!Borderless && applied) {
+    } else if (!coverMonitor && applied) {
         enhancedWindowResize=true;
         glfwSetWindowAttrib(window,GLFW_DECORATED,decoration);
         // A monitor may have been unplugged while the game was borderless.
@@ -1198,7 +1199,7 @@ void Enhanced::ApplyWindowMode(bool newWindow)
     glfwGetWindowPos(window,&wx,&wy);
     FILE *displayLog=fopen("re3-display.log","a");
     if (displayLog) {
-        fprintf(displayLog,"v1.8 format=%d probe=%d monitorAttached=%d window=%dx%d framebuffer=%dx%d pos=%d,%d\n",
+        fprintf(displayLog,"v1.9 format=%d probe=%d monitorAttached=%d window=%dx%d framebuffer=%dx%d pos=%d,%d\n",
             int(ScreenFormat),int(BorderlessCaptureProbe),glfwGetWindowMonitor(window)!=nil,ww,wh,fw,fh,wx,wy);
         fclose(displayLog);
     }
@@ -2157,6 +2158,10 @@ main(int argc, char *argv[])
 	for(i=1; i<argc; i++)
 	{
 #ifdef _WIN32
+        if (strcmp(argv[i],"-dxgi-composed-fullscreen")==0) {
+            Enhanced::DXGIComposedFullscreen=true;
+            continue;
+        }
         if (strcmp(argv[i],"-trace-display-timing")==0) {
             TraceDisplayTiming=true;
             continue;

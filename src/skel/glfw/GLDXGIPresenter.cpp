@@ -13,6 +13,8 @@
 #include <GLFW/glfw3native.h>
 
 namespace Enhanced {
+bool DXGIComposedFullscreen=false;
+
 namespace {
 typedef HANDLE (WINAPI *OpenInterop)(void *);
 typedef BOOL (WINAPI *CloseInterop)(HANDLE);
@@ -49,7 +51,7 @@ void Log(const char *format,...)
 {
     FILE *file=fopen("re3-display.log","a");
     if (!file) return;
-    fputs("v1.8 dxgi: ",file);
+    fputs("v1.9 dxgi: ",file);
     va_list args;
     va_start(args,format);
     vfprintf(file,format,args);
@@ -122,7 +124,7 @@ void ReleaseDevice()
     ReleaseBuffers();
     if (state.interopDevice && state.close) state.close(state.interopDevice);
     state.interopDevice=nil;
-    if (state.chain) state.chain->SetFullscreenState(FALSE,nil);
+    if (state.chain && !DXGIComposedFullscreen) state.chain->SetFullscreenState(FALSE,nil);
     if (state.context) { state.context->ClearState(); state.context->Flush(); }
     Release(state.chain);
     Release(state.output);
@@ -132,11 +134,13 @@ void ReleaseDevice()
 }
 bool Fail(const char *where, HRESULT result=E_FAIL)
 {
-    Log("%s failed hr=0x%08lX; returning to native OpenGL fullscreen",where,(unsigned long)result);
+    Log("%s failed hr=0x%08lX; returning to native OpenGL %s",
+        where,(unsigned long)result,DXGIComposedFullscreen ? "borderless" : "fullscreen");
     ResizeGuard guard;
     ReleaseDevice();
     state.failed=true;
-    FallbackNativeFullscreen(state.window);
+    if (!DXGIComposedFullscreen)
+        FallbackNativeFullscreen(state.window);
     return false;
 }
 
@@ -246,7 +250,8 @@ bool Initialise(GLFWwindow *window)
     DEVMODEW desktop={};
     desktop.dmSize=sizeof(desktop);
     const HMONITOR target=MonitorFromWindow(desc.OutputWindow,MONITOR_DEFAULTTONEAREST);
-    const bool desktopKnown=GetMonitorInfoW(target,reinterpret_cast<MONITORINFO*>(&monitor)) &&
+    const bool desktopKnown=!DXGIComposedFullscreen &&
+        GetMonitorInfoW(target,reinterpret_cast<MONITORINFO*>(&monitor)) &&
         EnumDisplaySettingsW(monitor.szDevice,ENUM_CURRENT_SETTINGS,&desktop);
     if (desktopKnown &&
         (desktop.dmPelsWidth!=UINT(FrontEndMenuManager.m_nPrefsWidth) ||
@@ -277,6 +282,17 @@ bool Initialise(GLFWwindow *window)
     if (SUCCEEDED(state.device->QueryInterface(__uuidof(IDXGIDevice1),(void**)&latency))) {
         state.latencyLimited=SUCCEEDED(latency->SetMaximumFrameLatency(1));
         latency->Release();
+    }
+    if (DXGIComposedFullscreen) {
+        IDXGIFactory *factory=nil;
+        hr=state.chain->GetParent(__uuidof(IDXGIFactory),(void**)&factory);
+        if (FAILED(hr)) return false;
+        hr=factory->MakeWindowAssociation(desc.OutputWindow,DXGI_MWA_NO_ALT_ENTER);
+        factory->Release();
+        if (FAILED(hr)) return false;
+        if (!CreateBuffers(width,height)) return false;
+        Log("active fullscreen=0 composed=1 transfer=texture-copy framebuffer=%dx%d",width,height);
+        return true;
     }
     hr=state.chain->GetContainingOutput(&state.output);
     if (FAILED(hr)) return false;
@@ -323,9 +339,11 @@ bool CopyFrame()
 }
 
 bool DXGIFullscreenRequested() { return FullscreenDXGI && ScreenFormat==0; }
+bool DXGIComposedFullscreenRequested() { return DXGIComposedFullscreen && DXGIFullscreenRequested(); }
 
 void UpdateFullscreenFocus(void *handle)
 {
+    if (DXGIComposedFullscreen) return;
     GLFWwindow *window=(GLFWwindow*)handle;
     if (!window || state.window!=window || !state.chain || state.suspended || state.busy)
         return;
@@ -368,10 +386,12 @@ bool PresentFullscreenDXGI(void *handle, bool vsync)
     int renderedWidth,renderedHeight;
     glfwGetFramebufferSize(window,&renderedWidth,&renderedHeight);
     if (!state.device && !Initialise(window)) return Fail("initialise/interop/fullscreen");
-    BOOL fullscreen=FALSE;
-    HRESULT hr=state.chain->GetFullscreenState(&fullscreen,nil);
-    if (FAILED(hr)) return Fail("GetFullscreenState",hr);
-    if ((state.suspended || !fullscreen) && !EnterFullscreen()) return Fail("resume fullscreen");
+    if (!DXGIComposedFullscreen) {
+        BOOL fullscreen=FALSE;
+        const HRESULT hr=state.chain->GetFullscreenState(&fullscreen,nil);
+        if (FAILED(hr)) return Fail("GetFullscreenState",hr);
+        if ((state.suspended || !fullscreen) && !EnterFullscreen()) return Fail("resume fullscreen");
+    }
     int width,height;
     glfwGetFramebufferSize(window,&width,&height);
     // Skip a frame drawn against the pre-transition framebuffer size.
@@ -383,7 +403,7 @@ bool PresentFullscreenDXGI(void *handle, bool vsync)
     }
     if (!CopyFrame()) return Fail("GPU copy/interop");
     state.context->CopyResource(state.backBuffer,state.interopTexture);
-    hr=state.chain->Present(vsync ? 1 : 0,0);
+    const HRESULT hr=state.chain->Present(vsync ? 1 : 0,0);
     if (FAILED(hr)) return Fail("Present",hr);
     return true;
 }
