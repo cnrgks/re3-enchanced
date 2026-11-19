@@ -6,9 +6,8 @@ class CColPoint;
 namespace Enhanced {
 extern int8 QuickSave, AutoSave, RadarZoom, GPS, MenuMap;
 extern int8 VehicleDistance, PedDistance, ScreenFormat;
-extern int8 BorderlessCaptureProbe, FullscreenDXGI, FullscreenDXGIFlipY;
+extern int8 BorderlessCaptureProbe, FullscreenDXGIFlipY;
 extern bool TraceVehicleEntry;
-void FullscreenPresenterChanged(int8 before,int8 after);
 void ApplyScreenFormatSettings();
 extern int8 VehicleDetail, PedDetail, HealAfterSave, BreakableWindscreen, Borderless;
 
@@ -28,7 +27,8 @@ void ApplyWindowMode(bool newWindow = false);
 bool ProcessWindscreenShot(const CVector &source, const CVector &target, CEntity *shooter, bool hit, CColPoint &point, CEntity *&entity, bool hitOccupants = true);
 void AfterSuccessfulSave();
 void ResetServices();
-void RememberService(int sprite, const CVector &position);
+void DiscoverServices(const CVector &player);
+bool ServiceBlipVisibleOnMap(int sprite, const CVector &position);
 void DrawServices();
 bool BeginHomeSave();
 void EndHomeSave();

@@ -34,15 +34,15 @@ geri bildirimini kaydeder; burada listelenen maddeler henüz düzeltilmiş sayı
 | VEH-01 | Kırık ön camdan sürücü hasar almıyor | Açık — kullanıcı bildirdi |
 | DIST-01 | Vehicle Distance 1× üzerindeyken araç spawn akışı bozuluyor | Açık — çarpanlar ve araç adet sınırı incelenecek |
 | DIST-02 | Pedestrian Distance 1× üzerindeyken yaya spawn akışı bozuluyor | Açık — çarpanlar ve yaya adet sınırı incelenecek |
-| GPS-01 | Elle waypoint'te üst/alt yol katmanı karışıyor | Açık — kullanıcı bildirdi |
-| GPS-02 | Rota boşlukları ve anlamsız geri dönüşler | Açık — SS3/SS4 |
-| MAP-01 | Çift ev ikonu | Açık — SS1/SS3 |
-| MAP-02 | Keşfedilmemiş/açılmamış adadaki ikonlar | Açık — SS2 ve not |
-| MAP-03 | Daha önce görülen payphone ikonu eksik | Açık — kullanıcı bildirdi |
-| MAP-04 | Sarı MAP şeridinin tamamı kaldırılmalı | Açık — önceki istek eksik uygulanmış |
-| MAP-05 | Back kesiliyor / hizası bozuk | Açık — SS3 |
+| GPS-01 | Elle waypoint'te üst/alt yol katmanı karışıyor | Kaynakta değiştirildi / derlenmedi |
+| GPS-02 | Rota boşlukları ve anlamsız geri dönüşler | Kaynakta değiştirildi / derlenmedi |
+| MAP-01 | Çift ev ikonu | Kaynakta değiştirildi / derlenmedi |
+| MAP-02 | Keşfedilmemiş/açılmamış adadaki ikonlar | Kısmi kaynak değişikliği / keşif kalıcılığı açık |
+| MAP-03 | Daha önce görülen mavi payphone ikonu eksik | Kaynakta değiştirildi / derlenmedi |
+| MAP-04 | Sarı MAP şeridinin tamamı kaldırılmalı | Kaynakta değiştirildi / derlenmedi |
+| MAP-05 | Back kesiliyor / hizası bozuk | Kaynakta değiştirildi / derlenmedi |
 | INPUT-01 | OpenGL–D3D9 fare hassasiyeti farklı | Açık — kullanıcı bildirdi |
-| CAP-01 | OpenGL fullscreen/borderless yakalama | v1.5 Discord paylaşımı başarılı. v1.6 açılış ve Alt-Tab sırasında tüm monitör kararıyor. Ambilight açık |
+| CAP-01 | OpenGL fullscreen/borderless yakalama | v1.9 Fullscreen ve Borderless için Discord/Ambilight kullanıcı onayı. Ana Fullscreen bağlantısı kaynakta hazır |
 | INPUT-02 | Borderless kayıtlıyken yeniden açılışta imleç sola kilitleniyor | v1.4 kaynak düzeltmesi derlendi, oyun içi doğrulama bekliyor |
 | INPUT-03 | Borderless modunda imleç gecikmesi sürüyor | v1.5 kullanıcı gecikmeyi daha düşük hissetti. Kontrollü ölçüm açık |
 | INPUT-04 | Araca binmek bazen ikinci basışı gerektiriyor | v1.5 kullanıcı denemesinde tekrarlanmadı. Eski Borderless koşulunda tekrar kontrol açık |
@@ -132,6 +132,12 @@ ve bağlı yol ağı geçerliliği ayrıca korunur; en yüksek ilgisiz bina seç
 2D ölçüyor. Aynı X/Y'deki katmanları ayırt etmeyen bu seçim incelenecek.
 Uzak/hedef bölgesi yüklenmemişken de tutarlı politika gerekli.
 
+**Kaynak değişikliği:** Elle tıklama yol bağlantıları üzerine izdüşürülüyor.
+En yakın yol 8 birim içindeyse benzer X/Y'deki üst yol tercih ediliyor. Üst
+yol seçildiğinde arama aynı yükseklikteki yakın bağlantıları deniyor.
+Görev konumunun geçerli Z değeri korunuyor. Katman seçimi aracın/yayanın
+yol ağına dayanıyor ve uzaktaki hedef için de kullanılabiliyor.
+
 ### GPS-02 — boşluk, erken bitiş ve geri dönüş
 
 **Kanıt:** SS3'te rota işarete varmadan bitiyor gibi; SS4'te U dönüşlü/çift hatlı
@@ -146,6 +152,11 @@ Gerçekten gerekli dönüş ile yanlış bağlanma kaynaklı dönüş ayrıştı
 `ClearRouteConnector` sınırları, rota önbelleği ve oyuncuyu ilk segmente bağlama.
 Tek yön/kapalı yol ve görev rengi davranışları korunur.
 
+**Kaynak değişikliği:** Başlangıç ve bitiş yol segmentinin üzerinde hesaplanıyor.
+Oyuncu ve hedef aynı yönlü bağlantı üzerindeyse rota aradaki kısmı kullanabiliyor.
+Yol dışı son parça yalnızca yakın ve çarpışma verisiyle açık görülen bir
+bağlantıda çiziliyor. SS3 ve SS4 konumlarında oyun içi kontrol bekliyor.
+
 ### MAP-01 — çift ev ikonu
 
 **Kanıt:** SS1 ve SS3 aynı ev yakınında iki mor ikon gösteriyor.
@@ -157,6 +168,10 @@ kör bir mesafe eşiğiyle birleştirilmemeli.
 **İnceleme:** `Radar.cpp::DrawBlips` ile `EnhancedServices.cpp::DrawServices`
 aynı servisi birlikte çiziyor olabilir; eski/yeni SCM konumları da aday neden.
 Görüntü, bunlardan hangisinin tek başına neden olduğunu kanıtlamıyor.
+
+**Kaynak değişikliği:** Ev ikonu etkin oyun blip'inden geliyor. SCM taraması
+ev konumu bilgisini kayıt özelliği için saklıyor. Çizim döngüsü temizlenmiş
+blip yuvalarını atlıyor.
 
 ### MAP-02 — keşif ve açılma durumu
 
@@ -173,17 +188,31 @@ seçilmesi istendi. Henüz görülmeyen tüm SCM sabitlerini doğrudan çizmek d
 değil. Keşif bilgisinin yeni oyun, kayıt yükleme, farklı save ve eski save
 uyumluluğunda nasıl saklanacağı kararlaştırılmalı; save biçimi rastgele değiştirilmez.
 
+**Kısmi kaynak değişikliği:** Etkin koordinat servis blip'lerine ada açılma
+kontrolü eklendi. Garajlar ve silah satış noktaları oyuncu yakınından geçince
+oturum önbelleğine giriyor. Bu önbellek kayıt yüklemede ve yeni oyunda
+sıfırlanıyor. Kayıtlar arası keşif kalıcılığı henüz uygulanmadı.
+
 ### MAP-03 — görülen payphone kayboluyor
 
-**Gözlem:** Kullanıcı diğer adada gördüğü payphone'u map menüsünde göremiyor.
+**Gözlem:** Kullanıcı daha önce gördüğü mavi telefon simgesini harita
+menüsünde artık göremiyor.
 SS2'deki 8-ball simgesi payphone kanıtı olarak yorumlanmadı.
 
 **Beklenen:** Görülmüş ve hâlen geçerli payphone haritada doğru simgeyle korunur;
 tamamlanmış/pasif görev telefonları native görev kurallarına göre değerlendirilir.
 Keşif kuralı telefonu da kapsamalı; her rastgele telefonu görev simgesi yapmamalı.
 
-**Kaynak bulgusu:** Özel servis listesi yalnızca spray/weapon/bomb/save içeriyor.
-Payphone'un gerçek script/blip kaynağı ve yaşam döngüsü bulunmalı; ikon türü tahmin edilmemeli.
+**Bulgular:** Kurulu HUD dokusundaki mavi ahize `radar_el` (sprite 8).
+Kurulu SCM'de bu sprite bir görev telefonu için atanıyor. Bir kayıtta
+telefon hâlâ çalma durumundayken bu koordinattaki radar kaydı temizlenmiş.
+[Salt okunur inceleme](feedback/2026-11-19/map-03-blue-phone.txt)
+
+**Kaynak değişikliği:** Harita, etkin telefonun daha önce atanmış simgesini
+radar kaydından hatırlıyor. Bir radar kaydı bulunamayan telefon oyuncu
+yakınından geçtiğinde kendi SCM simgesiyle keşfedilebiliyor. Yedek çizim ada
+açılma, aktif görev ve telefonun kullanılabilirlik durumunu kontrol ediyor.
+Yerleşik simge hâlâ etkinse çizim ona bırakılıyor.
 
 ### MAP-04 / MAP-05 — alt şerit ve Back
 
@@ -195,6 +224,10 @@ hizasında olacak. SS3'teki soldan kesilme giderilecek.
 **Kabul:** Back tamamen görünür ve tıklanabilir; çizim/tıklama koordinatları aynı
 dönüşümü kullanır. 16:9 ve 4:3'te hizalanır. Haritada Windows benzeri oyun imleci
 geri gelmez; yatay/dikey crosshair korunur. Şerit kaldırılınca başlık veya metin artığı kalmaz.
+
+**Kaynak değişikliği:** Şerit ve harita başlığı kaldırıldı. Back sola hizalı
+çiziliyor ve tıklama alanı aynı ekran koordinatlarından hesaplanıyor. 16:9 ve
+4:3 oyun içi kontrolü bekliyor.
 
 ### INPUT-01 — iki backend arasında fare hızı
 
@@ -548,3 +581,18 @@ paylaşımı, ardından Ambilight oyun içinde doğrulanmalı. Derleme bekliyor.
 Kaynak b8cd1c96, GitHub Actions run 44451935119. OpenGL x64
 derlemesi ve mevcut birim kontrolleri geçti. Çerçevesiz DXGI yolunda Alt-Tab,
 açılış görüntüsü ve yakalama oyun içinde doğrulanmayı bekliyor.
+
+### v1.9 kullanıcı onayı ve ana Fullscreen bağlantısı
+
+Kullanıcı Fullscreen ve Borderless denemelerinde Discord ve Ambilight
+sonuçlarını başarılı buldu ve Alt-Tab konusunda mevcut durumu kabul etti.
+Bu onay v1.9 denemesine ait.
+
+Windows OpenGL GLFW yolunda Graphics → Screen Format → Fullscreen artık
+çerçevesiz DXGI sunumunu doğrudan seçiyor. Enhanced Options içindeki
+deney seçeneği kaldırıldı. Eski INI dosyalarındaki `ScreenFormat` okunmaya
+devam ediyor. Eski `FullscreenDXGI` anahtarı artık kullanılmıyor.
+DXGI başarısız olursa pencere native OpenGL ile sunuluyor.
+`-safe-display` Borderless kurtarmasını, `-dxgi-exclusive-fullscreen`
+ise önceki exclusive DXGI yolunu seçiyor. Menü bağlantısı ve kaydedilmiş
+ayarlarla açılış kaynakta kontrol edildi. Derleme ve oyun içi doğrulama bekliyor.

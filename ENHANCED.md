@@ -76,12 +76,12 @@ Gameplay, save/load, screenshot layout, capture and vehicle-specific shots need
 in-game verification. The archive is a complete mod distribution, not a full
 licensed GTA III installation.
 
-## v1.4 implementation follow-up
+## Windows OpenGL fullscreen
 
-Cursor fixes are isolated in commit 9553703c. A separately switchable Windows
-fullscreen presenter keeps OpenGL rendering and copies the final frame on the
-GPU into a DXGI fullscreen swap chain through WGL_NV_DX_interop2. Unsupported
-or failed setup falls back to native OpenGL fullscreen with a log event.
-No driver settings change. The experiment is enabled by default on Windows;
-Enhanced Options / Fullscreen Capture or VideoMode/FullscreenDXGI=0 disables
-it without removing cursor fixes. Capture and latency require user validation.
+Graphics → Screen Format → Fullscreen presents the OpenGL frame through DXGI
+in a borderless window that covers the monitor. If DXGI setup or presentation
+fails, the game continues with native OpenGL in the same window and records
+the failure in `re3-display.log`. Borderless uses the OpenGL presentation
+path and its existing width probe. To recover without opening the menu, launch
+with `-safe-display`. The previous exclusive DXGI path is available for
+diagnosis with `-dxgi-exclusive-fullscreen`.

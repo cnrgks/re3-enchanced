@@ -13,7 +13,7 @@
 #include <GLFW/glfw3native.h>
 
 namespace Enhanced {
-bool DXGIComposedFullscreen=false;
+bool DXGIComposedFullscreen=true;
 
 namespace {
 typedef HANDLE (WINAPI *OpenInterop)(void *);
@@ -338,7 +338,7 @@ bool CopyFrame()
 }
 }
 
-bool DXGIFullscreenRequested() { return FullscreenDXGI && ScreenFormat==0; }
+bool DXGIFullscreenRequested() { return ScreenFormat==0; }
 bool DXGIComposedFullscreenRequested() { return DXGIComposedFullscreen && DXGIFullscreenRequested(); }
 
 void UpdateFullscreenFocus(void *handle)

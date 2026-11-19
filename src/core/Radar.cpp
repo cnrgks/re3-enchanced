@@ -539,11 +539,6 @@ void CRadar::DrawBlips()
 
 		CEntity *blipEntity = nil;
 		for(int blipId = 0; blipId < NUMRADARBLIPS; blipId++) {
-#ifdef MENU_MAP
-			// A little hack to reuse cleared blips in menu map. hehe
-			if (!CMenuManager::bMenuMapActive || ms_RadarTrace[blipId].m_eBlipType == BLIP_CAR ||
-				ms_RadarTrace[blipId].m_eBlipType == BLIP_CHAR || ms_RadarTrace[blipId].m_eBlipType == BLIP_OBJECT)
-#endif
 			if (!ms_RadarTrace[blipId].m_bInUse)
 				continue;
 
@@ -607,6 +602,11 @@ void CRadar::DrawBlips()
 					break;
 				case BLIP_COORD:
 				case BLIP_CONTACT_POINT:
+#ifdef MENU_MAP
+					if (CMenuManager::bMenuMapActive &&
+						!Enhanced::ServiceBlipVisibleOnMap(ms_RadarTrace[blipId].m_eRadarSprite, ms_RadarTrace[blipId].m_vecPos))
+						break;
+#endif
 					if ((ms_RadarTrace[blipId].m_eRadarSprite == RADAR_SPRITE_BOMB || ms_RadarTrace[blipId].m_eRadarSprite == RADAR_SPRITE_SAVE
 						|| ms_RadarTrace[blipId].m_eRadarSprite == RADAR_SPRITE_SPRAY || ms_RadarTrace[blipId].m_eRadarSprite == RADAR_SPRITE_WEAPON)
 						&& (ms_RadarTrace[blipId].m_eBlipType != BLIP_CONTACT_POINT || !CTheScripts::IsPlayerOnAMission())) {
@@ -722,6 +722,11 @@ void CRadar::DrawBlips()
 			switch (ms_RadarTrace[blipId].m_eBlipType) {
 				case BLIP_COORD:
 				case BLIP_CONTACT_POINT:
+#ifdef MENU_MAP
+					if (CMenuManager::bMenuMapActive &&
+						!Enhanced::ServiceBlipVisibleOnMap(ms_RadarTrace[blipId].m_eRadarSprite, ms_RadarTrace[blipId].m_vecPos))
+						break;
+#endif
 					if (ms_RadarTrace[blipId].m_eRadarSprite != RADAR_SPRITE_BOMB && ms_RadarTrace[blipId].m_eRadarSprite != RADAR_SPRITE_SAVE
 						&& ms_RadarTrace[blipId].m_eRadarSprite != RADAR_SPRITE_SPRAY && ms_RadarTrace[blipId].m_eRadarSprite != RADAR_SPRITE_WEAPON
 						&& (ms_RadarTrace[blipId].m_eBlipType != BLIP_CONTACT_POINT || !CTheScripts::IsPlayerOnAMission())) {
@@ -1183,8 +1188,6 @@ void CRadar::SetBlipSprite(int32 i, int32 icon)
 	int index = CRadar::GetActualBlipArrayIndex(i);
 	if (index != -1) {
 		ms_RadarTrace[index].m_eRadarSprite = icon;
-        if (ms_RadarTrace[index].m_eBlipType == BLIP_COORD || ms_RadarTrace[index].m_eBlipType == BLIP_CONTACT_POINT)
-            Enhanced::RememberService(icon, ms_RadarTrace[index].m_vecPos);
 	}
 }
 

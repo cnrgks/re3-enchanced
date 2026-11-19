@@ -8,6 +8,7 @@
 #include "Frontend.h"
 #include "frontendoption.h"
 #include "Camera.h"
+#include "Collision.h"
 #include "CutsceneMgr.h"
 #include "FileMgr.h"
 #include "Game.h"
@@ -31,6 +32,7 @@
 #include "TxdStore.h"
 #include "Wanted.h"
 #include "World.h"
+#include "Zones.h"
 
 namespace Enhanced {
 int8 QuickSave = 0, AutoSave = 0, RadarZoom = 0;
@@ -43,9 +45,9 @@ int8 Borderless = 0;
 #endif
 int8 VehicleDistance = 0, PedDistance = 0, ScreenFormat = 0;
 #ifdef _WIN32
-int8 BorderlessCaptureProbe = 1, FullscreenDXGI = 0, FullscreenDXGIFlipY = 1;
+int8 BorderlessCaptureProbe = 1, FullscreenDXGIFlipY = 1;
 #else
-int8 BorderlessCaptureProbe = 0, FullscreenDXGI = 0, FullscreenDXGIFlipY = 1;
+int8 BorderlessCaptureProbe = 0, FullscreenDXGIFlipY = 1;
 #endif
 static float radarRange = 120.0f;
 static bool homeSaveRequested;
@@ -107,7 +109,6 @@ wchar *GetText(const char *key)
         { "EN_GLSS", "BREAKABLE WINDSHIELDS" },
         { "EN_BORD", "BORDERLESS FULLSCREEN" },
         { "EN_BRDL", "BORDERLESS" },
-        { "EN_FCAP", "FULLSCREEN CAPTURE (EXPERIMENTAL)" },
         { "EN_VDST", "VEHICLE DISTANCE" },
         { "EN_PDST", "PEDESTRIAN DISTANCE" },
         { "EN_100", "1X" }, { "EN_150", "1.5X" },
@@ -173,13 +174,6 @@ void ApplyScreenFormatSettings()
 
 bool TraceVehicleEntry = false;
 
-void FullscreenPresenterChanged(int8, int8)
-{
-#if defined(_WIN32) && defined(RW_GL3) && !defined(LIBRW_SDL2)
-    _psSelectScreenVM(FrontEndMenuManager.m_nPrefsVideoMode);
-#endif
-}
-
 void WindowModeChanged(int8, int8)
 {
 #if defined(RW_GL3) && !defined(LIBRW_SDL2)
@@ -231,15 +225,20 @@ void OpenMap(int8 action)
 // Lane orientation follows CCarCtrl's native one-way-road checks.
 // Nodes disabled by SCM (including closed roads/bridges) are never traversed.
 struct RouteGraph {
-    struct Goal { int node; float penalty; };
+    struct RoadPoint {
+        int from = -1, to = -1;
+        CVector position;
+        float fraction = 0;
+    };
     int first, last, type;
-    std::vector<Goal> goals;
-    int NodeCount() const { return ThePaths.m_numPathNodes; }
+    RoadPoint start, goal;
+    int StartNode() const { return ThePaths.m_numPathNodes; }
+    int GoalNode() const { return StartNode() + 1; }
+    int NodeCount() const { return GoalNode() + 1; }
     float GoalPenalty(int node) const {
-        for (const Goal &goal : goals) if (goal.node == node) return goal.penalty;
-        return std::numeric_limits<float>::infinity();
+        return node == GoalNode() ? 0.0f : std::numeric_limits<float>::infinity();
     }
-    template<class Visitor> void VisitEdges(int current, Visitor visit) const {
+    template<class Visitor> void VisitRoadEdges(int current, Visitor visit) const {
         const CPathNode &node = ThePaths.m_pathNodes[current];
         if (node.bDisabled) return;
         for (int i = 0; i < node.numLinks; ++i) {
@@ -256,12 +255,57 @@ struct RouteGraph {
             visit(next, Max(1.0f, float(ThePaths.m_distances[edge])));
         }
     }
+
+    template<class Visitor> void VisitEdges(int current, Visitor visit) const {
+        if (current == GoalNode()) return;
+        if (current == StartNode()) {
+            const auto enterRoad = [&](int from, int to, float fraction) {
+                VisitRoadEdges(from, [&](int next, float weight) {
+                    if (next != to) return;
+                    if (from == goal.from && to == goal.to && fraction <= goal.fraction)
+                        visit(GoalNode(), Max(0.01f, (goal.fraction-fraction)*weight));
+                    if (from == goal.to && to == goal.from && fraction <= 1.0f-goal.fraction)
+                        visit(GoalNode(), Max(0.01f, (1.0f-goal.fraction-fraction)*weight));
+                    visit(to, Max(0.01f, (1.0f-fraction)*weight));
+                });
+            };
+            // At a junction the route can start along any permitted edge.
+            if (start.fraction == 0.0f) visit(start.from, 0.01f);
+            if (start.fraction == 1.0f) visit(start.to, 0.01f);
+            enterRoad(start.from, start.to, start.fraction);
+            enterRoad(start.to, start.from, 1.0f-start.fraction);
+            return;
+        }
+        if ((current == goal.from && goal.fraction == 0.0f) ||
+            (current == goal.to && goal.fraction == 1.0f))
+            visit(GoalNode(), 0.01f);
+        VisitRoadEdges(current, [&](int next, float weight) {
+            if (current == goal.from && next == goal.to)
+                visit(GoalNode(), Max(0.01f, goal.fraction*weight));
+            if (current == goal.to && next == goal.from)
+                visit(GoalNode(), Max(0.01f, (1.0f-goal.fraction)*weight));
+            visit(next, weight);
+        });
+    }
 };
+
+static RouteGraph::RoadPoint ProjectOntoRoad(int from, int to, const CVector &position, bool ignoreHeight)
+{
+    const CVector &a = ThePaths.m_pathNodes[from].pos;
+    const CVector edge = ThePaths.m_pathNodes[to].pos - a;
+    const CVector relative = position - a;
+    const float length = ignoreHeight ? edge.x*edge.x + edge.y*edge.y : edge.MagnitudeSqr();
+    const float dot = relative.x*edge.x + relative.y*edge.y + (ignoreHeight ? 0.0f : relative.z*edge.z);
+    const float fraction = length > 0.0f ? Clamp(dot/length, 0.0f, 1.0f) : 0.0f;
+    return {from, to, a + edge*fraction, fraction};
+}
 
 static bool ClearRouteConnector(const CVector &a, const CVector &b)
 {
     // Do not draw a shortcut through a building between the road and marker.
-    return (a-b).Magnitude2D() < 40.0f &&
+    const eLevelName level = CTheZones::FindZoneForPoint(b);
+    return (a-b).MagnitudeSqr() < 40.0f*40.0f &&
+        (level == LEVEL_GENERIC || level == CCollision::ms_collisionInMemory) &&
         CWorld::GetIsLineOfSightClear(a+CVector(0,0,1), b+CVector(0,0,1),
             true, false, false, true, true, false);
 }
@@ -315,11 +359,9 @@ static void UpdateRoute()
         }
     }
     if (!found) { routeCount=0; routeLastUpdate=0; return; }
-    const float arrivalDistance = manual || target.z < -90.0f ?
-        (target-start).Magnitude2D() : (target-start).Magnitude();
-    if (arrivalDistance < 12.0f) {
-        if (manual) CRadar::ToggleTargetMarker(target.x, target.y);
+    if (!manual && target.z >= -90.0f && (target-start).MagnitudeSqr() < 12.0f*12.0f) {
         routeCount = 0;
+        routeLastUpdate = 0;
         return;
     }
     const uint32 now = CTimer::GetTimeInMilliseconds();
@@ -337,32 +379,76 @@ static void UpdateRoute()
     graph.type = type;
     graph.first = type == PATH_CAR ? 0 : ThePaths.m_numCarPathNodes;
     graph.last = type == PATH_CAR ? ThePaths.m_numCarPathNodes : ThePaths.m_numPathNodes;
-    int startNode = -1;
-    float nearestStart = 250.0f*250.0f;
-    std::vector<RouteGraph::Goal> candidates;
-    for (int node = graph.first; node < graph.last; ++node) {
-        const CPathNode &path = ThePaths.m_pathNodes[node];
-        if (path.bDisabled || !path.numLinks) continue;
-        const float fromStart = (path.pos-start).MagnitudeSqr();
-        if (fromStart < nearestStart) { nearestStart=fromStart; startNode=node; }
-        const CVector delta = path.pos-target;
-        // A map click has no reliable height outside streamed collision.
-        const float distance = manual || target.z < -90.0f ?
-            delta.Magnitude2D() : delta.Magnitude();
-        if (distance < 120.0f) candidates.push_back({node, distance*2.0f});
+    const bool ignoreHeight = manual || target.z < -90.0f;
+    float nearestStart = 120.0f*120.0f;
+    RouteGraph::RoadPoint clearStart;
+    float nearestClearStart = 40.0f*40.0f;
+    float nearestTarget = 120.0f;
+    std::vector<RouteGraph::RoadPoint> targetRoads;
+    for (int from = graph.first; from < graph.last; ++from) {
+        graph.VisitRoadEdges(from, [&](int to, float) {
+            const auto entry = ProjectOntoRoad(from, to, start, false);
+            const float entryDistance = (entry.position-start).MagnitudeSqr();
+            if (entryDistance < nearestStart) {
+                nearestStart = entryDistance;
+                graph.start = entry;
+            }
+            if (entryDistance < nearestClearStart && Abs(entry.position.z-start.z) < 4.0f &&
+                ClearRouteConnector(start, entry.position)) {
+                nearestClearStart = entryDistance;
+                clearStart = entry;
+            }
+            const auto exit = ProjectOntoRoad(from, to, target, ignoreHeight);
+            const CVector delta = exit.position-target;
+            const float distance = ignoreHeight ? delta.Magnitude2D() : delta.Magnitude();
+            if (distance < 120.0f) targetRoads.push_back(exit);
+            nearestTarget = Min(nearestTarget, distance);
+        });
     }
-    std::sort(candidates.begin(), candidates.end(),
-        [](const RouteGraph::Goal &a, const RouteGraph::Goal &b) { return a.penalty < b.penalty; });
-    if (candidates.size() > 8) candidates.resize(8);
-    graph.goals = candidates;
-    if (startNode < 0 || graph.goals.empty()) return;
-    const std::vector<int> nodes = EnhancedRoute::Search(graph, startNode);
-    if (nodes.empty()) return; // Disconnected objectives get no invented straight route.
-    routeStartsAtPlayer = ClearRouteConnector(start, ThePaths.m_pathNodes[nodes.front()].pos);
+    if (clearStart.from >= 0) graph.start = clearStart;
+    if (graph.start.from < 0 || targetRoads.empty()) return;
+    const auto distanceToTarget = [&](const RouteGraph::RoadPoint &road) {
+        const CVector delta = road.position-target;
+        return ignoreHeight ? delta.Magnitude2D() : delta.Magnitude();
+    };
+    const bool preferUpperRoad = manual && nearestTarget < 8.0f;
+    const float targetRadius = nearestTarget + (preferUpperRoad ? 2.0f : 8.0f);
+    targetRoads.erase(std::remove_if(targetRoads.begin(), targetRoads.end(), [&](const auto &road) {
+        return distanceToTarget(road) > targetRadius;
+    }), targetRoads.end());
+    std::stable_sort(targetRoads.begin(), targetRoads.end(), [&](const auto &a, const auto &b) {
+        if (preferUpperRoad && a.position.z != b.position.z) return a.position.z > b.position.z;
+        return distanceToTarget(a) < distanceToTarget(b);
+    });
+    std::vector<int> nodes;
+    std::vector<RouteGraph::RoadPoint> triedRoads;
+    for (const auto &road : targetRoads) {
+        if (preferUpperRoad && targetRoads.front().position.z - road.position.z > 2.0f) break;
+        if (triedRoads.size() == 6) break;
+        if (std::any_of(triedRoads.begin(), triedRoads.end(), [&](const auto &tried) {
+            return (road.from == tried.to && road.to == tried.from) ||
+                (road.from == tried.from && road.to == tried.to);
+        })) continue;
+        triedRoads.push_back(road);
+        graph.goal = road;
+        nodes = EnhancedRoute::Search(graph, graph.StartNode());
+        if (!nodes.empty()) break;
+    }
+    if (nodes.empty()) return;
+    CVector destination = target;
+    if (ignoreHeight) destination.z = graph.goal.position.z;
+    if ((destination-start).MagnitudeSqr() < 12.0f*12.0f &&
+        Abs(destination.z-start.z) < 3.0f) {
+        if (manual) CRadar::ToggleTargetMarker(target.x, target.y);
+        return;
+    }
+    routeStartsAtPlayer = clearStart.from >= 0;
     if (routeStartsAtPlayer) route.push_back(start);
-    // Keep the complete path: a fixed-size truncation used to cut across turns.
-    for (int node : nodes) route.push_back(ThePaths.m_pathNodes[node].pos);
-    if (ClearRouteConnector(route.back(), target)) route.push_back(target);
+    route.push_back(graph.start.position);
+    for (size_t i = 1; i+1 < nodes.size(); ++i)
+        route.push_back(ThePaths.m_pathNodes[nodes[i]].pos);
+    route.push_back(graph.goal.position);
+    if (ClearRouteConnector(route.back(), destination)) route.push_back(destination);
     routeCount = int(route.size());
 #endif
 }
@@ -381,6 +467,7 @@ void Process()
     AutoSave = AutoSave != 0;
     RadarZoom = RadarZoom != 0;
     if (!GameReady()) return;
+    DiscoverServices(FindPlayerCoors());
     if (QuickSave && CPad::GetPad(0)->GetFJustDown(4)) {
         if (SafeToSave()) { homeSaveRequested=true; FrontEndMenuManager.m_bSaveMenuActive = true; }
         else CHud::SetHelpMessage(GetText("EN_SAFE"), false);
@@ -423,7 +510,11 @@ void DrawRoute()
     if (!GPS || routeCount < 2) return;
     for (int i = 1; i < routeCount; ++i) {
         CVector2D a, b, sa, sb;
-        CRadar::TransformRealWorldPointToRadarSpace(a, CVector2D(i==1 && routeStartsAtPlayer ? FindPlayerCoors() : route[i-1]));
+        const CVector aWorld = i == 1 && routeStartsAtPlayer ? FindPlayerCoors() : route[i-1];
+        if (i == 1 && routeStartsAtPlayer &&
+            ((aWorld-routeStart).MagnitudeSqr() >= 64.0f || Abs(aWorld.z-route[i].z) >= 4.0f ||
+             !ClearRouteConnector(aWorld, route[i]))) continue;
+        CRadar::TransformRealWorldPointToRadarSpace(a, CVector2D(aWorld));
         CRadar::TransformRealWorldPointToRadarSpace(b, CVector2D(route[i]));
         if (!CMenuManager::bMenuMapActive && !ClipRadarSegment(a,b)) continue;
         CRadar::TransformRadarPointToScreenSpace(sa,a);

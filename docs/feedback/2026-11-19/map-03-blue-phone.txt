@@ -1,0 +1,16 @@
+MAP-03 — Mavi telefon simgesi
+
+Kullanıcı daha önce mavi telefon işaretini gördüğünü ve artık
+haritada çıkmadığını belirtti.
+
+Kurulu hud.txd içindeki radar_el dokusu mavi bir telefon ahizesi.
+Kurulu main.scm, (938.375, -230.5, -100) konumundaki
+ADD_SPRITE_BLIP_FOR_CONTACT_POINT için RADAR_SPRITE_EL (8) kullanıyor.
+Yakındaki telefonun kayıt koordinatı (938.472, -229.501).
+
+İncelenen iki kayıtta bu telefon PHONE_STATE_9 (SCM tarafından açılmış,
+çalan telefon) durumunda. Bir kayıtta aynı konumda sprite 8 olan radar
+yuvası mevcut, m_bInUse değeri 0. Diğer kaydın radar bölümünde sprite 8
+yok. İkisinde de yeşil telefonun sprite 12 kaydı etkin.
+
+Dosyalar salt okunur incelendi. Oyun içi davranış doğrulanmadı.

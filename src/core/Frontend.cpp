@@ -1338,13 +1338,21 @@ CMenuManager::Draw()
 
 #ifdef MENU_MAP
 	if (m_nCurrScreen == MENUPAGE_MAP) {
-		// Back button
 		wchar *backTx = TheText.Get("FEDS_TB");
+		// The blue Rockstar logo is part of the full-screen menu texture.
+		const float backX = SCREEN_STRETCH_X(19.0f);
+		const float backY = SCREEN_STRETCH_FROM_BOTTOM(94.0f);
+		CFont::SetCentreOff();
+		CFont::SetRightJustifyOff();
+		CFont::SetJustifyOff();
+		CFont::SetWrapx(SCREEN_WIDTH);
+		CFont::SetColor(CRGBA(235, 170, 50, FadeIn(255)));
 		CFont::SetDropShadowPosition(1);
 		CFont::SetDropColor(CRGBA(0, 0, 0, FadeIn(255)));
-		CFont::PrintString(SCREEN_STRETCH_X(20.0f), SCREEN_SCALE_FROM_BOTTOM(94.0f), backTx);
+		CFont::PrintString(backX, backY, backTx);
 		CFont::SetDropShadowPosition(0);
-		if (!CheckHover(SCREEN_STRETCH_X(20.0f), SCREEN_STRETCH_X(20.0f) + CFont::GetStringWidth(backTx), SCREEN_SCALE_FROM_BOTTOM(96.0f), SCREEN_SCALE_FROM_BOTTOM(76.0f))) {
+		if (!CheckHover(backX, backX + CFont::GetStringWidth(backTx, true),
+			backY, backY + MENU_Y(lineHeight))) {
 			m_nHoverOption = HOVEROPTION_NOT_HOVERING;
 			m_nCurrOption = m_nOptionMouseHovering = 0;
 		} else {
@@ -6542,17 +6550,12 @@ CMenuManager::PrintMap(void)
 	if (fMapCenterX + fMapSize < SCREEN_WIDTH / 2)
 		fMapCenterX = SCREEN_WIDTH / 2 - fMapSize;
 
-	if (fMapCenterY + fMapSize < SCREEN_HEIGHT - MENU_Y(60.0f))
-		fMapCenterY = SCREEN_HEIGHT - MENU_Y(60.0f) - fMapSize;
+	if (fMapCenterY + fMapSize < SCREEN_HEIGHT)
+		fMapCenterY = SCREEN_HEIGHT - fMapSize;
 	
 	fMapCenterY = Min(fMapCenterY, fMapSize); // To not show beyond north border
 
 	bMenuMapActive = false;
-
-	CSprite2d::DrawRect(CRect(MENU_X(14.0f), SCREEN_STRETCH_FROM_BOTTOM(95.0f),
-		SCREEN_STRETCH_FROM_RIGHT(11.0f), SCREEN_STRETCH_FROM_BOTTOM(59.0f)),
-		CRGBA(235, 170, 50, 255));
-
 
 }
 

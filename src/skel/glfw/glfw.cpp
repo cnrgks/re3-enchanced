@@ -2158,6 +2158,10 @@ main(int argc, char *argv[])
 	for(i=1; i<argc; i++)
 	{
 #ifdef _WIN32
+        if (strcmp(argv[i],"-dxgi-exclusive-fullscreen")==0) {
+            Enhanced::DXGIComposedFullscreen=false;
+            continue;
+        }
         if (strcmp(argv[i],"-dxgi-composed-fullscreen")==0) {
             Enhanced::DXGIComposedFullscreen=true;
             continue;
@@ -2167,7 +2171,6 @@ main(int argc, char *argv[])
             continue;
         }
         if (strcmp(argv[i],"-safe-display")==0) {
-            Enhanced::FullscreenDXGI=0;
             Enhanced::ScreenFormat=2;
             Enhanced::ApplyScreenFormatSettings();
             continue;
