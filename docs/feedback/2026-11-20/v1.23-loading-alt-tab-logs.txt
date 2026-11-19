@@ -1,0 +1,83 @@
+Installed EXE matches packaged v1.23: True
+These append-only logs have no entry timestamps or incident ID. The excerpts cannot be matched to one specific Alt+Tab.
+
+re3-save-load.log, last 32 lines:
+Loading PedType Stuff 
+Resuming saved scripts
+Save data loaded
+Load requested for slot 1
+Save validation passed
+Clearing previous game world
+Restoring saved scene
+Streaming saved scene
+Reinitialising game state
+Reading saved game blocks
+Loading Scripts 
+Loading PedPool 
+Loading Garages 
+Loading Vehicles 
+Loading Objects 
+Loading Paths 
+Loading Cranes 
+Loading Pickups 
+Loading Phoneinfo 
+Loading Restart 
+Loading Radar Blips 
+Loading Zones 
+Loading Gang Data 
+Loading Car Generators 
+Loading Particles 
+Loading AudioScript Objects 
+Loading Player Info 
+Loading Stats 
+Loading Streaming Stuff 
+Loading PedType Stuff 
+Resuming saved scripts
+Save data loaded
+
+re3-display.log, last 45 lines:
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=1 enterMs=224.02
+v1.9 dxgi: shutdown
+v1.9 format=0 probe=1 monitorAttached=0 window=1920x1080 framebuffer=1920x1080 pos=0,0
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=0 enterMs=240.38
+v1.9 dxgi: suspended fullscreen iconified=0 exitMs=130.42
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=1 enterMs=155.65
+v1.9 dxgi: suspended fullscreen iconified=0 exitMs=146.82
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=1 enterMs=202.01
+v1.9 dxgi: suspended fullscreen iconified=0 exitMs=129.32
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=1 enterMs=229.44
+v1.9 dxgi: shutdown
+v1.9 format=0 probe=1 monitorAttached=0 window=1920x1080 framebuffer=1920x1080 pos=0,0
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=0 enterMs=217.12
+v1.9 dxgi: suspended fullscreen iconified=0 exitMs=142.18
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=1 enterMs=198.59
+v1.9 dxgi: suspended fullscreen iconified=0 exitMs=90.28
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=1 enterMs=188.56
+v1.9 dxgi: shutdown
+v1.9 format=0 probe=1 monitorAttached=0 window=1920x1080 framebuffer=1920x1080 pos=0,0
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=0 enterMs=257.32
+v1.9 dxgi: suspended fullscreen iconified=0 exitMs=111.63
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=1 enterMs=194.31
+v1.9 dxgi: suspended fullscreen iconified=0 exitMs=149.22
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=1 enterMs=175.90
+v1.9 dxgi: suspended fullscreen iconified=0 exitMs=146.54
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=1 enterMs=163.84
+v1.9 dxgi: suspended fullscreen iconified=0 exitMs=172.31
+v1.9 format=0 probe=1 monitorAttached=0 window=1920x1080 framebuffer=1920x1080 pos=0,0
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=0 enterMs=231.19
+v1.9 dxgi: suspended fullscreen iconified=0 exitMs=145.97
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=1 enterMs=215.25
+v1.9 dxgi: shutdown
+v1.9 format=0 probe=1 monitorAttached=0 window=1920x1080 framebuffer=1920x1080 pos=0,0
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=0 enterMs=304.98
+v1.9 dxgi: shutdown
+v1.9 format=0 probe=1 monitorAttached=0 window=1920x1080 framebuffer=1920x1080 pos=0,0
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=0 enterMs=238.95
+v1.9 dxgi: suspended fullscreen iconified=0 exitMs=125.42
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=1 enterMs=203.82
+v1.9 dxgi: suspended fullscreen iconified=0 exitMs=144.05
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=1 enterMs=201.00
+v1.9 dxgi: shutdown
+v1.9 format=0 probe=1 monitorAttached=0 window=1920x1080 framebuffer=1920x1080 pos=0,0
+v1.9 dxgi: active fullscreen=1 transfer=texture-copy framebuffer=1920x1080 modeSwitch=0 flipY=1 latencyLimitApplied=1 reusedBuffers=0 enterMs=248.29
+v1.9 dxgi: shutdown

@@ -1,10 +1,19 @@
-RE3 ENHANCED v1.23 - OPENGL x64
+RE3 ENHANCED v1.24 - OPENGL x64
 
 KURULUM
 Oyunu kapat ve mevcut re3.exe/re3.pdb ciftini yedekle. Paketin game
 klasorunun icerigini GTA III kurulumuna kopyala. Oyun verileri dahil
 degildir. Mevcut ini ve kayitlari koru. x64 ASI Loader, CLEO Redux ve
 runtime kutuphaneleri dahildir.
+
+v1.24 DENEMELERI
+Fullscreen varsayilan olarak cercevesiz DXGI sunumu kullanir.
+Yuklemede ve normal oynanista Alt+Tab gecisini ayri dene.
+Ayni cozunurluk, VSync ve FPS siniriyla -dxgi-exclusive-fullscreen
+secenegini karsilastir. Menu imleci ve oyun ici kamerayi ayri gozle.
+-trace-display-timing odak, yukleme ve sunum izini re3-display.log'a yazar.
+Discord ve Ambilight yakalamasini Fullscreen modunda kontrol et.
+
 
 v1.23 DENEMELERI
 Fullscreen modunda yeni oyun, kayit yukleme ve ada gecisinde Alt+Tab ile cik.

@@ -87,6 +87,7 @@ static RwBool		  WindowFocused = TRUE;
 #ifdef _WIN32
 static bool TraceDisplayTiming;
 static bool WindowLostFocus;
+static bool TraceNextPresent;
 #endif
 
 static RwBool		  RwInitialised = FALSE;
@@ -97,6 +98,19 @@ static unsigned loadingDepth;
 static bool loadingFocusPending;
 #endif
 static bool WindowAcceptsInput(GLFWwindow *window);
+#ifdef _WIN32
+static void TraceFocusTransition(const char *phase)
+{
+    if (!TraceDisplayTiming)
+        return;
+    if (FILE *log = fopen("re3-display.log", "a")) {
+        fprintf(log, "focus t=%.3f phase=%s composed=%d loading=%u pending=%d\n",
+            glfwGetTime(), phase, int(Enhanced::DXGIComposedFullscreenRequested()),
+            loadingDepth, int(loadingFocusPending));
+        fclose(log);
+    }
+}
+#endif
 
 static RwSubSystemInfo GsubSysInfo[MAX_SUBSYSTEMS];
 static RwInt32		GnumSubSystems = 0;
@@ -228,11 +242,25 @@ psCameraShowRaster(RwCamera *camera)
     const bool vsync=CMenuManager::m_PrefsVsync!=0;
 #ifdef _WIN32
     const double start=TraceDisplayTiming ? glfwGetTime() : 0.0;
+    const bool tracePresent = TraceNextPresent;
+    TraceNextPresent = false;
+    if (tracePresent)
+        TraceFocusTransition("first_present_call_begin");
+#else
+    const bool tracePresent = false;
 #endif
-    const bool dxgi=Enhanced::PresentFullscreenDXGI(PSGLOBAL(window),vsync);
+    const bool loading =
+#ifdef _WIN32
+        loadingDepth != 0;
+#else
+        false;
+#endif
+    const bool dxgi=Enhanced::PresentFullscreenDXGI(PSGLOBAL(window),vsync,loading,tracePresent);
     if (!dxgi)
         RwCameraShowRaster(camera,PSGLOBAL(window),vsync ? rwRASTERFLIPWAITVSYNC : rwRASTERFLIPDONTWAIT);
 #ifdef _WIN32
+    if (tracePresent)
+        TraceFocusTransition("first_present_call_end");
     if (TraceDisplayTiming && WindowFocused && !WindowIconified) {
         struct Timing {
             int format,width,height,limit;
@@ -1191,7 +1219,8 @@ static void UpdateWindowFocusAfterEvents(GLFWwindow *window)
     WindowLostFocus = false;
     if (!loadingFocusPending && !WindowAcceptsInput(window) &&
         !glfwGetWindowAttrib(window, GLFW_ICONIFIED) &&
-        (glfwGetWindowMonitor(window) || Enhanced::Borderless || Enhanced::DXGIFullscreenRequested()))
+        (glfwGetWindowMonitor(window) || Enhanced::Borderless ||
+         (Enhanced::DXGIFullscreenRequested() && !Enhanced::DXGIComposedFullscreenRequested())))
         glfwIconifyWindow(window);
 }
 
@@ -1218,14 +1247,19 @@ bool PumpWindowsLoadingEvents()
 
 WindowsLoadingScope::WindowsLoadingScope()
 {
-    if (++loadingDepth == 1)
+    if (++loadingDepth == 1) {
+        TraceFocusTransition("loading_begin");
+        Enhanced::SuspendFullscreenForLoading(PSGLOBAL(window));
         PumpWindowsLoadingEvents();
+    }
 }
 
 WindowsLoadingScope::~WindowsLoadingScope()
 {
-    if (loadingDepth == 1)
+    if (loadingDepth == 1) {
         PumpWindowsLoadingEvents();
+        TraceFocusTransition("loading_end");
+    }
     --loadingDepth;
 }
 #endif
@@ -2233,6 +2267,8 @@ windowFocusCB(GLFWwindow* window, int focused) {
 #ifdef _WIN32
     if (!focused && !enhancedWindowResize)
         WindowLostFocus = true;
+    TraceNextPresent = TraceDisplayTiming && focused;
+    TraceFocusTransition(focused ? "gained" : "lost");
 #endif
     ApplyCursorMode(window, focused && WindowAcceptsInput(window));
     if (focused) SynchroniseWindowInput(window,false);
@@ -2549,7 +2585,13 @@ main(int argc, char *argv[])
 				CTimer::SetWindowPause(windowPaused);
 				CPad::ResetOnWindowFocusChange(!windowPaused);
 				if (focusReturned && !loadingFocus && gGameState == GS_PLAYING_GAME) {
+#ifdef _WIN32
+					TraceFocusTransition("pause_begin");
+#endif
 					FrontEndMenuManager.PauseAfterWindowFocusReturns();
+#ifdef _WIN32
+					TraceFocusTransition("pause_end");
+#endif
 					CTimer::ResetFrameClock();
 				}
 				DMAudio.Service();
@@ -2605,6 +2647,9 @@ main(int argc, char *argv[])
 
 					case GS_INIT_ONCE:
 					{
+#ifdef _WIN32
+						WindowsLoadingScope windowLoading;
+#endif
 						//CoUninitialize();
 						
 #ifdef PS2_MENU
@@ -2633,6 +2678,9 @@ main(int argc, char *argv[])
 #ifndef PS2_MENU
 					case GS_INIT_FRONTEND:
 					{
+#ifdef _WIN32
+						WindowsLoadingScope windowLoading;
+#endif
 						LoadingScreen(nil, nil, "loadsc0");
 						
 						FrontEndMenuManager.m_bGameNotLoaded = true;

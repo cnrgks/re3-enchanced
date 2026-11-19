@@ -1038,3 +1038,36 @@ izliyor. Yeni aday derleme ve oyun içi doğrulama bekliyor.
 Kaynak 103eedd6, GitHub Actions run 44632006307. OpenGL x64 derlemesi
 ve mevcut üç CI birim kontrolü geçti. WIN-03 Fullscreen yükleme ve
 normal oynanış Alt+Tab davranışı oyun içinde doğrulanmayı bekliyor.
+
+### WIN-03 — v1.23 Fullscreen kullanıcı sonucu
+
+Kullanıcı Fullscreen'de yükleme sırasında Alt+Tab sonrasında bozulmanın
+sürdüğünü bildirdi. v1.23 denemesi başarısız. Kesin kilitlenme noktası
+oyun günlüğüyle doğrulanmadı. Yeni kaynak adayı exclusive DXGI sunumunu
+yükleme başlangıcında bırakıyor. Yükleme ekranı aynı DXGI zinciriyle
+pencereli sunuluyor. Odak yokken kare gönderilmiyor ve exclusive dönüş
+yükleme kapsamı sonrasındaki ilk uygun kareye bırakılıyor. Yükleme
+sırasında başlayan odak kaybı Pause menüsünü açmıyor. Derleme ve oyun
+içi doğrulama bekleniyor.
+
+v1.23 kurulu EXE paketle hash düzeyinde eşleşiyor. [Yerel günlük kesiti](feedback/2026-11-20/v1.23-loading-alt-tab-logs.txt)
+son kayıt denemesinde `Save data loaded` satırını içeriyor. Bu satır kayıt
+okuma yolunun tamamlandığını gösteriyor. Pencere günlüğünde exclusive
+çıkış ve yeniden giriş var. Günlüklerde olay bazında zaman damgası,
+Pause çağrısı ve ilk kare sunumunun giriş/çıkış izi bulunmadığından
+kilitlenme tek bir çağrıya bağlanamadı.
+
+### WIN-03 — çerçevesiz DXGI ve Alt+Tab gecikmesi denemesi
+
+Windows OpenGL Fullscreen için çerçevesiz DXGI sunumu kaynakta varsayılan.
+Bu yol Alt+Tab sırasında exclusive çıkış/giriş yapmıyor ve odak kaybında
+pencereyi uygulama ayrıca küçültmüyor. Normal oynanıştan dönüşte Pause
+davranışı sürüyor. Yüklemede başlayan odak kaybı otomatik Pause açmıyor.
+`-dxgi-exclusive-fullscreen` önceki sunumu karşılaştırma için seçiyor ve
+exclusive yolun yükleme korumasını kullanıyor.
+
+`-trace-display-timing` yükleme, odak, Pause açılışı ve ilk sunum çağrısını
+aynı monoton saatle kaydediyor. İlk karede exclusive giriş, OpenGL/DXGI
+kopyası ve DXGI Present ayrı işaretleniyor. Bu izler monitörün görüntüye
+dönüş süresini doğrudan ölçmez. Fullscreen yüklemesi, normal Alt+Tab,
+Discord ve Ambilight sonuçları oyun içinde doğrulanmayı bekliyor.
