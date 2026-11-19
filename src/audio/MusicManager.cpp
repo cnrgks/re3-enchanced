@@ -25,6 +25,13 @@ int32 gNumRetunePresses;
 int32 gRetuneCounter;
 bool8 bHasStarted;
 
+static void QueueRadioRetune(int32 steps)
+{
+	gRetuneCounter = 30;
+	gNumRetunePresses += steps;
+	AudioManager.PlayOneShot(AudioManager.m_nFrontEndEntity, SOUND_FRONTEND_RADIO_CHANGE, 1.0f);
+}
+
 cMusicManager::cMusicManager()
 {
 	m_bIsInitialised = FALSE;
@@ -402,11 +409,17 @@ cMusicManager::SelectCarStation(uint8 station)
 	    (station == USERTRACK && !SampleManager.IsMP3RadioChannelAvailable()))
 		return;
 
-	vehicle->m_nRadioStation = station;
-	AudioManager.PlayOneShot(AudioManager.m_nFrontEndEntity, SOUND_FRONTEND_RADIO_CHANGE, 1.0f);
-	gRetuneCounter = 0;
-	gNumRetunePresses = 0;
-	m_bSetNextStation = TRUE;
+	const uint8 current = GetCarTuning();
+	const int stationCount = SampleManager.IsMP3RadioChannelAvailable() ? USERTRACK + 1 : USERTRACK;
+	const int currentIndex = current < stationCount ? current : stationCount;
+	const int targetIndex = station == RADIO_OFF ? stationCount : station;
+	const int cycleSize = stationCount + 1;
+	const int steps = (targetIndex - currentIndex + cycleSize) % cycleSize;
+	if (steps != 0) {
+		// Replace any pending scroll steps with the station chosen on the wheel.
+		gNumRetunePresses = 0;
+		QueueRadioRetune(steps);
+	}
 }
 
 void
@@ -537,15 +550,11 @@ cMusicManager::ServiceGameMode()
 				const int scroll = Enhanced::RadioWheel && !pad->ArePlayerControlsDisabled()
 					? int(pad->GetMouseWheelUp()) - int(pad->GetMouseWheelDown()) : 0;
 				if (scroll) {
-					gRetuneCounter = 30;
-					gNumRetunePresses += scroll;
-					AudioManager.PlayOneShot(AudioManager.m_nFrontEndEntity, SOUND_FRONTEND_RADIO_CHANGE, 1.0f);
+					QueueRadioRetune(scroll);
 				} else
 #endif
 				if (pad->ChangeStationJustDown()) {
-					gRetuneCounter = 30;
-					gNumRetunePresses++;
-					AudioManager.PlayOneShot(AudioManager.m_nFrontEndEntity, SOUND_FRONTEND_RADIO_CHANGE, 1.0f);
+					QueueRadioRetune(1);
 					// This needs loop, and this is not the right place. Now done elsewhere.
 #ifndef FIX_BUGS
 					if (SampleManager.IsMP3RadioChannelAvailable()) {
@@ -560,9 +569,7 @@ cMusicManager::ServiceGameMode()
 					int scrollPrev = scrollNext == rsMOUSEWHEELUPBUTTON ? rsMOUSEWHEELDOWNBUTTON : scrollNext == rsMOUSEWHEELDOWNBUTTON ? rsMOUSEWHEELUPBUTTON : -1;
 
 					if (scrollPrev != -1 && !ControlsManager.IsAnyVehicleActionAssignedToMouseKey(scrollPrev)) {
-						gRetuneCounter = 30;
-						gNumRetunePresses--;
-						AudioManager.PlayOneShot(AudioManager.m_nFrontEndEntity, SOUND_FRONTEND_RADIO_CHANGE, 1.0f);
+						QueueRadioRetune(-1);
 					}
 				}
 #endif
@@ -626,15 +633,14 @@ cMusicManager::ServiceGameMode()
 		if (gRetuneCounter)
 			AudioManager.DoPoliceRadioCrackle();
 		if (m_bSetNextStation) {
-			const bool classicRetune = gNumRetunePresses != 0;
 			m_bSetNextStation = FALSE;
 			m_nPlayingTrack = m_nNextTrack;
 			m_nNextTrack = GetNextCarTuning();
 			if (m_nNextTrack == RADIO_OFF || m_nNextTrack == STREAMED_SOUND_CITY_AMBIENT || m_nNextTrack == STREAMED_SOUND_WATER_AMBIENT)
 				bRadioOff = TRUE;
 
-			if (classicRetune && (m_nPlayingTrack == STREAMED_SOUND_CITY_AMBIENT ||
-			                      m_nPlayingTrack == STREAMED_SOUND_WATER_AMBIENT))
+			if (m_nPlayingTrack == STREAMED_SOUND_CITY_AMBIENT ||
+			    m_nPlayingTrack == STREAMED_SOUND_WATER_AMBIENT)
 				AudioManager.PlayOneShot(AudioManager.m_nFrontEndEntity, SOUND_FRONTEND_RADIO_CHANGE, 0.0f);
 		}
 		if (m_nNextTrack < RADIO_OFF) {

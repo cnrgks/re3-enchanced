@@ -12,7 +12,7 @@ Referans görseldeki kategori yolu, kaydırılabilir liste, seçili satır, sır
 sayacı ve tuş yardımı GTA III renkleriyle yeniden tasarlandı. Enter alt
 menüyü açar veya komutu çalıştırır, Esc veya Backspace bir üst kategoriye döner ve ana listede trainer’ı kapatır.
 F8 herhangi bir seviyeden kapatır.
-Trainer klavye ile kullanılır. Tuş tekrarı oyun hızından bağımsızdır.
+Trainer klavye ile kullanılır. Açıkken oyun hareketi ve fare kamerası çalışır. Tuş tekrarı oyun hızından bağımsızdır.
 
 Doğrulama: farklı FPS sınırlarında gezinme, uzun araç listeleri, trainer açıkken
 NPC ve trafik hareketi, oluşturulan araçların sesi ve kapanışta oyun kontrolleri.
@@ -24,7 +24,7 @@ tutulur. Fare, oklar veya scroll ile seçim yapılır; R bırakılınca istasyon
 geçilir. R basılı değilken scroll klasik istasyon göstergesiyle çalışır.
 İstasyon adları ortak oyun metninden alınır, yerleşik logolar korunur.
 MP3 yuvası parça mevcutsa gösterilir. Radio Off en alttadır. Çarktan farklı
-bir istasyon seçilince ortak geçiş sesi çalar.
+bir istasyon seçilince klasik radyo geçiş süresi ve sesleri kullanılır.
 
 Doğrulama: istasyon değiştirme, radyoyu kapatıp tekrar açma, MP3 durumu,
 görev radyosu ve polis/telsizli araçlar. Kontrolcü erişimi sonraki iterasyonda.

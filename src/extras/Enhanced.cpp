@@ -3,7 +3,6 @@
 #include "crossplatform.h"
 #include "platform.h"
 #include "Enhanced.h"
-#include "debugmenu.h"
 #include "Darkel.h"
 #include "DMAudio.h"
 #include "Font.h"
@@ -248,12 +247,6 @@ static bool WheelEntryAvailable(uint8 entry, CPlayerPed *player)
 
 void ProcessSelectionWheel()
 {
-#ifdef DEBUGMENU
-    if (DebugMenuIsOpen()) {
-        CloseSelectionWheel();
-        return;
-    }
-#endif
     if (!GameReady() || CPad::GetPad(0)->ArePlayerControlsDisabled()) {
         CloseSelectionWheel();
         return;

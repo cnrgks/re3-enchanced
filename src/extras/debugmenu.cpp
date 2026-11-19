@@ -832,12 +832,6 @@ DebugMenuClose(void)
 	lastkeydown = 0;
 }
 
-bool
-DebugMenuIsOpen(void)
-{
-	return menuOn != 0;
-}
-
 void
 DebugMenuProcess(void)
 {
@@ -859,11 +853,6 @@ DebugMenuProcess(void)
 	}
 	if (!menuOn)
 		return;
-	// Consume local input while the trainer has focus without setting
-	// the global player-control flag consulted by world and AI code.
-	pad->NewState.Clear();
-	pad->OldState.Clear();
-	pad->NewMouseControllerState.Clear();
 	if (pad->GetEscapeJustDown() || pad->GetBackspaceJustDown()) {
 		pad->ConsumeEscapeJustDown();
 		if (activeMenu->parent) {

@@ -1,7 +1,6 @@
 #define WITHDINPUT
 #include "common.h"
 #include "Enhanced.h"
-#include "debugmenu.h"
 #include <cmath>
 #include "crossplatform.h"
 #include "platform.h"
@@ -632,19 +631,11 @@ void CPad::UpdateMouse()
 
 float CPad::GetMouseXThisFrame()
 {
-#ifdef DEBUGMENU
-	if (DebugMenuIsOpen())
-		return 0.0f;
-#endif
 	return Enhanced::IsSelectionWheelOpen() ? 0.0f : MouseXThisFrame;
 }
 
 float CPad::GetMouseYThisFrame()
 {
-#ifdef DEBUGMENU
-	if (DebugMenuIsOpen())
-		return 0.0f;
-#endif
 	return Enhanced::IsSelectionWheelOpen() ? 0.0f : MouseYThisFrame;
 }
 

@@ -985,3 +985,15 @@ INTRO-01 dışındaki değişiklikler kaynakta. Derleme ve oyun içi doğrulama 
 Kaynak 76f5c7d5, GitHub Actions run 44620808948. OpenGL x64 derlemesi
 ve mevcut üç CI birim kontrolü geçti. UI-04, TRAINER-02/03 ve WHEEL-04
 oyun içinde doğrulanmayı bekliyor.
+
+### v1.20 kullanıcı geri bildirimi
+
+- **WHEEL-05** · Radyo çarkı klasik retune beklemesini ve radyo kapalıyken
+  istasyonun açılma sesini atlıyordu. Çark seçimi artık klasik retune
+  sayacına ve aynı ses akışına gönderiliyor. R bırakıldığında ilk tık,
+  bekleme ve radyo kapalıdan açılırken ikinci tık oyun içinde karşılaştırılacak.
+- **TRAINER-04** · F8 açıkken klavye hareketi ve fare kamerası çalışmalı.
+  Oyuncu girdileri korunuyor. Trainer gezinmesi klavyede kalıyor ve kendi
+  Esc/Backspace/F8 davranışını koruyor.
+
+Kaynak değişiklikleri derleme ve oyun içi doğrulama bekliyor.
