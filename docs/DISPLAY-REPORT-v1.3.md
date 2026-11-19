@@ -196,3 +196,11 @@ Kullanıcı build istediğinde tek paketle kontrol edilecekler:
 
 Yeni build izni verilene kadar kaynak incelemesi/düzeltme kayıtları biriktirilecek;
 bu raporla birlikte build veya test başlatılmadı.
+
+## v1.4 build evidence
+
+OpenGL-only x64 CI run 44444400311 succeeded on source 1432a85c. Existing
+three unit programs, including cursor-coordinate regressions, passed.
+No in-game/capture/latency verification is implied. INPUT-02 and CAP-01 remain
+pending user validation. A runtime rollback only requires FullscreenDXGI=0;
+source rollback can retain cursor commit 9553703c independently.

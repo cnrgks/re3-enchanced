@@ -330,3 +330,11 @@ uyuşmazlığı veya sunum hatasında native GLFW fullscreen'e dönülür ve log
 Bu donanım bağımlı bir deneydir; capture ve gecikme doğrulanmadı.
 FullscreenDXGI=0 ile deneme kapatılır, imleç düzeltmesi korunur. Borderless
 +1 yolu korunur. Açık diğer bug'ların durumu değişmedi. Kullanıcı build istedi.
+
+### v1.4 derleme sonucu — 2026-11-19
+
+Kaynak 1432a85c, GitHub Actions run 44444400311: yalnızca OpenGL x64
+başarıyla derlendi. Üç mevcut birim programı, yeni imleç oranı regresyonları
+dahil geçti. D3D9 işi çalıştırılmadı. INPUT-02 kaynak/derleme doğrulandı;
+soğuk açılış, Alt-Tab, CAP-01 fullscreen Discord/Ambilight ve gecikme kullanıcı
+denemesini bekliyor. Hiçbir runtime bug bu derleme sonucuyla kapatılmadı.

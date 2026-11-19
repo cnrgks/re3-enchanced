@@ -143,3 +143,10 @@ VideoMode/FullscreenDXGIFlipY yön tanısı içindir. Deneme kapalıyken imleç
 fix'i ve +1 borderless korunur. Frame latency cihaz bazında 1 istenir;
 gecikme azalması veya yakalama başarısı ölçülmüş değildir. VSync oyun ayarıdır.
 Kullanıcı şimdi build istedi. Sonuçlar derleme ve runtime olarak ayrı tutulacak.
+
+### v1.4 build sonucu
+
+1432a85c kaynak commit'i, Actions 44444400311: OpenGL x64 build ve birim
+kontrolleri başarılı. Fullscreen logunda `dxgi: active fullscreen=1` yeni yolu,
+`returning to native OpenGL fullscreen` ise fallback'i ayırır. Capture,
+soğuk açılış imleci ve gecikme için kullanıcı sonucu bekleniyor.
