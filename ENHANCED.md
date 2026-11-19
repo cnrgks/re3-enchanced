@@ -1,46 +1,66 @@
-# re3 Enhanced — revision 2
+# re3 Enhanced v1.1
 
-Based on Hezkore/hez-gta-re3 upstream 0145967e46f64c671aa22ed7406131cd3132f5b5.
-Options: Options > Enhanced Options. Settings: [Enhanced] in re3.ini.
-Native modules: src/extras/Enhanced.* and EnhancedVehicle.cpp; window integration
-in src/skel/glfw/glfw.cpp. No fixed game addresses or class/save layout changes.
+Hezkore/hez-gta-re3, upstream 0145967e46f64c671aa22ed7406131cd3132f5b5.
+Native C++ features; no fixed EXE addresses or game class/save layout changes.
+Settings: Options > Enhanced Options, persisted under [Enhanced] in re3.ini.
 
-## Features
+- F5 opens the native save-slot menu in safe free roam: on foot, idle, alive,
+  no mission, wanted level, replay, cutscene or fade. The mission-pass option
+  queues the same menu until this safe state. It does not write automatically.
+- Enhanced saves serialize the current island's safehouse entrance and ground
+  height for the player and initial camera streaming. The live player is not
+  teleported. Native safehouse saves and mission retry keep their own flow.
+  Load Autosave is removed. Existing isolated autosave files are not deleted.
+- Heal after manual save persists at least 100 health; failed save restores it.
+- Radar icons, traces and rotating player arrow share range-dependent scaling,
+  including the native speed zoom. T smoothly targets 2.25x instead of 3x.
+- Pause-map service icons come from typed SCM metadata, native garages, shop
+  weapon pickups and runtime blips, including services cleared by distance.
+- Map keeps its two crosshair lines, hides the cursor sprite, removes footer
+  control instructions and aligns Back with the blue Rockstar logo's left edge.
+- Scrolling an option page moves its viewport by three rows, without cycling
+  the focused option or changing its value. Keyboard navigation remains native.
+- Vehicle/Pedestrian Distance: 1x, 1.5x, 2x or 3x. Spawn/despawn thresholds and
+  render LOD/visibility ranges scale together; density grows modestly. Native
+  pool limits remain in force, so this is not an unlimited-population setting.
+- High Detail Vehicles/Pedestrians selects native detailed render meshes.
+- Windscreen shots test actual mesh triangles, nested component frames and named
+  fallback frames. Coarse car collision no longer prevents a pane hit. Broken
+  panes still define the aperture. Seated driver/passenger hit models feed the
+  ordinary weapon damage flow; bulletproof/script protections stay in effect.
+  A custom car with glass merged into an unrelated body mesh is not inferred.
+- GPS retains v1.1's preceding GPS update: mission lines match actual blip RGBA,
+  including dim colours; manual waypoints stay red. Disabled roads and native
+  one-way lanes are respected; complete routes and alternate endpoints used.
+  Mission target selection remains a nearest-visible-objective heuristic.
 
-- F5 native save menu, in safe stationary free roam on foot, without wanted level.
-- Autosave only after SCM mission-pass registration. Waits for the same safe state;
-  no interval timer. GTA3sf-enhanced-auto1.b is isolated from eight normal slots.
-  Temporary file is closed and checksum validated before atomic Windows replace.
-  Load with confirmation from Enhanced Options. Loading never queues an autosave.
-- Hold T for smooth radar zoom. Icons/traces shrink; extra tiles cover wide range.
-- GPS: manual waypoint overrides mission routing. Otherwise prefer the nearest
-  visible coordinate objective, then visible entity objective. Mission routes
-  use the native objective blip's exact colour, including dim and literal RGBA
-  colours; manual waypoints remain red. Lines draw below every icon.
-  Read-only graph search respects disabled roads and native one-way lane data,
-  considers nearby target entrances and preserves the entire route. Short
-  endpoint connectors require clear building/object line of sight. Walking and
-  driving use separate graphs and recalculate when entering/leaving a vehicle.
-  Multi-goal mission selection remains a heuristic; no voice navigation.
-- Native pause map with radar-tile fallback when menu-map artwork is unavailable.
-- Detailed vehicle/ped models selected directly in render callbacks; low-detail
-  variants suppressed. Native spawning, world visibility and streaming retained.
-- Heal after successful manual save: at least 100, also serialized. Failed save
-  restores previous health. Autosave and mission retry do not heal.
-- Borderless fullscreen: current monitor desktop size via GLFW. Turning it off
-  restores prior window/fullscreen mode and geometry. Persisted through native ini.
-- Breakable windscreen: real bullet segment/render-mesh triangle intersections,
-  native glass effects and panel damage. No supplied vehicles.col replacement.
-  Protected vehicles and Rhino turret excluded. Reference mod's occupant hit-through,
-  extra CLEO opcode, custom animations and all fragment options are not reproduced.
+## Display backends
 
-Enhanced first person and ragdoll have been removed at the user's request.
-Their old ini keys are ignored. Old nonzero autosave/radar modes migrate to ON.
+The complete package uses Direct3D 9 as its main build. Borderless defaults ON
+for new configurations; existing ini settings take precedence. It selects a
+non-exclusive RenderWare mode before device creation, creates a desktop-sized
+WS_POPUP window on its monitor and keeps the D3D presentation Windowed=true.
+Change Borderless from the main menu before loading a game. The native graphics
+windowed/fullscreen preference is restored when Borderless is turned off.
 
-## Mod support and testing
+An OpenGL EXE/PDB pair is included as a fallback, with the same gameplay changes.
+Always switch both files together. Shared game data and runtime DLLs stay put.
+Discord desktop sharing and Ambilight must be checked on the user's GPU/system;
+compilation or a genuine windowed device alone cannot certify capture behavior.
 
-Keep x64 winmm.dll ASI loader and x64 CLEO Redux. ASIs: scripts/ or plugins/;
-JS/TS: CLEO/; FXT: CLEO/CLEO_TEXT/. Disable old quick_save.js for native F5.
-Original GTA III x86 ASIs and CS scripts are not made compatible.
-Keep EXE with its matching PDB. See ROADMAP.md for play-test status/limitations.
-Compilation and PDB checks do not replace in-game verification.
+## Mod support
+
+The package includes the existing x64 Ultimate ASI Loader (winmm.dll), CLEO Redux
+and CLEO plugins. ASIs: scripts/ or plugins/. JS/TS: CLEO/. FXT: CLEO/CLEO_TEXT/.
+Original GTA III x86 ASIs and legacy CS scripts are not generally compatible.
+Disable duplicate quicksave/GPS/windscreen reference mods when using native ones.
+No proprietary GTA III game data or reference mod binaries are incorporated.
+
+## Validation
+
+GitHub Actions builds both x64 backends and runs geometry, radar scaling, graph
+routing and SCM operand-decoder tests. Release packaging checks matching source
+commits, EXE/PDB GUID+age, x64 runtime files and SHA-256 manifest entries.
+Gameplay, save/load, screenshot layout, capture and vehicle-specific shots need
+in-game verification. The archive is a complete mod distribution, not a full
+licensed GTA III installation.

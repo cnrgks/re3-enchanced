@@ -2,6 +2,11 @@
 #include <cmath>
 
 namespace EnhancedMath {
+inline float RadarIconScale(float range)
+{
+    float scale=1.0f/std::sqrt(range>120.0f ? range/120.0f : 1.0f);
+    return scale<0.35f ? 0.35f : scale;
+}
 inline float SmoothZoom(float current, float target, float elapsed)
 {
     if (elapsed < 0.0f) elapsed=0.0f;

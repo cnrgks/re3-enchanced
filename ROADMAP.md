@@ -1,60 +1,38 @@
-# Enhanced roadmap — 18 November 2026
+# re3 Enhanced v1.1 validation
 
-User feedback: `re3 notlar.txt` and Enhanced Options screenshot.
-Status below means implementation, not a claim of in-game verification.
+Implementation and runtime verification are recorded separately.
 
-## GPS follow-up — 19 November 2026
+## Implemented
 
-- [x] Mission route uses native objective RGBA/dim colour; manual waypoint stays red.
-- [x] Read-only road/ped graph search, disabled-node filtering and native one-way lanes.
-- [x] Nearby target entrances, full-length routes and collision-tested short connectors.
-- [x] Recalculate after entering/exiting vehicles; account for mission target height on arrival.
-- [ ] In-game checks: dark/bright mission colours, closed bridges, one-way turns,
-  moving targets, cross-island routes and manual waypoint override.
+- Pause-map services: typed script metadata, garages, weapon shop pickups/cache.
+- Native speed and T radar zoom icon scaling including rotating player marker.
+- T target 2.25x (75% of the former 3x target).
+- Nested/named windscreen geometry and native seated-occupant bullet hits.
+- Remove Load Autosave; mission success queues save-slot menu, no silent write.
+- Enhanced save serialization uses the current island safehouse, no live teleport.
+- D3D9 non-exclusive borderless desktop presentation; OpenGL fallback provided.
+- Vehicle/ped spawn, removal and render distance settings.
+- Map crosshair without cursor sprite, clean footer, Back aligned above blue logo.
+- Wheel scrolls option viewport independently of selection/value.
+- Mission GPS colours, one-way/closed-road routing and complete long paths.
+- Complete versioned package with existing x64 ASI Loader/CLEO Redux support.
 
-## Remaining feedback — not included in the GPS follow-up
+## Required in-game validation
 
-- [ ] Pause-map service blips (Pay 'n' Spray, Ammu-Nation and others).
-- [ ] Speed-dependent icon/player scaling; T range reduced to 75% of current range.
-- [ ] Windscreen support across models and occupant hits through broken windows.
-- [ ] Remove Load Autosave; mission passed opens save menu; serialize island safehouse position.
-- [ ] Desktop capture compatibility (Discord full-screen sharing; Ambilight not verified).
-- [ ] Adjustable vehicle and pedestrian draw/spawn/despawn distances.
-- [ ] Map: hide pointer sprite, keep crosshair; remove controls; align Back over blue logo.
-- [ ] Graphics wheel scrolls the viewport rather than changing selection/options.
+- [ ] Map shows Pay 'n' Spray, Ammu-Nation, bomb shops and savehouses on all islands.
+- [ ] Icons/player scale together when accelerating, holding T and releasing T.
+- [ ] Map footer/Back/crosshair at 16:9 and 4:3; viewport scroll and keyboard input.
+- [ ] Mission success opens menu once; cancellation does not write a file.
+- [ ] F5 and mission saves load at each island's home without moving live player.
+- [ ] Ground height at homes; eight slots and mission retry; heal success/failure.
+- [ ] Front windscreen/driver shots across original/custom cars, after break/repair,
+      occluding walls/vehicles and protected cars. Merged custom glass unsupported.
+- [ ] Distance choices reduce pop-in during fast driving within native pool limits.
+- [ ] D3D9 startup, main-menu Borderless toggle, Alt-Tab, resize/multiple monitors.
+- [ ] Discord whole-desktop stream and Ambilight on user's actual machine.
+- [ ] Mission colour variants/moving targets, closed bridges, one-way turns and
+      cross-island routing; manual waypoint override, on-foot/car graph changes.
+- [ ] x64 ASI and CLEO Redux startup with the new matching PDB on both backends.
 
-## Revision 2 — implemented, build/play-test pending
-
-- [x] Normal Graphics menu font/scales, 20-pixel rows and footer clearance.
-- [x] Remove Enhanced first person and ragdoll, including runtime hooks/module.
-- [x] Autosave only on SCM REGISTER_MISSION_PASSED; wait for safe free-roam
-  state, never on a timer or on loading a save. Keep isolated/checksummed file.
-- [x] GPS: manual waypoint first, otherwise visible mission coordinate objectives,
-  then entity objectives. Red route below all icons and player arrow.
-- [x] World-map player arrow rotates with native north-up heading math.
-- [x] Hold T for frame-time based smooth radar zoom, smaller blips and more tiles.
-- [x] LOD selection in render callbacks; suppress low meshes and component culling.
-- [x] GLFW borderless desktop fullscreen on current monitor; restore old mode.
-- [x] Bullet-breakable windshield: visible-mesh triangle tests, native glass and
-  damage. Instant-hit/shotgun/drive-by and simulated sniper bullets. Honor
-  bulletproof/script protection. No ASI binary code or vehicles.col replacement.
-
-## Required revision 2 play-tests
-
-- [ ] Menu font/spacing/mouse/Back at 16:9 and 4:3.
-- [ ] Mission passed autosave, failed mission, load autosave, normal slots intact.
-- [ ] Multi-marker mission target choice, moving targets and waypoint override.
-- [ ] Red line under all markers; player arrow north/east/south/west.
-- [ ] Hold/release T at low/high FPS; shrinking blips and complete map coverage.
-- [ ] LOD toggles without restart; original/custom models at long range.
-- [ ] Borderless ON/OFF, restart, Alt-Tab, resolution changes, multiple monitors.
-- [ ] Windscreen weapons/occlusion/protected vehicles/repair/save-load.
-- [ ] x64 ASI and CLEO Redux startup with compatible scripts.
-
-## Follow-up work
-
-- [ ] Mission-specific selection when SCM displays multiple candidate objectives;
-  nearest-marker selection is a heuristic, not full mission understanding.
-- [ ] Refine glass fragment basis for unusual custom meshes. Reference mod's
-  occupant-hit behavior, custom CLEO opcode and animation options are separate.
-- [ ] First person/ragdoll stay withdrawn unless the user requests them again.
+First person and ragdoll remain withdrawn as requested in the previous revision.
+Full mission-specific multi-goal understanding is still outside GPS scope.

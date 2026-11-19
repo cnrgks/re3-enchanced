@@ -181,7 +181,7 @@ float BlipScale()
     if (CMenuManager::bMenuMapActive)
         return Clamp(CMenuManager::fMapSize/(SCREEN_HEIGHT*2.0f),0.55f,1.0f);
 #endif
-    return Clamp(1.0f/Sqrt(Max(1.0f,radarRange/120.0f)),0.35f,1.0f);
+    return EnhancedMath::RadarIconScale(radarRange);
 }
 
 void AfterSuccessfulSave()

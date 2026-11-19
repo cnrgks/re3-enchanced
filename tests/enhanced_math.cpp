@@ -8,6 +8,11 @@ void require(bool condition,const char *message)
 }
 int main()
 {
+    require(EnhancedMath::RadarIconScale(120)==1,"stationary radar icon size");
+    require(EnhancedMath::RadarIconScale(350)<EnhancedMath::RadarIconScale(180),"native speed zoom shrinks icons");
+    require(EnhancedMath::RadarIconScale(350*2.25f)<EnhancedMath::RadarIconScale(350),"T zoom adds proportional scaling");
+    require(EnhancedMath::RadarIconScale(100000)==0.35f,"icons remain readable at extreme ranges");
+    require(EnhancedMath::RadarIconScale(0)==1,"zero range guard");
     const Point a={-1,-1,0},b={1,-1,0},c={0,1,0};
     const Point start={0,0,1},delta={0,0,-2};
     float t=1;
