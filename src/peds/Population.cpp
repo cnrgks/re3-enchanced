@@ -563,7 +563,7 @@ int32
 CPopulation::AmbientVehicleOccupantTarget()
 {
 	constexpr int32 minimumStreetPedSlots = 16;
-	const int32 requested = 16 * int32(Enhanced::VehicleRangeMultiplier()) * Enhanced::TrafficMultiplier(true);
+	const int32 requested = 16 * int32(Enhanced::VehicleRangeMultiplier());
 	const int32 usable = CPools::GetPedPool()->GetSize() - reservedMissionPedSlots - minimumStreetPedSlots;
 	return Min(requested, Max(0, usable));
 }
@@ -585,7 +585,7 @@ CPopulation::CountAmbientVehicleOccupants()
 int32
 CPopulation::PedCountForSpawnBudget()
 {
-	const int32 occupants = Enhanced::SeparateTrafficPedBudget ? CountAmbientVehicleOccupants() : 0;
+	const int32 occupants = Enhanced::DistantCrowdedWorld ? CountAmbientVehicleOccupants() : 0;
 	return Max(0, int32(ms_nTotalPeds) - occupants);
 }
 
@@ -653,7 +653,7 @@ CPopulation::AddToPopulation(bool hiddenFeed, bool warmingUp)
 
 	const float fullRange = Enhanced::PedRangeMultiplier();
 	const int32 total = PedCountForSpawnBudget();
-	const int32 limit = basePedLimit * int32(fullRange) * Enhanced::TrafficMultiplier(false);
+	const int32 limit = basePedLimit * int32(fullRange);
 	const int32 target = Enhanced::TrafficTarget(false, limit, warmingUp);
 	const int32 openBudget = addCop ? 1 : target - total;
 	const bool distant = !addCop && !warmingUp && !hiddenFeed && fullRange > 1.0f;

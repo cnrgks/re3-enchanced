@@ -72,5 +72,5 @@ extern bool gbDrawVersionText;
 #endif
 
 #ifdef NO_MOVIES
-extern bool gbNoMovies;
+extern int8 gbNoMovies;
 #endif

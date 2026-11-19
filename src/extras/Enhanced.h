@@ -5,10 +5,8 @@ class CEntity;
 class CColPoint;
 struct sRadarTrace;
 namespace Enhanced {
-extern int8 QuickSave, AutoSave, RadarZoom, GPS, MenuMap;
-extern int8 VehicleDistance, PedDistance, ScreenFormat;
-extern int8 VehicleTrafficMultiplier, PedTrafficMultiplier, SeparateTrafficPedBudget;
-int TrafficMultiplier(bool vehicles);
+extern int8 QuickSave, AutoSave, GPS, ScreenFormat;
+extern int8 DistantCrowdedWorld;
 extern int8 BorderlessCaptureProbe, FullscreenDXGIFlipY;
 extern bool TraceVehicleEntry;
 extern bool TraceTraffic;
@@ -29,11 +27,17 @@ int TrafficAttempts(bool vehicles, const CVector &centre, float nearbyRadius, bo
 int TrafficTarget(bool vehicles, int limit, bool warmingUp);
 bool IsTrafficSpawnOccluded(const CVector &position);
 void ApplyScreenFormatSettings();
-extern int8 VehicleDetail, PedDetail, HealAfterSave, Borderless;
+extern int8 HealAfterSave, Borderless;
 
 wchar *GetText(const char *key);
 void Process();
 void Reset();
+void ProcessSelectionWheel();
+void CancelSelectionWheelIfUnavailable();
+void DrawSelectionWheel();
+void FreeSelectionWheelTextures();
+bool IsWeaponWheelOpen();
+bool IsSelectionWheelOpen();
 void DrawRoute();
 void WaypointChanged();
 void DrawMapFallback();
@@ -58,5 +62,4 @@ CVector SavePosition(const CVector &original);
 float VehicleRangeMultiplier();
 float PedRangeMultiplier();
 void OpenMap(int8 action);
-wchar *MapOptionDraw(bool *disabled, bool hovering);
 }

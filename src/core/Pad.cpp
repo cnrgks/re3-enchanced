@@ -1,5 +1,6 @@
 #define WITHDINPUT
 #include "common.h"
+#include "Enhanced.h"
 #include <cmath>
 #include "crossplatform.h"
 #include "platform.h"
@@ -626,6 +627,18 @@ void CPad::UpdateMouse()
 	MouseYThisFrame = y;
 	PCTempMouseControllerState.x += x;
 	PCTempMouseControllerState.y += y;
+}
+
+float CPad::GetMouseXThisFrame()
+{
+	return Enhanced::IsSelectionWheelOpen() || IsPlayerControlsDisabledBy(PLAYERCONTROL_TRAINER)
+		? 0.0f : MouseXThisFrame;
+}
+
+float CPad::GetMouseYThisFrame()
+{
+	return Enhanced::IsSelectionWheelOpen() || IsPlayerControlsDisabledBy(PLAYERCONTROL_TRAINER)
+		? 0.0f : MouseYThisFrame;
 }
 
 // Called once per logical frame. Hands over what the rendered frames since the last one
@@ -2069,6 +2082,9 @@ bool CPad::ExitVehicleJustDown(void)
 
 int32 CPad::GetWeapon(void)
 {
+	if (this == GetPad(0) && Enhanced::IsWeaponWheelOpen())
+		return false;
+
 	if ( ArePlayerControlsDisabled() )
 		return false;
 
@@ -2261,6 +2277,9 @@ bool CPad::ChangeStationJustDown(void)
 
 bool CPad::CycleWeaponLeftJustDown(void)
 {
+	if (this == GetPad(0) && Enhanced::IsWeaponWheelOpen())
+		return false;
+
 	if ( ArePlayerControlsDisabled() )
 		return false;
 
@@ -2269,6 +2288,9 @@ bool CPad::CycleWeaponLeftJustDown(void)
 
 bool CPad::CycleWeaponRightJustDown(void)
 {
+	if (this == GetPad(0) && Enhanced::IsWeaponWheelOpen())
+		return false;
+
 	if ( ArePlayerControlsDisabled() )
 		return false;
 

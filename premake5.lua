@@ -457,6 +457,9 @@ project "re3"
 		libdirs { path.join(_OPTIONS["glfwdir64"], "lib-" .. string.gsub(_ACTION or '', "vs", "vc")) }
 		links { "opengl32", "glfw3" }
 
+	filter "platforms:win-*gl3_glfw*"
+		links { "ole32", "strmiids" }
+
 	filter "platforms:linux*gl3_glfw*"
 		links { "GL", "glfw" }
 

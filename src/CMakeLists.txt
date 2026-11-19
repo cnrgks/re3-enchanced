@@ -68,6 +68,10 @@ elseif(${PROJECT}_AUDIO STREQUAL "MSS")
     target_link_libraries(${EXECUTABLE} PRIVATE MilesSDK::MilesSDK)
 endif()
 
+if(WIN32)
+    target_link_libraries(${EXECUTABLE} PRIVATE ole32 strmiids)
+endif()
+
 find_package(mpg123 REQUIRED)
 target_link_libraries(${EXECUTABLE} PRIVATE
     MPG123::libmpg123

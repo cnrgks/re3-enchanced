@@ -94,7 +94,7 @@ CCarCtrl::RandomCarLimit(float trafficMultiplier)
 {
 	const float baseDensity = trafficMultiplier * CarDensityMultiplier * CIniFile::CarNumberMultiplier;
 	const int32 baseLimit = int32(ceilf(Clamp(baseDensity, 0.0f, 30.0f)));
-	return baseLimit * int32(Enhanced::VehicleRangeMultiplier()) * Enhanced::TrafficMultiplier(true);
+	return baseLimit * int32(Enhanced::VehicleRangeMultiplier());
 }
 
 int32
@@ -113,7 +113,7 @@ CCarCtrl::HasRoomForTraffic()
 	return AmbientVehicleSlotsAvailable() > 0 &&
 		// Random police and emergency vehicles already contribute to NumRandomCars.
 		NumParkedCars + NumMissionCars + NumRandomCars <
-			MaxNumberOfCarsInUse * Enhanced::VehicleRangeMultiplier() * Enhanced::TrafficMultiplier(true);
+			MaxNumberOfCarsInUse * Enhanced::VehicleRangeMultiplier();
 }
 
 void
@@ -204,7 +204,7 @@ CCarCtrl::GenerateOneRandomCar(bool hiddenFeed, bool warmingUp)
 			/* In particular it means that cop cars never spawn if player has wanted level of 1. */
 			return;
 	}
-	if (carClass != COPS && Enhanced::SeparateTrafficPedBudget &&
+	if (carClass != COPS && Enhanced::DistantCrowdedWorld &&
 		CPopulation::CountAmbientVehicleOccupants() >= CPopulation::AmbientVehicleOccupantTarget()) {
 		if (Enhanced::TraceTraffic) ++Enhanced::VehicleTrafficStats.occupantBudgetFull;
 		return;
@@ -2788,7 +2788,7 @@ void CCarCtrl::GenerateEmergencyServicesCar(void)
 	if (pool->GetNoOfUsedSpaces() >= pool->GetSize() - 2 || CPopulation::AmbientVehicleOccupantSlotsAvailable() < 4)
 		return;
 	if (NumParkedCars + NumMissionCars + NumRandomCars >
-		MaxNumberOfCarsInUse * Enhanced::VehicleRangeMultiplier() * Enhanced::TrafficMultiplier(true))
+		MaxNumberOfCarsInUse * Enhanced::VehicleRangeMultiplier())
 		return;
 	if (NumAmbulancesOnDuty == 0){
 		if (gAccidentManager.CountActiveAccidents() < 2){

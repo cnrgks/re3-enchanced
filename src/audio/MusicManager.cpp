@@ -393,6 +393,25 @@ cMusicManager::SetRadioInCar(uint32 station)
 }
 
 void
+cMusicManager::SelectCarStation(uint8 station)
+{
+	if (!m_bIsInitialised || m_bDisabled || m_bRadioSetByScript ||
+	    m_bAnnouncementInProgress || !PlayerInCar())
+		return;
+	CVehicle *vehicle = FindPlayerVehicle();
+	if (!vehicle || UsesPoliceRadio(vehicle) || vehicle->m_nRadioStation == station)
+		return;
+	if ((station > USERTRACK && station != RADIO_OFF) ||
+	    (station == USERTRACK && !SampleManager.IsMP3RadioChannelAvailable()))
+		return;
+
+	vehicle->m_nRadioStation = station;
+	gRetuneCounter = 0;
+	gNumRetunePresses = 0;
+	m_bSetNextStation = TRUE;
+}
+
+void
 cMusicManager::SetRadioChannelByScript(uint8 station, int32 pos)
 {
 	if (m_bIsInitialised && station < RADIO_OFF) {
@@ -601,7 +620,7 @@ cMusicManager::ServiceGameMode()
 			m_bSetNextStation = FALSE;
 			m_nPlayingTrack = m_nNextTrack;
 			m_nNextTrack = GetNextCarTuning();
-			if (m_nNextTrack == STREAMED_SOUND_CITY_AMBIENT || m_nNextTrack == STREAMED_SOUND_WATER_AMBIENT)
+			if (m_nNextTrack == RADIO_OFF || m_nNextTrack == STREAMED_SOUND_CITY_AMBIENT || m_nNextTrack == STREAMED_SOUND_WATER_AMBIENT)
 				bRadioOff = TRUE;
 
 			if (m_nPlayingTrack == STREAMED_SOUND_CITY_AMBIENT || m_nPlayingTrack == STREAMED_SOUND_WATER_AMBIENT)

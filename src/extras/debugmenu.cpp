@@ -4,6 +4,10 @@
 #include "Pad.h"
 #include "ControllerConfig.h"
 #include "Timer.h"
+#include "Frontend.h"
+#include "CutsceneMgr.h"
+#include "Sprite2d.h"
+#include <string>
 #include "rtcharse.h"
 #include "re3_inttypes.h"
 #include "debugmenu.h"
@@ -132,10 +136,11 @@ enum EntryType
 struct Menu
 {
 	Menu *parent;
+	const char *name;
 	RwRect r;
 	MenuEntry *entries;
 	int numEntries;
-	int maxNameWidth, maxValWidth;
+	int maxValWidth;
 
 	MenuEntry *findEntry(const char *entryname);
 	void insertEntrySorted(MenuEntry *entry);
@@ -285,18 +290,20 @@ static int menuInitialized;
 static int screenWidth, screenHeight;
 static RwRaster *cursor, *arrow;
 
-static int firstBorder = 10;
-static int topBorder = 40;	//10;
-static int leading = 4;
-static int gap = 10;
-static int minwidth = 100;
+static constexpr int panelLeft = 20;
+static constexpr int panelTop = 36;
+static constexpr int panelWidth = 384;
+static constexpr int panelHeader = 54;
+static constexpr int panelFooter = 26;
+static constexpr int rowLeading = 8;
+static constexpr int rowPadding = 12;
+
 
 void drawMouse(void);
 void drawArrow(RwRect r, int direction, int style);
 
 Menu toplevel;
 Menu *activeMenu = &toplevel;
-Menu *deepestMenu = &toplevel;
 Menu *mouseOverMenu;
 MenuEntry *mouseOverEntry;
 MenuEntry scrollUpEntry("SCROLLUP"), scrollDownEntry("SCROLLDOWN");	// dummies
@@ -304,10 +311,6 @@ MenuEntry scrollUpEntry("SCROLLUP"), scrollDownEntry("SCROLLDOWN");	// dummies
 
 #define KEYJUSTDOWN(k) ControlsManager.GetIsKeyboardKeyJustDown((RsKeyCodes)k)
 #define KEYDOWN(k) ControlsManager.GetIsKeyboardKeyDown((RsKeyCodes)k)
-#define CTRLJUSTDOWN(key) \
-	       ((KEYDOWN(rsLCTRL) || KEYDOWN(rsRCTRL)) && KEYJUSTDOWN((RsKeyCodes)key) || \
-	        (KEYJUSTDOWN(rsLCTRL) || KEYJUSTDOWN(rsRCTRL)) && KEYDOWN((RsKeyCodes)key))
-#define CTRLDOWN(key) ((KEYDOWN(rsLCTRL) || KEYDOWN(rsRCTRL)) && KEYDOWN((RsKeyCodes)key))
 
 
 bool
@@ -607,107 +610,87 @@ Menu::appendEntry(MenuEntry *entry)
 void
 Menu::update(void)
 {
-	int i;
-	int x, y;
-	Pt sz;
-	MenuEntry *e;
-	int onscreen;
-	x = this->r.x;
-	y = this->r.y + 18;
-	int end = this->r.y+this->r.h - 18;
-	this->numVisible = 0;
+	const int rowHeight = fontDesc.height + rowLeading;
+	const int capacity = Max(1, (r.h - 32) / rowHeight);
+	numVisible = Min(numEntries, capacity);
+	scrollStart = Clamp(scrollStart, 0, numEntries - numVisible);
+	isScrollingUp = scrollStart > 0;
+	isScrollingDown = scrollStart + numVisible < numEntries;
 
-	deepestMenu = this;
-
-	int bottomy = end;
-	onscreen = 1;
-	i = 0;
-	this->maxNameWidth = 0;
-	this->maxValWidth = 0;
-	this->isScrollingUp = this->scrollStart > 0;
-	this->isScrollingDown = false;
-	this->selectedEntry = nil;
-	for(e = this->entries; e; e = e->next){
-		sz = fontGetStringSize(e->name);
-		e->r.x = x;
-		e->r.y = y;
-		e->r.w = sz.x;
-		e->r.h = sz.y;
-
-		if(i == this->selection)
-			this->selectedEntry = e;
-
-		if(i >= this->scrollStart)
-			y += sz.y + leading*fontscale;
-		if(y >= end){
-			this->isScrollingDown = true;
-			onscreen = 0;
-		}else
-			bottomy = y;
-		if(i >= this->scrollStart && onscreen)
-			this->numVisible++;
-
-		if(e->type == MENUVAR){
-			int valwidth = fontGetLen(((MenuEntry_Var*)e)->getValWidth());
-			if(valwidth > maxValWidth)
-				maxValWidth = valwidth;
-		}
-		if(e->r.w > maxNameWidth)
-			maxNameWidth = e->r.w;
-		i++;
+	selectedEntry = nil;
+	maxValWidth = 0;
+	int i = 0;
+	for (MenuEntry *entry = entries; entry; entry = entry->next, ++i) {
+		entry->r = {r.x, r.y + 16 + (i - scrollStart) * rowHeight, r.w, rowHeight};
+		if (i == selection)
+			selectedEntry = entry;
+		if (entry->type == MENUVAR)
+			maxValWidth = Max(maxValWidth, fontGetLen(((MenuEntry_Var *)entry)->getValWidth()));
 	}
-	if(this->r.w < maxNameWidth + maxValWidth + gap*fontscale)
-		this->r.w = maxNameWidth + maxValWidth + gap*fontscale;
 
-	this->scrollUpR = this->r;
-	this->scrollUpR.h = 16;
-	this->scrollDownR = this->scrollUpR;
-	this->scrollDownR.y = bottomy;
+	scrollUpR = {r.x, r.y, r.w, 16};
+	scrollDownR = {r.x, r.y + 16 + numVisible * rowHeight, r.w, 16};
+}
 
-	// Update active submenu
-	if(this->selectedEntry && this->selectedEntry->type == MENUSUB){
-		Menu *submenu = ((MenuEntry_Sub*)this->selectedEntry)->submenu;
-		submenu->r.x = this->r.x+this->r.w + 10;
-		submenu->r.y = this->r.y;
-		submenu->r.w = minwidth;	// update menu will expand
-		submenu->r.h = this->r.h;
-		submenu->update();
+static void
+DrawTrainerRect(float x, float y, float width, float height, const CRGBA &colour)
+{
+	CSprite2d::DrawRect(CRect(x, y, x + width, y + height), colour);
+	RwRenderStateSet(rwRENDERSTATEZTESTENABLE, (void *)FALSE);
+	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, (void *)FALSE);
+	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, (void *)TRUE);
+}
+
+static void
+PrintTrainerLabel(const char *label, int x, int y, int width)
+{
+	const int maxChars = width / fontGetLen(1);
+	if (maxChars < 4)
+		return;
+	std::string clipped(label);
+	if (clipped.size() > size_t(maxChars)) {
+		clipped.resize(maxChars - 3);
+		clipped += "...";
 	}
+	fontPrint(clipped.c_str(), x, y, MENUFONT_NORMAL);
 }
 
 void
 Menu::draw(void)
 {
-	static char val[100];
-	int i;
-	MenuEntry *e;
-	i = 0;
-	for(e = this->entries; e; e = e->next){
-		if(i >= this->scrollStart+this->numVisible)
-			break;
-		if(i >= this->scrollStart){
-			int style = MENUFONT_NORMAL;
-			if(i == this->selection)
-				style = this == activeMenu ? MENUFONT_SEL_ACTIVE : MENUFONT_SEL_INACTIVE;
-			if(style != MENUFONT_SEL_ACTIVE && e == mouseOverEntry)
-				style = MENUFONT_MOUSE;
-			fontPrint(e->name, e->r.x, e->r.y, style);
-			if(e->type == MENUVAR){
-				int valw = fontGetLen(((MenuEntry_Var*)e)->getValWidth());
-				((MenuEntry_Var*)e)->getValStr(val, 100);
-				fontPrint(val, e->r.x+this->r.w-valw, e->r.y, style);
-			}
+	int i = 0;
+	for (MenuEntry *entry = entries; entry && i < scrollStart + numVisible; entry = entry->next, ++i) {
+		if (i < scrollStart)
+			continue;
+		const RwRect &row = entry->r;
+		if (i == selection || entry == mouseOverEntry) {
+			// Flush queued text before drawing the next row's background.
+			RtCharsetBufferFlush();
+			DrawTrainerRect(row.x, row.y, row.w, row.h,
+			                i == selection ? CRGBA(44, 97, 107, 250) : CRGBA(39, 53, 61, 235));
+			if (i == selection)
+				DrawTrainerRect(row.x, row.y, 3, row.h, CRGBA(231, 192, 105, 255));
 		}
-		i++;
+
+		const int textY = row.y + rowLeading / 2;
+		const int valueWidth = Min(maxValWidth, row.w / 3);
+		PrintTrainerLabel(entry->name, row.x + rowPadding, textY, row.w - 3 * rowPadding - valueWidth);
+		if (entry->type == MENUSUB) {
+			fontPrint(">", row.x + row.w - rowPadding - fontGetLen(1), textY, MENUFONT_NORMAL);
+		} else if (entry->type == MENUVAR) {
+			char value[100];
+			((MenuEntry_Var *)entry)->getValStr(value, sizeof(value));
+			value[sizeof(value) - 1] = '\0';
+			const int width = Min(fontGetStringSize(value).x, valueWidth);
+			PrintTrainerLabel(value, row.x + row.w - rowPadding - width, textY, Max(width, fontGetLen(4)));
+		}
 	}
 
-	if(this->isScrollingUp)
-		drawArrow(this->scrollUpR, -1, isMouseInRect(this->scrollUpR));
-	if(this->isScrollingDown)
-		drawArrow(this->scrollDownR, 1, isMouseInRect(this->scrollDownR));
-
-	if(this->selectedEntry && this->selectedEntry->type == MENUSUB)
-		((MenuEntry_Sub*)this->selectedEntry)->submenu->draw();
+	RtCharsetBufferFlush();
+	if (isScrollingUp)
+		drawArrow(scrollUpR, -1, isMouseInRect(scrollUpR));
+	if (isScrollingDown)
+		drawArrow(scrollDownR, 1, isMouseInRect(scrollDownR));
 }
 
 Menu::~Menu(void)
@@ -754,6 +737,7 @@ findMenu(const char *name)
 			Menu *submenu = new Menu();
 			submenu->parent = m;
 			MenuEntry *me = new MenuEntry_Sub(curname, submenu);
+			submenu->name = me->name;
 			// Don't sort submenus outside the toplevel menu
 			if(m == &toplevel)
 				m->insertEntrySorted(me);
@@ -809,11 +793,13 @@ DebugMenuInit(void)
 
 
 	menuInitialized = true;
+	return true;
 }
 
 void
 DebugMenuShutdown(void)
 {
+	DebugMenuClose();
 	if(menuInitialized){
 		destroyMenuFont();
 		RwRasterDestroy(cursor);
@@ -825,7 +811,6 @@ DebugMenuShutdown(void)
 		new (&toplevel) Menu();
 
 		activeMenu = &toplevel;
-		deepestMenu = &toplevel;
 		mouseOverMenu = nil;
 		mouseOverEntry = nil;
 	}
@@ -843,7 +828,7 @@ processInput(void)
 	// Implement auto-repeat
 #define X(var, keycode) \
 	if(var){ \
-		repeattime = downtime = CTimer::GetTimeInMilliseconds(); \
+		repeattime = downtime = CTimer::GetTimeInMillisecondsPauseMode(); \
 		lastkeydown = keycode; \
 		keyptr = &var; \
 	}
@@ -851,7 +836,7 @@ processInput(void)
 #undef X
 	if(lastkeydown){
 		if(KEYDOWN(lastkeydown)){
-			int curtime = CTimer::GetTimeInMilliseconds();
+			int curtime = CTimer::GetTimeInMillisecondsPauseMode();
 			if(curtime - downtime > REPEATDELAY){
 				if(curtime - repeattime > REPEATINTERVAL){
 					repeattime = curtime;
@@ -866,7 +851,7 @@ processInput(void)
 	// Also for mouse buttons
 #define X(var, num)							  \
 	if(var){							  \
-		repeattime = downtime = CTimer::GetTimeInMilliseconds();	  \
+		repeattime = downtime = CTimer::GetTimeInMillisecondsPauseMode();	  \
 		lastbuttondown = num;					  \
 		buttonptr = &var;					  \
 	}
@@ -874,7 +859,7 @@ processInput(void)
 #undef X
 	if(lastbuttondown){
 		if(buttondown[lastbuttondown-1]){
-			int curtime = CTimer::GetTimeInMilliseconds();
+			int curtime = CTimer::GetTimeInMillisecondsPauseMode();
 			if(curtime - downtime > REPEATDELAY){
 				if(curtime - repeattime > REPEATINTERVAL){
 					repeattime = curtime;
@@ -886,15 +871,8 @@ processInput(void)
 		}
 	}
 
-	// Walk through all visible menus and figure out which one the mouse is over
-	mouseOverMenu = nil;
+	mouseOverMenu = isMouseInRect(activeMenu->r) ? activeMenu : nil;
 	mouseOverEntry = nil;
-	Menu *menu;
-	for(menu = deepestMenu; menu; menu = menu->parent)
-		if(isMouseInRect(menu->r)){
-			mouseOverMenu = menu;
-			break;
-		}
 	if(mouseOverMenu){
 		// Walk all visibile entries and figure out which one the mouse is over
 		MenuEntry *e;
@@ -964,19 +942,30 @@ processInput(void)
 		activeMenu = mouseOverEntry->menu;
 		activeMenu->changeSelection(mouseOverEntry);
 	}
-	if(KEYJUSTDOWN(rsENTER)){
-		if(activeMenu->selectedEntry && activeMenu->selectedEntry->type == MENUSUB)
-			activeMenu = ((MenuEntry_Sub*)activeMenu->selectedEntry)->submenu;
-	}else if(KEYJUSTDOWN(rsBACKSP)){
-		if(activeMenu->parent)
-			activeMenu = activeMenu->parent;
-	}else{
-		if(mouseOverEntry && mouseOverEntry->type == MENUVAR)
-			((MenuEntry_Var*)mouseOverEntry)->processInput(true, mouseOverEntry == activeMenu->selectedEntry);
-		if(activeMenu->selectedEntry && activeMenu->selectedEntry->type == MENUVAR &&
-		   mouseOverEntry != activeMenu->selectedEntry)
-			((MenuEntry_Var*)activeMenu->selectedEntry)->processInput(false, true);
+	activeMenu->update();
+	if ((KEYJUSTDOWN(rsENTER) || button1justdown) && activeMenu->selectedEntry) {
+		MenuEntry *entry = activeMenu->selectedEntry;
+		if (entry->type == MENUSUB && (!button1justdown || mouseOverEntry == entry)) {
+			activeMenu = ((MenuEntry_Sub *)entry)->submenu;
+			return;
+		}
+		if (KEYJUSTDOWN(rsENTER) && entry->type == MENUVAR &&
+		    ((MenuEntry_Var *)entry)->vartype == MENUVAR_CMD) {
+			MenuEntry_Cmd *command = (MenuEntry_Cmd *)entry;
+			if (command->triggerFunc)
+				command->triggerFunc();
+			return;
+		}
 	}
+	if (KEYJUSTDOWN(rsBACKSP) && activeMenu->parent) {
+		activeMenu = activeMenu->parent;
+		return;
+	}
+	if (mouseOverEntry && mouseOverEntry->type == MENUVAR)
+		((MenuEntry_Var *)mouseOverEntry)->processInput(true, mouseOverEntry == activeMenu->selectedEntry);
+	if (activeMenu->selectedEntry && activeMenu->selectedEntry->type == MENUVAR &&
+	    mouseOverEntry != activeMenu->selectedEntry)
+		((MenuEntry_Var *)activeMenu->selectedEntry)->processInput(false, true);
 }
 
 void
@@ -1009,64 +998,108 @@ updateMouse(void)
 	pad->NewMouseControllerState.y = 0.0f;
 }
 
+static void
+LayoutTrainer()
+{
+	activeMenu->r = {
+		panelLeft, panelTop + panelHeader, Min(panelWidth, Max(1, screenWidth - 2 * panelLeft)),
+		Max(48, Min(screenHeight - panelTop - panelHeader - panelFooter - 20,
+		            32 + 12 * (fontDesc.height + rowLeading)))
+	};
+	activeMenu->update();
+}
+
+void
+DebugMenuClose(void)
+{
+	if (!menuOn)
+		return;
+	menuOn = false;
+	CPad::GetPad(0)->SetEnablePlayerControls(PLAYERCONTROL_TRAINER);
+	lastkeydown = lastbuttondown = 0;
+	mouseOverMenu = nil;
+	mouseOverEntry = nil;
+}
+
 void
 DebugMenuProcess(void)
 {
-	// We only process some input here
-
 	CPad *pad = CPad::GetPad(0);
-	if(CTRLJUSTDOWN('M'))
-		menuOn = !menuOn;
-	if(!menuOn)
+	if (CTimer::GetIsPaused() || FrontEndMenuManager.m_bMenuActive ||
+	    FrontEndMenuManager.m_bWantToRestart || FrontEndMenuManager.m_bWantToLoad ||
+	    CCutsceneMgr::IsCutsceneProcessing() || (menuOn && pad->GetEscapeJustDown())) {
+		DebugMenuClose();
+		return;
+	}
+	if (pad->GetFJustDown(7)) { // F8
+		if (menuOn) {
+			DebugMenuClose();
+			return;
+		}
+		if (!pad->ArePlayerControlsDisabled())
+			menuOn = true;
+	}
+	if (!menuOn)
 		return;
 
-	pad->DisablePlayerControls = 1;
-	// TODO: this could happen earlier
-	if(!menuInitialized)
+	pad->SetDisablePlayerControls(PLAYERCONTROL_TRAINER);
+	if (!menuInitialized)
 		DebugMenuInit();
+	screenWidth = SCREEN_WIDTH;
+	screenHeight = SCREEN_HEIGHT;
 	updateMouse();
-
+	LayoutTrainer();
+	processInput();
 }
 
 void
 DebugMenuRender(void)
 {
-	if(!menuOn)
+	if (!menuOn || FrontEndMenuManager.m_bMenuActive || CTimer::GetIsPaused())
 		return;
 
 	RwRenderStateSet(rwRENDERSTATEZTESTENABLE, 0);
 	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, 0);
-	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, (void*)TRUE);
-	RwRenderStateSet(rwRENDERSTATESRCBLEND, (void*)rwBLENDSRCALPHA);
-	RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDINVSRCALPHA);
+	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, (void *)TRUE);
+	RwRenderStateSet(rwRENDERSTATESRCBLEND, (void *)rwBLENDSRCALPHA);
+	RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void *)rwBLENDINVSRCALPHA);
 	RwRenderStateSet(rwRENDERSTATEFOGENABLE, 0);
-	RwRenderStateSet(rwRENDERSTATECULLMODE, (void*)rwCULLMODECULLNONE);
+	RwRenderStateSet(rwRENDERSTATECULLMODE, (void *)rwCULLMODECULLNONE);
 
-	RwCamera *cam = RwCameraGetCurrentCamera();
-	screenWidth = RwRasterGetWidth(RwCameraGetRaster(cam));
-	screenHeight = RwRasterGetHeight(RwCameraGetRaster(cam));
+	RwCamera *camera = RwCameraGetCurrentCamera();
+	screenWidth = RwRasterGetWidth(RwCameraGetRaster(camera));
+	screenHeight = RwRasterGetHeight(RwCameraGetRaster(camera));
+	LayoutTrainer();
 
-//	if(screenHeight > 1080)
-//		fontscale = 2;
-//	else
-		fontscale = 1;
+	const RwRect &list = activeMenu->r;
+	DrawTrainerRect(panelLeft, panelTop, list.w, panelHeader + list.h + panelFooter, CRGBA(11, 18, 23, 235));
+	DrawTrainerRect(panelLeft, panelTop, list.w, 28, CRGBA(28, 51, 59, 255));
+	DrawTrainerRect(panelLeft, panelTop + 28, list.w, 2, CRGBA(231, 192, 105, 255));
+	fontPrint("LIBERTY CITY TRAINER", panelLeft + rowPadding, panelTop + 8, MENUFONT_NORMAL);
 
-	Pt sz;
-	sz = fontPrint("Debug Menu", firstBorder*fontscale+30, topBorder, 0);
-
-	toplevel.r.x = firstBorder*fontscale;
-	toplevel.r.y = topBorder + sz.y + 10;
-	toplevel.r.w = minwidth;	// update menu will expand
-	toplevel.r.h = screenHeight - 10 - toplevel.r.y;
-	toplevel.update();
-	toplevel.draw();
-	processInput();
+	std::string path;
+	for (const Menu *menu = activeMenu; menu->parent; menu = menu->parent) {
+		if (!path.empty())
+			path = " / " + path;
+		path = menu->name + path;
+	}
+	char count[32];
+	snprintf(count, sizeof(count), "%d / %d",
+	         activeMenu->numEntries ? activeMenu->selection + 1 : 0, activeMenu->numEntries);
+	const int countWidth = fontGetStringSize(count).x;
+	PrintTrainerLabel(path.empty() ? "Categories" : path.c_str(), panelLeft + rowPadding,
+	                  panelTop + 37, list.w - countWidth - 3 * rowPadding);
+	fontPrint(count, panelLeft + list.w - rowPadding - countWidth, panelTop + 37, MENUFONT_NORMAL);
 	RtCharsetBufferFlush();
 
+	activeMenu->draw();
+	PrintTrainerLabel("Arrows: Navigate   Enter: Open / Run", panelLeft + rowPadding,
+	                  list.y + list.h + 1, list.w - 2 * rowPadding);
+	PrintTrainerLabel("Backspace: Back   F8: Close", panelLeft + rowPadding,
+	                  list.y + list.h + 13, list.w - 2 * rowPadding);
+	RtCharsetBufferFlush();
 	drawMouse();
 }
-
-
 
 void
 drawArrow(RwRect r, int direction, int style)

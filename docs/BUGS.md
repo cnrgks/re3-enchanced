@@ -244,6 +244,13 @@ Ayar varsayılan olarak kapalı. Log sürücü/yolcu ve yaya payını ayrı
 veriyor. Baskın nedenin ölçümü yeni build ve aynı şehir rotasında oyun
 denemesi bekliyor.
 
+**Park edilmiş araçlar:** Distant and Crowded World açıkken normal araç
+üreticileri üç kat uzaktan devreye giriyor. Yakındaki ve doğrudan görünen
+park yerlerinde model veya çarpışma geç yüklenirse üretim uygun ana kadar
+bekletiliyor. Yer ve fiziksel araç havuzu kontrolleri geçerli. Parklı araç
+bütçesi normal trafikten pay bırakacak şekilde en fazla 30'a çıkabiliyor.
+Teknelerin üretim aralığı eski kuralları kullanıyor. Oyun denemesi bekliyor.
+
 ### GPS-01 — elle işaretlemede üst yol
 
 **Derleme:** v1.10 Windows OpenGL x64 derlemesi ve mevcut geometri, rota,
@@ -520,6 +527,20 @@ satırlarıyla aynı fontun büyük harfleriyle çiziliyor. Görsel doğrulama b
 v1.14 denemesinde hizmet simgelerinin minimap menzili dışında da göründüğü
 bildirildi. Hizmetlerin görünürlük sınırı ve tam opaklık kuralı MAP-02'de
 takip ediliyor. Oyun doğrulaması bekliyor.
+
+### Options menü düzeni
+
+Options sırası Gameplay, Graphics, Display, Audio, Controls, Language ve
+Player Setup. Gameplay Setup içinde F5 Quicksave, Mission Autosave ve Heal
+After Saving yer alıyor. Autosave menü etiketi slot numarası içermiyor.
+Mission GPS Display altında ve mevcut kayıtlı değerini kullanıyor.
+Smooth Radar Zoom ve Pause Map her zaman etkin; ayrı ayarları kaldırıldı.
+
+Graphics → Distant and Crowded World açıkken araç/yaya mesafesi 3×,
+yüksek detay ve ayrı araç içi ped bütçesi birlikte etkin. Kapalıyken
+mesafe 1× ve standart detay/bütçe geçerli. Varsayılan kapalı.
+Eski Distance, Detail, Separate Traffic Ped Budget ve Traffic Multiplier
+INI değerleri bu yeni anahtarı değiştirmiyor. Oyun içi doğrulama bekliyor.
 
 ### UI-01 — ekran biçiminde üçüncü seçenek
 

@@ -2289,11 +2289,7 @@ WinMain(HINSTANCE instance,
 				{
 					case GS_START_UP:
 					{
-#ifdef NO_MOVIES
 						gGameState = gbNoMovies ? GS_INIT_ONCE : GS_INIT_LOGO_MPEG;
-#else
-						gGameState = GS_INIT_LOGO_MPEG;
-#endif
 						TRACE("gGameState = GS_INIT_LOGO_MPEG");
 						break;
 					}

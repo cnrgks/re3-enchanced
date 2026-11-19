@@ -3,7 +3,7 @@
 enum {
 	PLAYERCONTROL_ENABLED = 0,
 	PLAYERCONTROL_CAMERA = 1,
-	PLAYERCONTROL_UNK2 = 2,
+	PLAYERCONTROL_TRAINER = 2,
 	PLAYERCONTROL_GARAGE = 4,
 	PLAYERCONTROL_UNK8 = 8,
 	PLAYERCONTROL_UNK10 = 16,
@@ -312,8 +312,8 @@ public:
 
 	float GetMouseX() { return NewMouseControllerState.x; }
 	float GetMouseY() { return NewMouseControllerState.y; }
-	float GetMouseXThisFrame() { return MouseXThisFrame; }
-	float GetMouseYThisFrame() { return MouseYThisFrame; }
+	float GetMouseXThisFrame();
+	float GetMouseYThisFrame();
 
 	// keyboard
 	

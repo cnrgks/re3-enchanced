@@ -3700,7 +3700,7 @@ CMenuManager::LoadAllTextures()
 		if (!menuOptionAdded && (firstTile = RwTextureRead(MapFilenames[i][0], MapFilenames[i][1]))) {
 			RwTextureDestroy(firstTile);
 			FrontendOptionSetCursor(MENUPAGE_PAUSE_MENU, 2, false);
-			FrontendOptionAddDynamic("FEG_MAP", Enhanced::MapOptionDraw, nil, Enhanced::OpenMap);
+			FrontendOptionAddDynamic("FEG_MAP", nil, nil, Enhanced::OpenMap);
 			menuOptionAdded = true;
 		}
 		m_aMapSprites[i].SetTexture(MapFilenames[i][0], MapFilenames[i][1]);
@@ -3708,7 +3708,7 @@ CMenuManager::LoadAllTextures()
 	}
     if (!menuOptionAdded) {
         FrontendOptionSetCursor(MENUPAGE_PAUSE_MENU, 2, false);
-        FrontendOptionAddDynamic("FEG_MAP", Enhanced::MapOptionDraw, nil, Enhanced::OpenMap);
+        FrontendOptionAddDynamic("FEG_MAP", nil, nil, Enhanced::OpenMap);
         menuOptionAdded = true;
     }
 	fMapSize = SCREEN_HEIGHT * 2.0f;
@@ -4201,7 +4201,7 @@ CMenuManager::Process(void)
 	CPad *pad = CPad::GetPad(0);
 #ifdef MENU_MAP
 	const bool mapKey = pad->GetCharJustDown('M');
-	const bool openMapFromGame = mapKey && Enhanced::MenuMap && !m_bMenuActive &&
+	const bool openMapFromGame = mapKey && !m_bMenuActive &&
 		!m_bSaveMenuActive && !m_bGameNotLoaded && FindPlayerPed() &&
 		!CCutsceneMgr::IsCutsceneProcessing() && !TheCamera.m_WideScreenOn;
 	if (openMapFromGame)

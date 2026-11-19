@@ -37,6 +37,7 @@
 #include "World.h"
 #include "Ped.h"
 #include "Font.h"
+#include "Enhanced.h"
 #include "Pad.h"
 #include "Hud.h"
 #include "User.h"
@@ -96,7 +97,7 @@ bool gbShowTimebars;
 bool gbDrawVersionText; // Our addition, we think it was always enabled on !MASTER builds
 #endif
 #ifdef NO_MOVIES
-bool gbNoMovies;
+int8 gbNoMovies = 0;
 #endif
 
 volatile int32 frameCount;
@@ -1527,6 +1528,7 @@ Render2dStuff(void)
 	CDarkel::DrawMessages();
 	CGarages::PrintMessages();
 	CPad::PrintErrorMessage();
+	Enhanced::DrawSelectionWheel();
 	CFont::DrawFonts();
 
 #ifdef DEBUGMENU
@@ -1761,6 +1763,11 @@ Idle(void *arg)
 	CDraw::SetAspectRatio(CDraw::FindAspectRatio());
 #endif
 
+	Enhanced::CancelSelectionWheelIfUnavailable();
+#ifdef DEBUGMENU
+	if (CTimer::GetIsPaused() || FrontEndMenuManager.m_bMenuActive)
+		DebugMenuClose();
+#endif
 	CTimer::Update();
 	if (!CTimer::GetIsWindowPaused())
 		CPad::GetPad(0)->UpdateMouse();

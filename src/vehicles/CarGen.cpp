@@ -7,6 +7,7 @@
 #include "Camera.h"
 #include "CarCtrl.h"
 #include "CutsceneMgr.h"
+#include "Enhanced.h"
 #include "General.h"
 #include "Pools.h"
 #include "Streaming.h"
@@ -46,13 +47,21 @@ uint32 CCarGenerator::CalcNextGen()
 
 void CCarGenerator::DoInternalProcessing()
 {
-	if (CheckForBlockage()) {
+	const bool extended = Enhanced::DistantCrowdedWorld && !CModelInfo::IsBoatModel(m_nModelIndex);
+	if (!extended && CheckForBlockage()) {
 		m_nTimer += 4;
 		if (m_nUsesRemaining == 0)
 			--CTheCarGenerators::CurrentActiveCount;
 		return;
 	}
-	if (CCarCtrl::NumParkedCars >= 10)
+	int parkedLimit = 10;
+	if (extended) {
+		const int halfTrafficBudget = int(CCarCtrl::MaxNumberOfCarsInUse * Enhanced::VehicleRangeMultiplier()) / 2;
+		parkedLimit = Clamp(halfTrafficBudget, 10, 30);
+		if (CCarCtrl::AmbientVehicleSlotsAvailable() == 0)
+			return;
+	}
+	if (CCarCtrl::NumParkedCars >= parkedLimit)
 		return;
 	CStreaming::RequestModel(m_nModelIndex, STREAMFLAGS_DEPENDENCY);
 	if (!CStreaming::HasModelLoaded(m_nModelIndex))
@@ -94,8 +103,22 @@ void CCarGenerator::DoInternalProcessing()
 				pos.z = cp.point.z;
 		}
 		if (!groundFound) {
+			if (extended)
+				return; // Retry when collision streams in, without consuming a generator use.
 			debug("CCarGenerator::DoInternalProcessing - can't find ground z for new car x = %f y = %f \n", m_vecPos.x, m_vecPos.y);
 		}else{
+			if (extended) {
+				const CVector centre = pos + CVector(0.0f, 0.0f, m_vecSup.z * 0.5f);
+				const float visibleRange = 100.0f * TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier();
+				const bool withinDrawRange = (TheCamera.GetPosition() - centre).MagnitudeSqr() <= sq(visibleRange + m_fSize);
+				if (TheCamera.GetScreenFadeStatus() != FADE_2 && withinDrawRange &&
+					TheCamera.IsSphereVisible(centre, m_fSize) && !Enhanced::IsTrafficSpawnOccluded(pos))
+					return;
+				int16 entities;
+				CWorld::FindObjectsKindaColliding(centre, m_fSize, false, &entities, 2, nil, false, true, true, false, false);
+				if (entities > 0)
+					return;
+			}
 			CAutomobile* pCar;
 
 			// So game crashes if it's bike :D
@@ -188,8 +211,12 @@ bool CCarGenerator::CheckIfWithinRangeOfAnyPlayer()
 {
 	CVector2D direction = FindPlayerCentreOfWorld(CWorld::PlayerInFocus) - m_vecPos;
 	float distance = direction.Magnitude();
-	float farclip = 120.0f * TheCamera.GenerationDistMultiplier;
-	float nearclip = farclip - 20.0f;
+	const float nativeFarclip = 120.0f * TheCamera.GenerationDistMultiplier;
+	const bool extended = Enhanced::DistantCrowdedWorld && !CModelInfo::IsBoatModel(m_nModelIndex);
+	const float farclip = extended ? nativeFarclip * Enhanced::VehicleRangeMultiplier() : nativeFarclip;
+	const float nearclip = nativeFarclip - 20.0f;
+	if (extended && m_bIsBlocking && distance >= nativeFarclip)
+		m_bIsBlocking = false;
 	if (distance >= farclip){
 		if (m_bIsBlocking)
 			m_bIsBlocking = false;
@@ -199,6 +226,8 @@ bool CCarGenerator::CheckIfWithinRangeOfAnyPlayer()
 		return true;
 	if (m_bIsBlocking)
 		return false;
+	if (extended)
+		return true; // The actual ground position is checked for visibility before spawning.
 	if (distance < nearclip)
 		return false;
 	return DotProduct2D(direction, FindPlayerSpeed()) <= 0;

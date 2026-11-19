@@ -151,6 +151,7 @@ void DebugMenuEntrySetAddress(MenuEntry *e, void *addr);
 void DebugMenuInit(void);
 void DebugMenuShutdown(void);
 void DebugMenuProcess(void);
+void DebugMenuClose(void);
 void DebugMenuRender(void);
 
 

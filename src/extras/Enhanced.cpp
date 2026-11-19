@@ -3,6 +3,10 @@
 #include "crossplatform.h"
 #include "platform.h"
 #include "Enhanced.h"
+#include "Darkel.h"
+#include "DMAudio.h"
+#include "Font.h"
+#include "MusicManager.h"
 #include "EnhancedMath.h"
 #include "EnhancedRoute.h"
 #include "Frontend.h"
@@ -40,15 +44,13 @@
 #include <map>
 
 namespace Enhanced {
-int8 QuickSave = 0, AutoSave = 0, RadarZoom = 0;
-int8 GPS = 0, MenuMap = 1, VehicleDetail = 0, PedDetail = 0, HealAfterSave = 0;
+int8 QuickSave = 0, AutoSave = 0, GPS = 0, HealAfterSave = 0;
 #ifdef RW_D3D9
 int8 Borderless = 1;
 #else
 int8 Borderless = 0;
 #endif
-int8 VehicleDistance = 0, PedDistance = 0, ScreenFormat = 0;
-int8 VehicleTrafficMultiplier = 0, PedTrafficMultiplier = 0, SeparateTrafficPedBudget = 0;
+int8 ScreenFormat = 0, DistantCrowdedWorld = 0;
 #ifdef _WIN32
 int8 BorderlessCaptureProbe = 1, FullscreenDXGIFlipY = 1;
 #else
@@ -87,11 +89,11 @@ static CVector routeStart;
 bool FindHomePosition(const CVector &current, CVector &home);
 float VehicleRangeMultiplier()
 {
-    return 1.0f + Clamp(int(VehicleDistance), 0, 2);
+    return DistantCrowdedWorld ? 3.0f : 1.0f;
 }
 float PedRangeMultiplier()
 {
-    return 1.0f + Clamp(int(PedDistance), 0, 2);
+    return VehicleRangeMultiplier();
 }
 bool IsSavingAtHome()
 {
@@ -108,32 +110,22 @@ wchar *GetText(const char *key)
 {
     struct Entry { const char *key; const char *value; wchar wide[120]; };
     static Entry strings[] = {
-        { "ENHANCE", "ENHANCED OPTIONS" },
+        { "EN_GAME", "GAMEPLAY" },
+        { "EN_GSET", "GAMEPLAY SETUP" },
         { "EN_DEFT", "RESTORE DEFAULTS" },
         { "EN_DEFP", "Are you sure you want to restore the default settings?" },
         { "EN_NO", "NO" },
         { "EN_YES", "YES" },
-        { "EN_QSAV", "F5 SAVE MENU" },
-        { "EN_AUTO", "MISSION AUTOSAVE (SLOT 8)" },
+        { "EN_QSAV", "F5 QUICKSAVE" },
+        { "EN_AUTO", "MISSION AUTOSAVE" },
         { "EN_ASOK", "Autosaved." },
         { "EN_ASER", "Autosave failed." },
-        { "EN_RADR", "SMOOTH RADAR ZOOM (T)" },
         { "EN_GPS", "MISSION GPS" },
-        { "EN_MAP", "PAUSE MAP" },
-        { "EN_VLOD", "HIGH DETAIL VEHICLES" },
-        { "EN_PLOD", "HIGH DETAIL PEDESTRIANS" },
         { "EN_HEAL", "HEAL AFTER SAVING" },
+        { "EN_INT", "SKIP INTROS" },
         { "EN_BORD", "BORDERLESS FULLSCREEN" },
         { "EN_BRDL", "BORDERLESS" },
-        { "EN_VDST", "VEHICLE DISTANCE" },
-        { "EN_PDST", "PEDESTRIAN DISTANCE" },
-        { "EN_VMUL", "VEHICLE TRAFFIC MULTIPLIER" },
-        { "EN_PMUL", "PEDESTRIAN TRAFFIC MULTIPLIER" },
-        { "EN_PSEP", "SEPARATE TRAFFIC PED BUDGET" },
-        { "EN_100", "1X" },
-        { "EN_200", "2X" }, { "EN_300", "3X" }, { "EN_400", "4X" },
-        { "EN_500", "5X" }, { "EN_600", "6X" }, { "EN_700", "7X" },
-        { "EN_800", "8X" }, { "EN_900", "9X" }, { "EN_10X", "10X" },
+        { "EN_DCW", "DISTANT AND CROWDED WORLD" },
         { "EN_SAFE", "To save, stand still on foot with no active mission and no wanted level." },
     };
     for (unsigned i = 0; i < ARRAY_SIZE(strings); ++i) {
@@ -156,6 +148,302 @@ static bool GameReady()
         !CReplay::IsPlayingBack() && p->m_fHealth > 0.0f;
 }
 
+
+enum class SelectionWheel { Closed, Radio, Weapon };
+
+static SelectionWheel selectionWheel;
+static uint8 wheelSelection;
+static bool wheelRadioIconsLoaded;
+static CVector2D wheelPointer;
+static CSprite2d wheelRadioIcons[USERTRACK + 1];
+
+static const char *const radioTextureNames[] = {
+    "fe_radio1", "fe_radio2", "fe_radio5", "fe_radio7", "fe_radio8",
+    "fe_radio3", "fe_radio4", "fe_radio6", "fe_radio9",
+};
+static const char *const weaponLabels[] = {
+    "Unarmed", "Baseball Bat", "Pistol", "Uzi", "Shotgun", "AK-47",
+    "M16", "Sniper Rifle", "Rocket Launcher", "Flamethrower", "Molotov",
+    "Grenade", "Detonator",
+};
+static_assert(ARRAY_SIZE(radioTextureNames) == USERTRACK, "Radio icon order");
+static_assert(ARRAY_SIZE(weaponLabels) == WEAPONTYPE_TOTAL_INVENTORY_WEAPONS, "Weapon icon order");
+
+static bool CanSelectRadio()
+{
+    CVehicle *vehicle = FindPlayerVehicle();
+    return vehicle && MusicManager.PlayerInCar() && !MusicManager.UsesPoliceRadio(vehicle) &&
+        !MusicManager.m_bRadioSetByScript && !MusicManager.m_bAnnouncementInProgress;
+}
+
+static bool CanSelectWeapon(CPlayerPed *player)
+{
+    return !player->bInVehicle && !CWorld::Players[CWorld::PlayerInFocus].m_bInRemoteMode &&
+        player->IsPedInControl() && !CDarkel::FrenzyOnGoing() &&
+        player->m_nPedState != PED_ATTACK && player->m_nPedState != PED_FIGHT &&
+        player->m_nPedState != PED_AIM_GUN;
+}
+
+static void CloseSelectionWheel()
+{
+    selectionWheel = SelectionWheel::Closed;
+    CTimer::SetWeaponWheelSlowMotion(false);
+}
+
+bool IsSelectionWheelOpen()
+{
+    return selectionWheel != SelectionWheel::Closed;
+}
+
+bool IsWeaponWheelOpen()
+{
+    return selectionWheel == SelectionWheel::Weapon;
+}
+
+void CancelSelectionWheelIfUnavailable()
+{
+    if (selectionWheel != SelectionWheel::Closed && !GameReady())
+        CloseSelectionWheel();
+}
+
+static int CollectWheelEntries(uint8 *entries)
+{
+    int count = 0;
+    if (selectionWheel == SelectionWheel::Radio) {
+        for (int i = HEAD_RADIO; i <= CHATTERBOX; ++i)
+            entries[count++] = i;
+        if (DMAudio.IsMP3RadioChannelAvailable())
+            entries[count++] = USERTRACK;
+        entries[count++] = RADIO_OFF;
+    } else {
+        CPlayerPed *player = FindPlayerPed();
+        for (int i = 0; i < WEAPONTYPE_TOTAL_INVENTORY_WEAPONS; ++i) {
+            if (player->HasWeapon(i) &&
+                (i <= WEAPONTYPE_BASEBALLBAT || i == WEAPONTYPE_DETONATOR ||
+                    player->GetWeapon(i).m_nAmmoTotal > 0))
+                entries[count++] = i;
+        }
+    }
+    return count;
+}
+
+void ProcessSelectionWheel()
+{
+    if (!GameReady() || CPad::GetPad(0)->ArePlayerControlsDisabled()) {
+        CloseSelectionWheel();
+        return;
+    }
+
+    CPad *pad = CPad::GetPad(0);
+    CPlayerPed *player = FindPlayerPed();
+    // Function-key indices are zero-based.
+    constexpr int radioKey = 5;
+    constexpr int weaponKey = 6;
+    if (selectionWheel == SelectionWheel::Closed) {
+        wheelPointer = CVector2D(0.0f, 0.0f);
+        if (pad->GetFJustDown(radioKey) && CanSelectRadio()) {
+            selectionWheel = SelectionWheel::Radio;
+            wheelSelection = MusicManager.GetRadioInCar();
+        } else if (pad->GetFJustDown(weaponKey) && CanSelectWeapon(player)) {
+            selectionWheel = SelectionWheel::Weapon;
+            wheelSelection = player->GetWeapon()->m_eWeaponType;
+            CTimer::SetWeaponWheelSlowMotion(true);
+        } else {
+            return;
+        }
+    }
+
+    const bool radio = selectionWheel == SelectionWheel::Radio;
+    if (pad->GetBackspaceJustDown() ||
+        (radio ? !CanSelectRadio() : !CanSelectWeapon(player))) {
+        CloseSelectionWheel();
+        return;
+    }
+
+    uint8 entries[WEAPONTYPE_TOTAL_INVENTORY_WEAPONS];
+    const int count = CollectWheelEntries(entries);
+    if (count == 0) {
+        CloseSelectionWheel();
+        return;
+    }
+    int selected = 0;
+    while (selected + 1 < count && entries[selected] != wheelSelection)
+        ++selected;
+    if (entries[selected] != wheelSelection)
+        selected = 0;
+    const int direction = int(pad->GetRightJustDown()) - int(pad->GetLeftJustDown());
+    if (direction) {
+        wheelPointer = CVector2D(0.0f, 0.0f);
+        selected = (selected + count + direction) % count;
+    } else if (pad->GetMouseX() != 0.0f || pad->GetMouseY() != 0.0f) {
+        const float dx = MousePointerStateHelper.bInvertHorizontally ? -pad->GetMouseX() : pad->GetMouseX();
+        const float dy = MousePointerStateHelper.bInvertVertically ? -pad->GetMouseY() : pad->GetMouseY();
+        wheelPointer.x += dx;
+        wheelPointer.y += dy;
+        const float distance = Sqrt(SQR(wheelPointer.x) + SQR(wheelPointer.y));
+        if (distance >= 12.0f) {
+            const float angle = Atan2(wheelPointer.y, wheelPointer.x) + HALFPI + TWOPI;
+            selected = int(angle / (TWOPI / count) + 0.5f) % count;
+            if (distance > 48.0f) {
+                wheelPointer.x *= 48.0f / distance;
+                wheelPointer.y *= 48.0f / distance;
+            }
+        }
+    }
+    wheelSelection = entries[selected];
+
+    if (!pad->GetF(radio ? radioKey : weaponKey)) {
+        if (radio) {
+            MusicManager.SelectCarStation(wheelSelection);
+        } else if (player->GetWeapon()->m_eWeaponType != wheelSelection) {
+            player->m_nSelectedWepSlot = wheelSelection;
+            player->MakeChangesForNewWeapon(wheelSelection);
+        }
+        CloseSelectionWheel();
+    }
+}
+
+static bool LoadWheelTxd(int slot, const char *filename)
+{
+    RwStream *stream = RwStreamOpen(rwSTREAMFILENAME, rwSTREAMREAD, filename);
+    if (!stream)
+        return false;
+    const bool loaded = CTxdStore::LoadTxd(slot, stream);
+    RwStreamClose(stream, nil);
+    return loaded;
+}
+
+static void LoadSelectionWheelTextures()
+{
+    if (wheelRadioIconsLoaded)
+        return;
+
+    wheelRadioIconsLoaded = true;
+    const int radioSlot = CTxdStore::AddTxdSlot("wheel_radio");
+    CTxdStore::PushCurrentTxd();
+    if (LoadWheelTxd(radioSlot, "MODELS/FRONTEND.TXD")) {
+        CTxdStore::SetCurrentTxd(radioSlot);
+        for (int i = 0; i < USERTRACK; ++i)
+            wheelRadioIcons[i].SetTexture(radioTextureNames[i], "");
+    }
+
+    const int menuSlot = CTxdStore::AddTxdSlot("wheel_menu");
+    if (LoadWheelTxd(menuSlot, "MODELS/MENU.TXD")) {
+        CTxdStore::SetCurrentTxd(menuSlot);
+        wheelRadioIcons[USERTRACK].SetTexture("mp3logo", "mp3logoA");
+    }
+    CTxdStore::PopCurrentTxd();
+    CTxdStore::RemoveTxdSlot(menuSlot);
+    CTxdStore::RemoveTxdSlot(radioSlot);
+}
+
+void FreeSelectionWheelTextures()
+{
+    CloseSelectionWheel();
+    for (auto &icon : wheelRadioIcons)
+        icon.Delete();
+    wheelRadioIconsLoaded = false;
+}
+
+static void PrintWheelText(float x, float y, const char *label, float size)
+{
+    wchar wide[72];
+    AsciiToUnicode(label, wide);
+    CFont::SetScale(SCREEN_SCALE_X(size), SCREEN_SCALE_Y(size * 1.4f));
+    CFont::PrintString(x, y, wide);
+}
+
+static const char *RadioLabel(uint8 station)
+{
+    static const char *const labels[] = {
+        "Head Radio", "Double Clef FM", "K-JAH", "Rise FM", "Lips 106",
+        "Game FM", "MSX FM", "Flashback 95.6", "Chatterbox", "MP3 Player",
+    };
+    return station == RADIO_OFF ? "Radio Off" : labels[station];
+}
+
+void DrawSelectionWheel()
+{
+    if (selectionWheel == SelectionWheel::Closed || !GameReady())
+        return;
+
+    const bool radio = selectionWheel == SelectionWheel::Radio;
+    if (radio)
+        LoadSelectionWheelTextures();
+
+    uint8 entries[WEAPONTYPE_TOTAL_INVENTORY_WEAPONS];
+    const int count = CollectWheelEntries(entries);
+    if (!count)
+        return;
+
+    const float x = SCREEN_WIDTH * 0.5f;
+    const float y = SCREEN_HEIGHT * 0.46f;
+    const float scale = Min(SCREEN_WIDTH / 640.0f, SCREEN_HEIGHT / 448.0f);
+    const float radius = 126.0f * scale;
+    const float iconRadius = 97.0f * scale;
+    const float sectorAngle = TWOPI / count;
+    const float halfSector = TWOPI / Max(count, 5) * 0.44f;
+    const float half = 17.0f * scale;
+    CSprite2d segment;
+    CSprite2d::DrawRect(CRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT), CRGBA(5, 10, 16, 96));
+    RwRenderStateSet(rwRENDERSTATEZTESTENABLE, (void *)FALSE);
+    RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, (void *)FALSE);
+    RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, (void *)TRUE);
+
+    CFont::SetBackgroundOff();
+    CFont::SetPropOn();
+    CFont::SetFontStyle(FONT_HEADING);
+    CFont::SetJustifyOff();
+    CFont::SetRightJustifyOff();
+    CFont::SetCentreOn();
+    CFont::SetCentreSize(SCREEN_WIDTH);
+    CFont::SetDropShadowPosition(0);
+    CFont::SetColor(CRGBA(245, 239, 212, 255));
+    for (int i = 0; i < count; ++i) {
+        const uint8 entry = entries[i];
+        const float angle = -HALFPI + i * sectorAngle;
+        const float start = angle - halfSector;
+        const float end = angle + halfSector;
+        const float inner = 71.0f * scale;
+        const CRGBA colour = entry == wheelSelection
+            ? CRGBA(56, 112, 126, 245) : CRGBA(13, 24, 32, 230);
+        constexpr int steps = 6;
+        for (int step = 0; step < steps; ++step) {
+            const float a = start + (end - start) * step / steps;
+            const float b = start + (end - start) * (step + 1) / steps;
+            segment.Draw(x + Cos(a) * inner, y + Sin(a) * inner,
+                         x + Cos(b) * inner, y + Sin(b) * inner,
+                         x + Cos(a) * radius, y + Sin(a) * radius,
+                         x + Cos(b) * radius, y + Sin(b) * radius, colour);
+        }
+
+        const float iconX = x + Cos(angle) * iconRadius;
+        const float iconY = y + Sin(angle) * iconRadius;
+        CSprite2d *icon = radio
+            ? (entry == RADIO_OFF ? nil : &wheelRadioIcons[entry])
+            : &CHud::Sprites[entry];
+        if (icon && icon->m_pTexture)
+            icon->Draw(CRect(iconX - half, iconY - half, iconX + half, iconY + half),
+                       CRGBA(255, 255, 255, 255));
+        else
+            PrintWheelText(iconX, iconY - 5.0f * scale,
+                           radio ? RadioLabel(entry) : weaponLabels[entry], 0.38f);
+    }
+
+    PrintWheelText(x, y - 12.0f * scale,
+                   radio ? RadioLabel(wheelSelection) : weaponLabels[wheelSelection], 0.75f);
+    if (!radio && wheelSelection > WEAPONTYPE_BASEBALLBAT && wheelSelection != WEAPONTYPE_DETONATOR) {
+        const CWeapon &weapon = FindPlayerPed()->GetWeapon(wheelSelection);
+        char ammo[32];
+        snprintf(ammo, sizeof(ammo), "%u / %u", unsigned(weapon.m_nAmmoInClip),
+                 unsigned(weapon.m_nAmmoTotal));
+        PrintWheelText(x, y + 10.0f * scale, ammo, 0.52f);
+    }
+    PrintWheelText(x, y + radius + 10.0f * scale,
+                   radio ? "Mouse / Arrows: Select   Release F6: Tune   Backspace: Cancel"
+                         : "Mouse / Arrows: Select   Release F7: Equip   Backspace: Cancel", 0.48f);
+}
+
 static bool CanSaveAfterMission()
 {
     if (CTheScripts::IsPlayerOnAMission() || CTheScripts::bAlreadyRunningAMissionScript) return false;
@@ -174,6 +462,7 @@ static bool CanQuickSave()
 
 void Reset()
 {
+    CloseSelectionWheel();
     missionSavePending = false;
     homeSaveActive = false;
     VehicleSpawnStats = {};
@@ -220,7 +509,7 @@ float RadarRange(float nativeRange)
     const uint32 now = CTimer::GetTimeInMillisecondsPauseMode();
     const float dt = radarTime ? Min(now-radarTime,100u)*0.001f : 0.0f;
     radarTime = now;
-    const float target = RadarZoom && CPad::GetPad(0)->GetChar('T') ? 2.25f : 1.0f;
+    const float target = CPad::GetPad(0)->GetChar('T') ? 2.25f : 1.0f;
     radarZoom = EnhancedMath::SmoothZoom(radarZoom,target,dt);
     radarRange = nativeRange*radarZoom;
     return radarRange;
@@ -235,16 +524,10 @@ float BlipScale()
     return EnhancedMath::RadarIconScale(radarRange);
 }
 
-wchar *MapOptionDraw(bool *disabled, bool)
-{
-    *disabled = !MenuMap;
-    return nil;
-}
-
 void OpenMap(int8 action)
 {
 #ifdef MENU_MAP
-    if (action == FEOPTION_ACTION_SELECT && MenuMap)
+    if (action == FEOPTION_ACTION_SELECT)
         FrontEndMenuManager.OpenMap(false);
 #endif
 }
@@ -591,12 +874,6 @@ static float MeasureTrafficNetwork(bool vehicles, const CVector &centre)
     return length;
 }
 
-int TrafficMultiplier(bool vehicles)
-{
-    const int index = vehicles ? VehicleTrafficMultiplier : PedTrafficMultiplier;
-    return 1 + Clamp(index, 0, 9);
-}
-
 int TrafficAttempts(bool vehicles, const CVector &centre, float nearbyRadius, bool warmingUp)
 {
     TrafficArea &area = vehicles ? carTraffic : pedTraffic;
@@ -644,8 +921,7 @@ int TrafficAttempts(bool vehicles, const CVector &centre, float nearbyRadius, bo
     if (deficit <= 0) return 1;
 
     const float remaining = float(deficit) / Max(1, area.target);
-    const int multiplier = TrafficMultiplier(vehicles);
-    int attempts = 1 + int(ceilf((multiplier - 1) * remaining));
+    int attempts = 1;
     if (thin && (CTimer::GetFrameCounter() & 1) == 0)
         attempts += int(ceilf(3.0f * remaining));
     return Min(attempts, deficit);
@@ -683,18 +959,18 @@ static void ReportTraffic()
         int32 totalPeds;
         const int32 nearbyPeds = CPopulation::CountNearbyTraffic(centre, &totalPeds);
         fprintf(log, "time=%u interval_ms=%u x=%.1f y=%.1f "
-            "cars distance=%.0f density=%.2f multiplier=%d near=%d total=%d "
+            "cars distance=%.0f density=%.2f near=%d total=%d "
             "near_attempts=%u near_spawned=%u far_attempts=%u far_spawned=%u "
-            "peds distance=%.0f density=%.2f multiplier=%d near=%d total=%d "
+            "peds distance=%.0f density=%.2f near=%d total=%d "
             "near_attempts=%u near_spawned=%u far_attempts=%u far_spawned=%u "
             "car_target=%d car_lane_m=%.0f car_arrivals=%.2f car_no_candidate=%u car_exposed=%u "
             "ped_target=%d ped_walk_m=%.0f ped_arrivals=%.2f ped_no_candidate=%u ped_exposed=%u\n",
             now, elapsed, centre.x, centre.y,
-            VehicleRangeMultiplier(), CIniFile::CarNumberMultiplier, TrafficMultiplier(true),
+            VehicleRangeMultiplier(), CIniFile::CarNumberMultiplier,
             CCarCtrl::CountNearbyTraffic(centre), CCarCtrl::NumRandomCars,
             VehicleSpawnStats.attempts[0], VehicleSpawnStats.spawned[0],
             VehicleSpawnStats.attempts[1], VehicleSpawnStats.spawned[1],
-            PedRangeMultiplier(), CIniFile::PedNumberMultiplier, TrafficMultiplier(false),
+            PedRangeMultiplier(), CIniFile::PedNumberMultiplier,
             nearbyPeds, totalPeds,
             PedSpawnStats.attempts[0], PedSpawnStats.spawned[0],
             PedSpawnStats.attempts[1], PedSpawnStats.spawned[1],
@@ -704,14 +980,14 @@ static void ReportTraffic()
         fprintf(log, "time=%u car_rejections target=%u car_budget=%u ped_pool=%u occupant_budget=%u no_models_ticks=%u "
             "route=%u lane=%u ground=%u visibility=%u collision=%u direction=%u "
             "range_removed=%u offscreen_removed=%u moving_offscreen_kept=%u "
-            "vehicle_pool_used=%d vehicle_pool_size=%d ambient_ped_slots=%d occupant_slots=%d traffic_occupants=%d occupant_target=%d separate_ped_budget=%d\n",
+            "vehicle_pool_used=%d vehicle_pool_size=%d ambient_ped_slots=%d occupant_slots=%d traffic_occupants=%d occupant_target=%d distant_crowded_world=%d\n",
             now, car.targetFull, car.carBudgetFull, car.pedPoolLow, car.occupantBudgetFull, car.noModels,
             car.routeRejected, car.laneRejected, car.groundRejected, car.visibilityRejected,
             car.collisionRejected, car.directionRejected, car.rangeRemoved, car.offscreenRemoved,
             car.movingOffscreenKept, CPools::GetVehiclePool()->GetNoOfUsedSpaces(),
             CPools::GetVehiclePool()->GetSize(), CPopulation::AmbientPedSlotsAvailable(),
             CPopulation::AmbientVehicleOccupantSlotsAvailable(), CPopulation::CountAmbientVehicleOccupants(),
-            CPopulation::AmbientVehicleOccupantTarget(), int(SeparateTrafficPedBudget));
+            CPopulation::AmbientVehicleOccupantTarget(), int(DistantCrowdedWorld));
         fclose(log);
     }
     trafficReportTime = now;
@@ -724,7 +1000,6 @@ void Process()
 {
     // Also clamp settings loaded from edited ini files before using as indexes.
     AutoSave = AutoSave != 0;
-    RadarZoom = RadarZoom != 0;
     if (!GameReady()) return;
     if (TraceTraffic) ReportTraffic();
     if (!AutoSave) missionSavePending = false;

@@ -12,6 +12,12 @@ uint32 CTimer::m_snTimeInMillisecondsNonClipped;
 uint32 CTimer::m_snPreviousTimeInMilliseconds;
 uint32 CTimer::m_FrameCounter;
 float CTimer::ms_fTimeScale;
+bool CTimer::ms_bWeaponWheelSlowMotion;
+
+float CTimer::GetSimulationTimeScale()
+{
+	return ms_bWeaponWheelSlowMotion ? Min(ms_fTimeScale, 0.25f) : ms_fTimeScale;
+}
 float CTimer::ms_fTimeStep;
 float CTimer::ms_fTimeStepNonClipped;
 bool  CTimer::m_UserPause;
@@ -53,6 +59,7 @@ void CTimer::Initialise(void)
 	debug("Initialising CTimer...\n");
 
 	ms_fTimeScale = 1.0f;
+	ms_bWeaponWheelSlowMotion = false;
 	ms_fTimeStep = 1.0f;
 	ms_fTimeStepNonClipped = 1.0f;
 	ms_fRenderTimeStep = 1.0f;
@@ -143,7 +150,7 @@ void CTimer::Update(void)
 	}
 
 	// bugfix from VC
-	frameTime = GetIsPaused() ? updInMs : updInMs * ms_fTimeScale;
+	frameTime = GetIsPaused() ? updInMs : updInMs * GetSimulationTimeScale();
 
 	m_LogicalFramesPassed = 0;
 	logicalFrameTime += updInMs;
@@ -195,7 +202,7 @@ void CTimer::UpdateLogicalFrame(void)
 		ms_fTimeStep = 0.0f;
 	else
 	{
-		frameTime = LOGICAL_FRAME_MS * ms_fTimeScale;
+		frameTime = LOGICAL_FRAME_MS * GetSimulationTimeScale();
 		gameTimeFraction += frameTime;
 		m_snTimeInMilliseconds += uint32(gameTimeFraction);
 		m_snTimeInMillisecondsNonClipped += uint32(gameTimeFraction);
@@ -237,7 +244,7 @@ void CTimer::SetTimeStepForRender(void)
 	m_snTimeInMilliseconds -= renderTimeOffset;
 	m_snTimeInMillisecondsNonClipped -= renderTimeOffset;
 	m_snTimeInMillisecondsPauseMode -= renderPauseTimeOffset;
-	renderTimeOffset = GetIsPaused() ? 0 : uint32(ms_fLogicalFrameFraction * LOGICAL_FRAME_MS * ms_fTimeScale);
+	renderTimeOffset = GetIsPaused() ? 0 : uint32(ms_fLogicalFrameFraction * LOGICAL_FRAME_MS * GetSimulationTimeScale());
 	renderPauseTimeOffset = uint32(ms_fLogicalFrameFraction * LOGICAL_FRAME_MS);
 	m_snTimeInMilliseconds += renderTimeOffset;
 	m_snTimeInMillisecondsNonClipped += renderTimeOffset;
@@ -313,7 +320,7 @@ uint32 CTimer::GetCurrentTimeInCycles(void)
 
 bool CTimer::GetIsSlowMotionActive(void)
 {
-	return ms_fTimeScale < 1.0f;
+	return GetSimulationTimeScale() < 1.0f;
 }
 
 void CTimer::Stop(void)

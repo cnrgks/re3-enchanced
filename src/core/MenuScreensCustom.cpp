@@ -118,6 +118,8 @@ void RestoreDefGraphics(int8 action) {
 	if (action != FEOPTION_ACTION_SELECT)
 		return;
 
+	Enhanced::DistantCrowdedWorld = 0;
+
 	#ifdef PS2_ALPHA_TEST
 		gPS2alphaTest = false;
 	#endif
@@ -154,6 +156,8 @@ void RestoreDefGraphics(int8 action) {
 void RestoreDefDisplay(int8 action) {
 	if (action != FEOPTION_ACTION_SELECT)
 		return;
+
+	Enhanced::GPS = 0;
 
 	#ifdef CUTSCENE_BORDERS_SWITCH
 		CMenuManager::m_PrefsCutsceneBorders = true;
@@ -407,11 +411,6 @@ void ControllerTypeAfterChange(int8 before, int8 after)
 }
 #endif
 
-static const char *enhancedDistances[] = { "EN_100", "EN_200", "EN_300" };
-static const char *trafficMultipliers[] = {
-    "EN_100", "EN_200", "EN_300", "EN_400", "EN_500",
-    "EN_600", "EN_700", "EN_800", "EN_900", "EN_10X",
-};
 CMenuScreenCustom aScreens[MENUPAGES] = {
 	// MENUPAGE_NONE = 0
 	{ "", MENUPAGE_DISABLED, MENUPAGE_DISABLED, nil, nil, },
@@ -481,6 +480,10 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
 		MENUACTION_WIDESCREEN,	"FED_WIS", { nil, SAVESLOT_NONE, MENUPAGE_DISPLAY_SETTINGS },
 		MENUACTION_SCREENRES,	"FED_RES", { nil, SAVESLOT_NONE, MENUPAGE_DISPLAY_SETTINGS },
 		VIDEOMODE_SELECTOR
+#if !defined(RW_GL3) || defined(LIBRW_SDL2)
+		MENUACTION_CFO_SELECT, "EN_BORD", { new CCFOSelect(&Enhanced::Borderless, "Enhanced", "Borderless", off_on, 2, true, Enhanced::WindowModeChanged, true) },
+#endif
+		MENUACTION_CFO_SELECT, "EN_DCW", { new CCFOSelect(&Enhanced::DistantCrowdedWorld, "Graphics", "DistantCrowdedWorld", off_on, 2, false) },
 		MULTISAMPLING_SELECTOR
 		ISLAND_LOADING_SELECTOR
 		DUALPASS_SELECTOR
@@ -488,6 +491,7 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
 		FREE_CAM_TOGGLE
 		POSTFX_SELECTORS
 		// re3.cpp inserts here pipeline selectors if neo/neo.txd exists and EXTENDED_PIPELINES defined
+		MENUACTION_CFO_SELECT, "EN_GPS", { new CCFOSelect(&Enhanced::GPS, "Enhanced", "GPS", off_on, 2, false) },
 		MENUACTION_RESTOREDEF,	"FET_DEF", { nil, SAVESLOT_NONE, MENUPAGE_DISPLAY_SETTINGS },
 		MENUACTION_CHANGEMENU,	"FEDS_TB", { nil, SAVESLOT_NONE, MENUPAGE_NONE },
 	},
@@ -501,6 +505,7 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
 		FREE_CAM_TOGGLE
 		MENUACTION_SUBTITLES,	"FED_SUB", { nil, SAVESLOT_NONE, MENUPAGE_DISPLAY_SETTINGS },
 		MENUACTION_CFO_SELECT,	"FEM_EHU", { new CCFOSelect((int8*)&CDraw::ms_bExtendHud, "Display", "ExtendHud", off_on, 2, false) },
+		MENUACTION_CFO_SELECT, "EN_GPS", { new CCFOSelect(&Enhanced::GPS, "Enhanced", "GPS", off_on, 2, false) },
 		MENUACTION_RESTOREDEF,	"FET_DEF", { nil, SAVESLOT_NONE, MENUPAGE_DISPLAY_SETTINGS },
 		MENUACTION_CHANGEMENU,	"FEDS_TB", { nil, SAVESLOT_NONE, MENUPAGE_NONE },
 	},
@@ -775,20 +780,20 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
 
    // MENUPAGE_OPTIONS = 41
    { "FET_OPT", MENUPAGE_NONE, MENUPAGE_NONE, nil, nil,
-#ifdef GTA_HANDHELD
-		MENUACTION_CHANGEMENU,		"FET_CTL", { nil, SAVESLOT_NONE, MENUPAGE_CONTROLLER_SETTINGS },
-#else
-		MENUACTION_CHANGEMENU,		"FET_CTL", { nil, SAVESLOT_NONE, MENUPAGE_CONTROLLER_PC },
-#endif
-		MENUACTION_CHANGEMENU, "ENHANCE", { nil, SAVESLOT_NONE, MENUPAGE_ENHANCED },
-		MENUACTION_LOADRADIO,		"FET_AUD", { nil, SAVESLOT_NONE, MENUPAGE_SOUND_SETTINGS },
-		MENUACTION_CHANGEMENU,		"FET_DIS", { nil, SAVESLOT_NONE, MENUPAGE_DISPLAY_SETTINGS },
+		MENUACTION_CHANGEMENU,	"EN_GAME", { nil, SAVESLOT_NONE, MENUPAGE_GAMEPLAY },
 #ifdef GRAPHICS_MENU_OPTIONS
-		MENUACTION_CHANGEMENU,		"FET_GFX", { nil, SAVESLOT_NONE, MENUPAGE_GRAPHICS_SETTINGS },
+		MENUACTION_CHANGEMENU,	"FET_GFX", { nil, SAVESLOT_NONE, MENUPAGE_GRAPHICS_SETTINGS },
 #endif
-		MENUACTION_CHANGEMENU,		"FET_LAN", { nil, SAVESLOT_NONE, MENUPAGE_LANGUAGE_SETTINGS },
-		MENUACTION_PLAYERSETUP,		"FET_PSU", { nil, SAVESLOT_NONE, MENUPAGE_SKIN_SELECT },
-		MENUACTION_CHANGEMENU,		"FEDS_TB", { nil, SAVESLOT_NONE, MENUPAGE_NONE },
+		MENUACTION_CHANGEMENU,	"FET_DIS", { nil, SAVESLOT_NONE, MENUPAGE_DISPLAY_SETTINGS },
+		MENUACTION_LOADRADIO,	"FET_AUD", { nil, SAVESLOT_NONE, MENUPAGE_SOUND_SETTINGS },
+#ifdef GTA_HANDHELD
+		MENUACTION_CHANGEMENU,	"FET_CTL", { nil, SAVESLOT_NONE, MENUPAGE_CONTROLLER_SETTINGS },
+#else
+		MENUACTION_CHANGEMENU,	"FET_CTL", { nil, SAVESLOT_NONE, MENUPAGE_CONTROLLER_PC },
+#endif
+		MENUACTION_CHANGEMENU,	"FET_LAN", { nil, SAVESLOT_NONE, MENUPAGE_LANGUAGE_SETTINGS },
+		MENUACTION_PLAYERSETUP,	"FET_PSU", { nil, SAVESLOT_NONE, MENUPAGE_SKIN_SELECT },
+		MENUACTION_CHANGEMENU,	"FEDS_TB", { nil, SAVESLOT_NONE, MENUPAGE_NONE },
    },
 
    // MENUPAGE_EXIT = 42
@@ -919,6 +924,10 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
 #endif
 		MENUACTION_WIDESCREEN,	"FED_WIS", { nil, SAVESLOT_NONE, MENUPAGE_GRAPHICS_SETTINGS },
 		VIDEOMODE_SELECTOR
+#if !defined(RW_GL3) || defined(LIBRW_SDL2)
+		MENUACTION_CFO_SELECT, "EN_BORD", { new CCFOSelect(&Enhanced::Borderless, "Enhanced", "Borderless", off_on, 2, true, Enhanced::WindowModeChanged, true) },
+#endif
+		MENUACTION_CFO_SELECT, "EN_DCW", { new CCFOSelect(&Enhanced::DistantCrowdedWorld, "Graphics", "DistantCrowdedWorld", off_on, 2, false) },
 		MENUACTION_FRAMESYNC,	"FEM_VSC", { nil, SAVESLOT_NONE, MENUPAGE_DISPLAY_SETTINGS },
 		MENUACTION_CFO_SELECT,	"FEM_FRM", { new CCFOSelect((int8*)&CMenuManager::m_PrefsFrameLimiter, "Graphics", "FrameLimiter", frameLimitTexts, numFrameLimits, false) },
 		MENUACTION_CFO_SELECT,	"FEM_SMA", { new CCFOSelect(&CMenuManager::m_PrefsSmoothAnims, "Graphics", "SmoothAnimations", off_on, 2, false) },
@@ -947,25 +956,15 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
 	},
 #endif
 
-   // MENUPAGE_ENHANCED
-   { "ENHANCE", MENUPAGE_OPTIONS, MENUPAGE_OPTIONS,
+   // MENUPAGE_GAMEPLAY
+   { "EN_GSET", MENUPAGE_OPTIONS, MENUPAGE_OPTIONS,
        new CCustomScreenLayout({MENUSPRITE_MAINMENU, 50, 0, 20, FONT_HEADING, FESCREEN_LEFT_ALIGN, true, MEDIUMTEXT_X_SCALE, MEDIUMTEXT_Y_SCALE}), nil,
        MENUACTION_CFO_SELECT, "EN_QSAV", { new CCFOSelect(&Enhanced::QuickSave, "Enhanced", "QuickSave", off_on, 2, false) },
        MENUACTION_CFO_SELECT, "EN_AUTO", { new CCFOSelect(&Enhanced::AutoSave, "Enhanced", "AutoSave", off_on, 2, false) },
-       MENUACTION_CFO_SELECT, "EN_RADR", { new CCFOSelect(&Enhanced::RadarZoom, "Enhanced", "RadarZoom", off_on, 2, false) },
-       MENUACTION_CFO_SELECT, "EN_GPS", { new CCFOSelect(&Enhanced::GPS, "Enhanced", "GPS", off_on, 2, false) },
-       MENUACTION_CFO_SELECT, "EN_MAP", { new CCFOSelect(&Enhanced::MenuMap, "Enhanced", "MenuMap", off_on, 2, false) },
-       MENUACTION_CFO_SELECT, "EN_VLOD", { new CCFOSelect(&Enhanced::VehicleDetail, "Enhanced", "VehicleDetail", off_on, 2, false) },
-       MENUACTION_CFO_SELECT, "EN_PLOD", { new CCFOSelect(&Enhanced::PedDetail, "Enhanced", "PedDetail", off_on, 2, false) },
        MENUACTION_CFO_SELECT, "EN_HEAL", { new CCFOSelect(&Enhanced::HealAfterSave, "Enhanced", "HealAfterSave", off_on, 2, false) },
-#if !defined(RW_GL3) || defined(LIBRW_SDL2)
-       MENUACTION_CFO_SELECT, "EN_BORD", { new CCFOSelect(&Enhanced::Borderless, "Enhanced", "Borderless", off_on, 2, true, Enhanced::WindowModeChanged, true) },
+#if defined(_WIN32) && !defined(LIBRW_SDL2)
+       MENUACTION_CFO_SELECT, "EN_INT", { new CCFOSelect(&gbNoMovies, "General", "NoMovies", off_on, 2, false) },
 #endif
-       MENUACTION_CFO_SELECT, "EN_VDST", { new CCFOSelect(&Enhanced::VehicleDistance, "Enhanced", "VehicleDistance", enhancedDistances, 3, false) },
-       MENUACTION_CFO_SELECT, "EN_PDST", { new CCFOSelect(&Enhanced::PedDistance, "Enhanced", "PedDistance", enhancedDistances, 3, false) },
-       MENUACTION_CFO_SELECT, "EN_VMUL", { new CCFOSelect(&Enhanced::VehicleTrafficMultiplier, "Enhanced", "VehicleTrafficMultiplier", trafficMultipliers, ARRAY_SIZE(trafficMultipliers), false) },
-       MENUACTION_CFO_SELECT, "EN_PMUL", { new CCFOSelect(&Enhanced::PedTrafficMultiplier, "Enhanced", "PedTrafficMultiplier", trafficMultipliers, ARRAY_SIZE(trafficMultipliers), false) },
-       MENUACTION_CFO_SELECT, "EN_PSEP", { new CCFOSelect(&Enhanced::SeparateTrafficPedBudget, "Enhanced", "SeparateTrafficPedBudget", off_on, 2, false) },
        MENUACTION_CHANGEMENU, "FEDS_TB", { nil, SAVESLOT_NONE, MENUPAGE_NONE },
    },
 

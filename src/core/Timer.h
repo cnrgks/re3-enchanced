@@ -21,6 +21,8 @@ class CTimer
 	static uint32 m_snPreviousTimeInMilliseconds;
 	static uint32 m_FrameCounter;
 	static float ms_fTimeScale;
+	static bool ms_bWeaponWheelSlowMotion;
+	static float GetSimulationTimeScale();
 	static float ms_fTimeStep;
 	static float ms_fTimeStepNonClipped;
 	static uint32 m_LogicalFramesPassed;
@@ -53,6 +55,7 @@ public:
 	static void SetPreviousTimeInMilliseconds(uint32 t) { m_snPreviousTimeInMilliseconds = t; }
 	static const float &GetTimeScale(void) { return ms_fTimeScale; }
 	static void SetTimeScale(float ts) { ms_fTimeScale = ts; }
+	static void SetWeaponWheelSlowMotion(bool active) { ms_bWeaponWheelSlowMotion = active; }
 	static uint32 GetCyclesPerFrame();
 
 	static bool GetIsPaused() { return m_UserPause || m_CodePause || m_WindowPause; }

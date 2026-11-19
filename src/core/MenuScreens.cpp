@@ -442,7 +442,7 @@ CMenuScreen aScreens[MENUPAGES] = {
    },
 #endif
 
-   // MENUPAGE_ENHANCED
+   // MENUPAGE_GAMEPLAY
    { "", 0, MENUPAGE_NONE, MENUPAGE_NONE, 0, 0 },
 
    // MENUPAGE_RESTORE_DEFAULTS

@@ -7,6 +7,7 @@
 #include <regstr.h>
 #include <shellapi.h>
 #include <windowsx.h>
+#include <dshow.h>
 
 DWORD _dwOperatingSystemVersion;
 #include "resource.h"
@@ -289,6 +290,71 @@ psGrabScreen(RwCamera *pCamera)
  */
 #ifdef _WIN32
 #pragma comment( lib, "Winmm.lib" ) // Needed for time
+
+static void PlayStartupMovie(GLFWwindow *window, const wchar_t *path)
+{
+	if (GetFileAttributesW(path) == INVALID_FILE_ATTRIBUTES ||
+	    FAILED(CoInitializeEx(nil, COINIT_APARTMENTTHREADED)))
+		return;
+
+	IGraphBuilder *graph = nil;
+	IMediaControl *control = nil;
+	IMediaEvent *events = nil;
+	IVideoWindow *video = nil;
+	const HWND owner = glfwGetWin32Window(window);
+	const OAHWND ownerHandle = reinterpret_cast<OAHWND>(owner);
+
+	if (SUCCEEDED(CoCreateInstance(CLSID_FilterGraph, nil, CLSCTX_INPROC_SERVER,
+	                               IID_IGraphBuilder, reinterpret_cast<void **>(&graph))) &&
+	    SUCCEEDED(graph->RenderFile(path, nil)) &&
+	    SUCCEEDED(graph->QueryInterface(IID_IMediaControl, reinterpret_cast<void **>(&control))) &&
+	    SUCCEEDED(graph->QueryInterface(IID_IMediaEvent, reinterpret_cast<void **>(&events))) &&
+	    SUCCEEDED(graph->QueryInterface(IID_IVideoWindow, reinterpret_cast<void **>(&video))) &&
+	    SUCCEEDED(video->put_Owner(ownerHandle)) &&
+	    SUCCEEDED(video->put_WindowStyle(WS_CHILD | WS_CLIPSIBLINGS)) &&
+	    SUCCEEDED(video->put_MessageDrain(ownerHandle))) {
+		RECT client;
+		if (GetClientRect(owner, &client) &&
+		    SUCCEEDED(video->SetWindowPosition(0, 0, client.right, client.bottom)) &&
+		    SUCCEEDED(video->put_Visible(OATRUE)) && SUCCEEDED(control->Run())) {
+			SetFocus(owner);
+			const double deadline = glfwGetTime() + 120.0;
+			while (!RsGlobal.quit && !glfwWindowShouldClose(window) &&
+			       glfwGetWindowAttrib(window, GLFW_FOCUSED) && glfwGetTime() < deadline) {
+				long eventCode;
+				LONG_PTR first, second;
+				bool finished = false;
+				while (events->GetEvent(&eventCode, &first, &second, 0) == S_OK) {
+					events->FreeEventParams(eventCode, first, second);
+					if (eventCode == EC_COMPLETE || eventCode == EC_USERABORT ||
+					    eventCode == EC_ERRORABORT) {
+						finished = true;
+						break;
+					}
+				}
+				if (finished || glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS ||
+				    glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS ||
+				    glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS ||
+				    glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+					break;
+				glfwWaitEventsTimeout(0.02);
+			}
+		}
+	}
+
+	if (control) control->Stop();
+	if (video) {
+		video->put_Visible(OAFALSE);
+		video->put_MessageDrain(0);
+		video->put_Owner(0);
+		video->Release();
+	}
+	if (events) events->Release();
+	if (control) control->Release();
+	if (graph) graph->Release();
+	CoUninitialize();
+}
+
 RwUInt32
 psTimer(void)
 {
@@ -2439,80 +2505,26 @@ main(int argc, char *argv[])
 				{
 					case GS_START_UP:
 					{
-#ifdef NO_MOVIES
-						gGameState = GS_INIT_ONCE;
-#else
-						gGameState = GS_INIT_LOGO_MPEG;
+#ifdef _WIN32
+						if (!gbNoMovies) {
+							GLFWwindow *window = PSGLOBAL(window);
+							PlayStartupMovie(window, L"movies\\Logo.mpg");
+							if (!RsGlobal.quit && !glfwWindowShouldClose(window) &&
+							    glfwGetWindowAttrib(window, GLFW_FOCUSED)) {
+								const bool alternateTitles = CMenuManager::OS_Language == LANG_FRENCH ||
+								                             CMenuManager::OS_Language == LANG_GERMAN;
+								const wchar_t *localized = L"movies\\GTAtitlesGER.mpg";
+								const wchar_t *titles = alternateTitles &&
+								    GetFileAttributesW(localized) != INVALID_FILE_ATTRIBUTES
+								    ? localized : L"movies\\GTAtitles.mpg";
+								PlayStartupMovie(window, titles);
+							}
+						}
 #endif
+						gGameState = GS_INIT_ONCE;
 						TRACE("gGameState = GS_INIT_ONCE");
 						break;
 					}
-
-				    case GS_INIT_LOGO_MPEG:
-					{
-					    //if (!startupDeactivate)
-						//    PlayMovieInWindow(cmdShow, "movies\\Logo.mpg");
-					    gGameState = GS_LOGO_MPEG;
-					    TRACE("gGameState = GS_LOGO_MPEG;");
-					    break;
-				    }
-
-				    case GS_LOGO_MPEG:
-					{
-//					    CPad::UpdatePads();
-
-//					    if (startupDeactivate || ControlsManager.GetJoyButtonJustDown() != 0)
-						    ++gGameState;
-//					    else if (CPad::GetPad(0)->GetLeftMouseJustDown())
-//						    ++gGameState;
-//					    else if (CPad::GetPad(0)->GetEnterJustDown())
-//						    ++gGameState;
-//					    else if (CPad::GetPad(0)->GetCharJustDown(' '))
-//						    ++gGameState;
-//					    else if (CPad::GetPad(0)->GetAltJustDown())
-//						    ++gGameState;
-//					    else if (CPad::GetPad(0)->GetTabJustDown())
-//						    ++gGameState;
-
-					    break;
-				    }
-
-				    case GS_INIT_INTRO_MPEG:
-					{
-//#ifndef NO_MOVIES
-//					    CloseClip();
-//					    CoUninitialize();
-//#endif
-//
-//					    if (CMenuManager::OS_Language == LANG_FRENCH || CMenuManager::OS_Language == LANG_GERMAN)
-//						    PlayMovieInWindow(cmdShow, "movies\\GTAtitlesGER.mpg");
-//					    else
-//						    PlayMovieInWindow(cmdShow, "movies\\GTAtitles.mpg");
-
-					    gGameState = GS_INTRO_MPEG;
-					    TRACE("gGameState = GS_INTRO_MPEG;");
-					    break;
-				    }
-
-				    case GS_INTRO_MPEG:
-					{
-//					    CPad::UpdatePads();
-//
-//					    if (startupDeactivate || ControlsManager.GetJoyButtonJustDown() != 0)
-						    ++gGameState;
-//					    else if (CPad::GetPad(0)->GetLeftMouseJustDown())
-//						    ++gGameState;
-//					    else if (CPad::GetPad(0)->GetEnterJustDown())
-//						    ++gGameState;
-//					    else if (CPad::GetPad(0)->GetCharJustDown(' '))
-//						    ++gGameState;
-//					    else if (CPad::GetPad(0)->GetAltJustDown())
-//						    ++gGameState;
-//					    else if (CPad::GetPad(0)->GetTabJustDown())
-//						    ++gGameState;
-
-					    break;
-				    }
 
 					case GS_INIT_ONCE:
 					{

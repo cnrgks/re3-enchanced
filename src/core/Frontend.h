@@ -251,7 +251,7 @@ enum eMenuScreen
 #endif
 
 #endif
-	MENUPAGE_ENHANCED,
+	MENUPAGE_GAMEPLAY,
 	MENUPAGE_RESTORE_DEFAULTS,
 	MENUPAGE_UNK, // originally 58. Custom screens are inserted above, because last screen in CMenuScreens should always be empty to make CFO work
 	MENUPAGES

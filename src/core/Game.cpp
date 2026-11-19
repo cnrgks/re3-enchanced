@@ -298,6 +298,7 @@ void CGame::ShutdownRenderWare(void)
 
 	CMBlur::MotionBlurClose();
 	DestroySplashScreen();
+	Enhanced::FreeSelectionWheelTextures();
 	CHud::Shutdown();
 	CFont::Shutdown();
 	
@@ -1040,6 +1041,7 @@ void CGame::Process(void)
 		FrontEndMenuManager.Process();
 	POP_MEMID();
 
+	Enhanced::ProcessSelectionWheel();
 	CStreaming::Update();
 	if (!CTimer::GetIsPaused())
 	{
