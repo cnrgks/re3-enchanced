@@ -6,6 +6,7 @@ class CColPoint;
 namespace Enhanced {
 extern int8 QuickSave, AutoSave, RadarZoom, GPS, MenuMap;
 extern int8 VehicleDistance, PedDistance, ScreenFormat;
+extern int8 BorderlessCaptureProbe;
 void ApplyScreenFormatSettings();
 extern int8 VehicleDetail, PedDetail, HealAfterSave, BreakableWindscreen, Borderless;
 

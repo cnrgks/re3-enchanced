@@ -1,4 +1,4 @@
-# re3 Enhanced v1.2 — OpenGL display candidate
+# re3 Enhanced v1.3 — OpenGL borderless width probe
 
 > Known v1.1 issues and the latest requested save/map behavior are tracked in
 > [docs/BUGS.md](docs/BUGS.md). Future features: [ROADMAP.md](ROADMAP.md).
@@ -41,7 +41,7 @@ Settings: Options > Enhanced Options, persisted under [Enhanced] in re3.ini.
 
 ## Display backend for this release
 
-This v1.2 candidate builds OpenGL only. Graphics > Screen Format has Fullscreen,
+This v1.3 diagnostic candidate builds OpenGL only. Graphics > Screen Format has Fullscreen,
 Windowed and Borderless. Changes are applied with Enter from the main menu
 before loading a game. Enhanced Options no longer contains a duplicate Borderless
 selector on the GLFW backend. [VideoMode] ScreenFormat (0/1/2) is authoritative;
@@ -51,6 +51,12 @@ Borderless selects a non-exclusive RW video mode before creating the GL window.
 This avoids the old exclusive-first, windowed-later startup transition. Capture
 compatibility is not yet verified. No driver settings are modified. The D3D9
 backend remains in source but is not built or bundled for this user-requested run.
+On Windows only, Borderless requests monitor width + 1 (height unchanged).
+[VideoMode] BorderlessCaptureProbe defaults to 1; setting 0 and restarting
+allows the exact-width comparison in the same EXE. Windowed/exclusive modes
+are untouched by this probe. A column may extend onto an adjacent monitor.
+re3-display.log records window/framebuffer size and monitor attachment once
+per startup/mode change. No per-frame logging or driver changes.
 See docs/OPENGL-CAPTURE.md; other v1.1 issues in docs/BUGS.md remain open.
 
 ## Mod support

@@ -42,6 +42,11 @@ int8 Borderless = 1;
 int8 Borderless = 0;
 #endif
 int8 VehicleDistance = 0, PedDistance = 0, ScreenFormat = 0;
+#ifdef _WIN32
+int8 BorderlessCaptureProbe = 1;
+#else
+int8 BorderlessCaptureProbe = 0;
+#endif
 static float radarRange = 120.0f;
 static bool homeSaveRequested;
 static bool homeSaveActive;

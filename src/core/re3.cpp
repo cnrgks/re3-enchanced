@@ -548,6 +548,8 @@ bool LoadINISettings()
     Enhanced::ScreenFormat=legacyBorderless ? 2 : (legacyWindowed ? 1 : 0);
     ReadIniIfExists("VideoMode","ScreenFormat",&Enhanced::ScreenFormat);
     Enhanced::ApplyScreenFormatSettings();
+    ReadIniIfExists("VideoMode","BorderlessCaptureProbe",&Enhanced::BorderlessCaptureProbe);
+    Enhanced::BorderlessCaptureProbe=Enhanced::BorderlessCaptureProbe!=0;
 #endif
 
 #ifdef CUSTOM_FRONTEND_OPTIONS
@@ -595,6 +597,7 @@ void SaveINISettings()
 {
 #if defined(RW_GL3) && !defined(LIBRW_SDL2) && defined(IMPROVED_VIDEOMODE)
     StoreIni("VideoMode","ScreenFormat",Enhanced::ScreenFormat);
+    StoreIni("VideoMode","BorderlessCaptureProbe",Enhanced::BorderlessCaptureProbe);
     StoreIni("VideoMode","Windowed",FrontEndMenuManager.m_nPrefsWindowed);
     cfg["Enhanced"].remove("Borderless");
 #endif

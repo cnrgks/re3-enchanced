@@ -1,7 +1,42 @@
 # CAP-01 — OpenGL ekran yakalama incelemesi
 
-Durum: **v1.2 OpenGL adayı derlendi; oyun/yakalama testi bekleniyor**.
+Durum: **kullanıcı v1.2 adayının sorunu çözmediğini bildirdi; CAP-01 açık**.
 Kesin kök neden veya çözülme iddiası yok. Son kullanıcı kararı: OpenGL ana yol.
+
+## v1.2 sonrası sonuç ve sıradaki aday
+
+Kullanıcının son bildirimi: “yok olmadı halen”. Başlangıcı windowed yapmak
+tek başına çözüm olmadı. Bu geri bildirimde Discord ve Ambilight'in son durumları
+ayrı ayrı belirtilmedi; iki uygulama için yeni ayrı başarı sonucu varsayılmadı.
+
+**Sıradaki önerilen kontrollü deneme:** monitörü tam kaplayan borderless pencere
+yerine, pencere boyutunu tek yönde 1 piksel farklı yaparak yakalamanın geri gelip
+gelmediğini gözlemek. Windows/OpenGL sürücüsünün tam ekran boyutundaki pencereyi
+kompozisyon dışına yükseltmesi bir hipotezdir; v1.2'de gerçekten böyle olduğu ölçülmedi.
+
+GLFW'nin kendi destek forumunda benzer bir yakalama vakasında aynı olasılık
+tartışılmış ve uygulama yazarı ekran genişliğinden 1 piksel eksik/fazla pencereyle
+sorunun düzeldiğini bildirmiştir:
+[GLFW — Cannot view window via screenshot or remote screen access](https://discourse.glfw.org/t/cannot-view-window-via-screenshot-or-remote-screen-access/2986).
+Bu bir vaka raporudur, Windows/GLFW garantisi değildir.
+
+- Önce aynı EXE'de normal boyut ve 1 piksel farklı boyut karşılaştırılmalı;
+  başka ayar aynı anda değiştirilmemeli.
+- +1 piksel dışarı taşırma görünür boş çizgi bırakmayabilir, fakat kırpılma,
+  çoklu monitörde taşma, framebuffer/aspect ve imleç koordinatları değerlendirilir.
+  -1 piksel ise masaüstünde görünür ince boşluk bırakabilir.
+- Bu adım teşhis/uyumluluk adayıdır; piksel ölçüsü değişmeden kusursuz borderless
+  sağlandığı iddia edilemez. v1.3 için kaynakta +1 genişlik denemesi hazırlandı.
+- Çalışırsa sorun genel OpenGL çiziminden çok fullscreen sunum/kompozisyon
+  sınırında daraltılmış olur. Çalışmazsa bu hipotez doğrulanmış sayılmaz.
+
+Daha büyük uygulama-içi seçenek: Windows'ta OpenGL ile çizilen son görüntüyü
+uygulamanın yönettiği DXGI sunum yoluna aktarmak. Bu, D3D9 renderer'ına geçmek
+değildir; ancak GPU paylaşımı/interop, senkronizasyon, resize, cihaz kaybı ve
+desteklenmeyen sürücüler için fallback tasarımı gerektirir. Bu aşamada uygulanmadı,
+performansı veya capture uyumu doğrulanmadı; basit pencere ayarı gibi sunulmayacak.
+
+Sürücü ayarlarını değiştirmek veya kullanıcıya harici ayar önermek çözüm planına dahil değildir.
 
 ## Bilinenler
 
@@ -69,3 +104,14 @@ kenarlık kaldırmak bütün sunum/yakalama sorunlarının çözümü sayılmaz.
 
 Kullanıcı bu iki değişiklik için build istedi. Tek OpenGL işi derlendi ve mevcut
 birim kontrolleri geçti. Sürücü ayarı değiştirilmedi; D3D9 build başlatılmadı.
+
+## v1.3 — kullanıcı denemeyi istedi
+
+Yalnızca Windows OpenGL Borderless genişliği +1 yapıldı. Diğer pencere
+biçimleri ve Linux/macOS geometrisi değiştirilmedi. Uygulama içi ini bayrağı
+`[VideoMode] BorderlessCaptureProbe` varsayılan 1; 0 ile aynı EXE
+tam genişliğe geri dönebilir (oyunu yeniden başlatmak gerekir).
+`re3-display.log` gerçek pencere/framebuffer boyutunu ve GLFW monitor
+bağlantısını başlangıç/mod değişiminde kaydeder. Sağ kenardaki taşan sütun,
+çoklu monitör, görüntü oranı ve fare koordinatları denemede değerlendirilecek.
+Sürücü ayarı yok; yalnızca OpenGL build/paket hazırlanacak. Yakalama sonucu bilinmiyor.

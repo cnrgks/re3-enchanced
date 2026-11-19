@@ -1072,10 +1072,17 @@ void Enhanced::ApplyWindowMode(bool newWindow)
         const GLFWvidmode *mode=glfwGetVideoMode(monitor);
         int mx,my;
         glfwGetMonitorPos(monitor,&mx,&my);
+        int targetWidth=mode->width;
+#ifdef _WIN32
+        // Diagnostic only: avoid an exact monitor-sized window that the ICD
+        // may promote to fullscreen presentation. One column extends beyond
+        // the right edge; framebuffer resizing still uses its actual size.
+        if (BorderlessCaptureProbe) ++targetWidth;
+#endif
         enhancedWindowResize=true;
         PSGLOBAL(fullScreen)=FALSE;
         glfwSetWindowAttrib(window,GLFW_DECORATED,GLFW_FALSE);
-        glfwSetWindowMonitor(window,nil,mx,my,mode->width,mode->height,GLFW_DONT_CARE);
+        glfwSetWindowMonitor(window,nil,mx,my,targetWidth,mode->height,GLFW_DONT_CARE);
         enhancedWindowResize=false;
         applied=true;
     } else if (!Borderless && applied) {
@@ -1094,6 +1101,20 @@ void Enhanced::ApplyWindowMode(bool newWindow)
         enhancedWindowResize=false;
         applied=false;
     }
+#ifdef _WIN32
+    // One record per startup/mode change, never per frame. Confirm the probe
+    // really changed geometry before drawing conclusions from capture tests.
+    int ww,wh,fw,fh,wx,wy;
+    glfwGetWindowSize(window,&ww,&wh);
+    glfwGetFramebufferSize(window,&fw,&fh);
+    glfwGetWindowPos(window,&wx,&wy);
+    FILE *displayLog=fopen("re3-display.log","a");
+    if (displayLog) {
+        fprintf(displayLog,"v1.3 format=%d probe=%d monitorAttached=%d window=%dx%d framebuffer=%dx%d pos=%d,%d\n",
+            int(ScreenFormat),int(BorderlessCaptureProbe),glfwGetWindowMonitor(window)!=nil,ww,wh,fw,fh,wx,wy);
+        fclose(displayLog);
+    }
+#endif
 }
 
 void psPostRWinit(void)

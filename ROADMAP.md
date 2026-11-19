@@ -151,3 +151,14 @@ ayarlarına müdahale yok. Diğer hata kayıtları açık kalır.
 Derleme sonucu: v1.2 için tek OpenGL işi ve mevcut birim kontrolleri geçti.
 CAP-01/UI-01 oyun içi doğrulaması bekleniyor. Sürücü ayarı değiştirmek dağıtım
 çözümü olarak reddedildi; düzeltme oyun kodunda yapılacak. Diğer hata kayıtları açık.
+
+Son geri bildirim: kullanıcı v1.2 yakalama adayının çözmediğini bildirdi. CAP-01
+kapanmadı. Sıradaki öneri, fullscreen'e otomatik yükseltilme hipotezini 1 piksel
+farklı pencere boyutuyla sınamak; henüz kodlanmadı/build alınmadı. Büyük ölçekli
+uygulama-içi DXGI sunumu yalnızca sonraki tasarım seçeneği olarak kaydedildi.
+
+## v1.3 OpenGL yakalama probu
+
+Kullanıcı +1 piksel denemesini istedi. Windows Borderless genişliği +1,
+uygulama içi karşılaştırma bayrağı ve başlangıç/mod değişimi ölçü günlüğü
+hazırlandı. Yalnızca OpenGL build/paket planlandı. Gerçek capture sonucu henüz yok.

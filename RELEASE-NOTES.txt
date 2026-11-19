@@ -1,4 +1,4 @@
-RE3 ENHANCED v1.2 - OPENGL DENEME PAKETI
+RE3 ENHANCED v1.3 - OPENGL +1 PIKSEL DENEMESI
 
 Bu surum yalnizca OpenGL olarak derlendi. D3D9 build'i veya eski bir D3D9
 EXE/PDB cifti pakete eklenmedi. x64 ASI Loader ve CLEO Redux dahildir.
@@ -11,6 +11,15 @@ KURULUM
    Native guvenlik nedeniyle ekran bicimi secimi oyun yukluyken kilitlidir.
 
 BU DENEMENIN KAPSAMI
+- Yalnizca Windows OpenGL Borderless modunda pencere, monitor genisliginden
+  1 piksel fazla acilir. 1920x1080 icin istenen boyut 1921x1080 olur.
+  Bir sutun sag kenarin disina tasar; coklu monitorde bu sutun gorunebilir.
+- Normal Windowed ve gercek Fullscreen boyutu bu degisiklikten etkilenmez.
+- Bu davranis varsayilan aciktir. Karsilastirma gerekirse oyunu kapatip
+  re3.ini [VideoMode] altinda BorderlessCaptureProbe=0 yaparak kapatilabilir;
+  1 yaparak ayni EXE ile tekrar acilabilir. Surucu ayari degildir.
+- re3-display.log baslangic/mod degisiminde gercek pencere/framebuffer olcusunu
+  kaydeder; her karede yazmaz. format=2, probe=1, monitorAttached=0 beklenir.
 - Borderless GL penceresi bastan windowed video moduyla olusturulur;
   once exclusive acilip sonra borderless'a cevrilmez.
 - Borderless Screen Format'in ucuncu secenegidir; OpenGL'de Enhanced Options
@@ -22,8 +31,9 @@ BU DENEMENIN KAPSAMI
   bir cozum bu paketin parcasi degildir.
 
 DENEYECEGIMIZ SEY
-Ayni OpenGL EXE ile once Windowed, sonra Borderless, sonra Fullscreen acarak
-Discord'da ayni tam ekran paylasimini dene. Ambilight'i de ayri kontrol et.
+Once Borderless secip Discord'da oncekiyle ayni tam ekran paylasimini dene.
+Ambilight'i de ayri kontrol et. Calismazsa re3-display.log, pencerenin gercekten
+1 piksel genisleyip genislemedigini anlamamiza yardimci olacak.
 Ozellikle Borderless seciminin gorunmesi, Alt-Tab, oyunu kapatip tekrar acinca
 secimin korunmasi ve normal pencereye geri donus kontrol edilecek.
 

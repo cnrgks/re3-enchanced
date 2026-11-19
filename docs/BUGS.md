@@ -42,7 +42,7 @@ geri bildirimini kaydeder; burada listelenen maddeler henüz düzeltilmiş sayı
 | MAP-04 | Sarı MAP şeridinin tamamı kaldırılmalı | Açık — önceki istek eksik uygulanmış |
 | MAP-05 | Back kesiliyor / hizası bozuk | Açık — SS3 |
 | INPUT-01 | OpenGL–D3D9 fare hassasiyeti farklı | Açık — kullanıcı bildirdi |
-| CAP-01 | OpenGL fullscreen/borderless yakalanmıyor; normal pencere yakalanıyor | OpenGL aday derlendi / yakalama testi bekleniyor |
+| CAP-01 | OpenGL fullscreen/borderless yakalanmıyor; normal pencere yakalanıyor | Kullanıcıya göre v1.2 adayı çözmedi / açık |
 | WIN-01 | Alt-Tab sırasında eski Windows çerçevesi/toolbar parlaması | Açık — kullanıcı bildirdi |
 | WIN-02 | Odak kaybında otomatik pause | İstenen davranış / eksik |
 | UI-01 | Borderless, Graphics ekran biçiminin üçüncü seçeneği olmalı | OpenGL derlendi / oyun testi bekleniyor |
@@ -271,3 +271,14 @@ D3D9 derlemesi yapılmayacak. Runtime sonuçları henüz yok.
 OpenGL v1.2 derlemesi ve mevcut birim kontrolleri başarıyla tamamlandı.
 D3D9 işi çalıştırılmadı. Yalnızca CAP-01/UI-01 için aday çıktı üretildi;
 yakalama ve yeni menünün runtime doğrulaması kullanıcı testini bekliyor.
+
+Sonraki kullanıcı geri bildirimi: v1.2 yakalama sorununu çözmedi. CAP-01 açık;
+UI-01 menü davranışı için ayrı bir başarısızlık bildirimi yapılmadı. Sonraki
+sunum/kompozisyon denemesi [yakalama notunda](OPENGL-CAPTURE.md) kayıtlıdır.
+
+## v1.3 dar kapsamlı yakalama denemesi
+
+CAP-01 için +1 genişlik probu kullanıcı tarafından denemeye alındı. Yalnızca
+Windows OpenGL Borderless etkilenir. Kaynak değişikliği ve tek seferlik
+pencere boyutu günlüğü hazır; sürücü ayarı yok. Kayıt/cam/GPS/harita gibi
+diğer açık hatalar bu denemede değiştirilmedi. Build ve runtime sonuçları ayrı izlenecek.
