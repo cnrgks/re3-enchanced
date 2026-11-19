@@ -542,3 +542,9 @@ davranışı seçer. `-safe-display` de kullanılabilir.
 
 Soğuk açılış ve Alt-Tab süreleri ile Discord pencere ve tüm ekran
 paylaşımı, ardından Ambilight oyun içinde doğrulanmalı. Derleme bekliyor.
+
+### v1.9 derleme sonucu
+
+Kaynak b8cd1c96, GitHub Actions run 44451935119. OpenGL x64
+derlemesi ve mevcut birim kontrolleri geçti. Çerçevesiz DXGI yolunda Alt-Tab,
+açılış görüntüsü ve yakalama oyun içinde doğrulanmayı bekliyor.
