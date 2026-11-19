@@ -6,8 +6,7 @@ extern bool DXGIComposedFullscreen;
 bool DXGIFullscreenRequested();
 bool DXGIComposedFullscreenRequested();
 void UpdateFullscreenFocus(void *window);
-void SuspendFullscreenForLoading(void *window);
-bool PresentFullscreenDXGI(void *window, bool vsync, bool loading, bool trace);
+bool PresentFullscreenDXGI(void *window, bool vsync);
 void ShutdownFullscreenDXGI();
 // Implemented by glfw.cpp to prevent a resize event re-entering rsIDLE.
 bool SetPresentationResizeGuard(bool active);
@@ -15,7 +14,7 @@ void FallbackNativeFullscreen(void *window);
 #else
 inline bool DXGIFullscreenRequested() { return false; }
 inline bool DXGIComposedFullscreenRequested() { return false; }
-inline bool PresentFullscreenDXGI(void *, bool, bool, bool) { return false; }
+inline bool PresentFullscreenDXGI(void *, bool) { return false; }
 inline void ShutdownFullscreenDXGI() {}
 #endif
 }

@@ -46,6 +46,8 @@ void LoadingScreen(const char *str1, const char *str2, const char *splashscreen)
 void LoadingIslandScreen(const char *levelName);
 #if defined(_WIN32) && defined(RW_GL3) && !defined(LIBRW_SDL2)
 bool PumpWindowsLoadingEvents();
+void ServiceWindowsLoadingProgress();
+void TraceWindowsLoadingStage(const char *stage, int detail = -1);
 
 class WindowsLoadingScope
 {

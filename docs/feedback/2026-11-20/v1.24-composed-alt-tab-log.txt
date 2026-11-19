@@ -1,0 +1,6 @@
+Installed re3.exe SHA-256 matches the v1.24 release.
+Display log confirms composed DXGI (last four lines):
+v1.9 dxgi: shutdown
+v1.9 format=0 probe=1 monitorAttached=0 window=1920x1080 framebuffer=1920x1080 pos=0,0
+v1.9 dxgi: active fullscreen=0 composed=1 transfer=texture-copy framebuffer=1920x1080
+v1.9 dxgi: shutdown

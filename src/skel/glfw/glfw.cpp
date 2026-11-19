@@ -87,7 +87,9 @@ static RwBool		  WindowFocused = TRUE;
 #ifdef _WIN32
 static bool TraceDisplayTiming;
 static bool WindowLostFocus;
-static bool TraceNextPresent;
+static bool TraceLoadingFocus;
+static bool traceFirstFocusPresent;
+static bool traceResumeFramePending;
 #endif
 
 static RwBool		  RwInitialised = FALSE;
@@ -98,19 +100,6 @@ static unsigned loadingDepth;
 static bool loadingFocusPending;
 #endif
 static bool WindowAcceptsInput(GLFWwindow *window);
-#ifdef _WIN32
-static void TraceFocusTransition(const char *phase)
-{
-    if (!TraceDisplayTiming)
-        return;
-    if (FILE *log = fopen("re3-display.log", "a")) {
-        fprintf(log, "focus t=%.3f phase=%s composed=%d loading=%u pending=%d\n",
-            glfwGetTime(), phase, int(Enhanced::DXGIComposedFullscreenRequested()),
-            loadingDepth, int(loadingFocusPending));
-        fclose(log);
-    }
-}
-#endif
 
 static RwSubSystemInfo GsubSysInfo[MAX_SUBSYSTEMS];
 static RwInt32		GnumSubSystems = 0;
@@ -133,6 +122,26 @@ static psGlobalType PsGlobal;
 
 size_t _dwMemAvailPhys;
 RwUInt32 gGameState;
+
+#ifdef _WIN32
+void TraceWindowsLoadingStage(const char *stage, int detail)
+{
+    if (!TraceLoadingFocus || (detail >= 0 && !loadingDepth))
+        return;
+    GLFWwindow *window = PSGLOBAL(window);
+    const HWND hwnd = window ? glfwGetWin32Window(window) : nil;
+    if (FILE *log = fopen("re3-loading-focus.log", "a")) {
+        fprintf(log, "t=%.3f stage=%s detail=%d load=%u pending=%d state=%d foreground=%d glfwFocus=%d iconified=%d windowPause=%d userPause=%d codePause=%d menu=%d\n",
+            glfwGetTime(), stage, detail, loadingDepth, int(loadingFocusPending), int(gGameState),
+            int(hwnd && GetForegroundWindow() == hwnd),
+            window ? glfwGetWindowAttrib(window, GLFW_FOCUSED) : 0,
+            hwnd ? int(IsIconic(hwnd) != 0) : 0,
+            int(CTimer::GetIsWindowPaused()), int(CTimer::GetIsUserPaused()),
+            int(CTimer::GetIsCodePaused()), int(FrontEndMenuManager.m_bMenuActive));
+        fclose(log);
+    }
+}
+#endif
 
 #ifdef DETECT_JOYSTICK_MENU
 char gSelectedJoystickName[128] = "";
@@ -242,25 +251,17 @@ psCameraShowRaster(RwCamera *camera)
     const bool vsync=CMenuManager::m_PrefsVsync!=0;
 #ifdef _WIN32
     const double start=TraceDisplayTiming ? glfwGetTime() : 0.0;
-    const bool tracePresent = TraceNextPresent;
-    TraceNextPresent = false;
-    if (tracePresent)
-        TraceFocusTransition("first_present_call_begin");
-#else
-    const bool tracePresent = false;
+    const bool firstAfterFocus = traceFirstFocusPresent;
+    traceFirstFocusPresent = false;
+    if (firstAfterFocus)
+        TraceWindowsLoadingStage("present_begin");
 #endif
-    const bool loading =
-#ifdef _WIN32
-        loadingDepth != 0;
-#else
-        false;
-#endif
-    const bool dxgi=Enhanced::PresentFullscreenDXGI(PSGLOBAL(window),vsync,loading,tracePresent);
+    const bool dxgi=Enhanced::PresentFullscreenDXGI(PSGLOBAL(window),vsync);
     if (!dxgi)
         RwCameraShowRaster(camera,PSGLOBAL(window),vsync ? rwRASTERFLIPWAITVSYNC : rwRASTERFLIPDONTWAIT);
 #ifdef _WIN32
-    if (tracePresent)
-        TraceFocusTransition("first_present_call_end");
+    if (firstAfterFocus)
+        TraceWindowsLoadingStage("present_end");
     if (TraceDisplayTiming && WindowFocused && !WindowIconified) {
         struct Timing {
             int format,width,height,limit;
@@ -1219,8 +1220,7 @@ static void UpdateWindowFocusAfterEvents(GLFWwindow *window)
     WindowLostFocus = false;
     if (!loadingFocusPending && !WindowAcceptsInput(window) &&
         !glfwGetWindowAttrib(window, GLFW_ICONIFIED) &&
-        (glfwGetWindowMonitor(window) || Enhanced::Borderless ||
-         (Enhanced::DXGIFullscreenRequested() && !Enhanced::DXGIComposedFullscreenRequested())))
+        (glfwGetWindowMonitor(window) || Enhanced::Borderless || Enhanced::DXGIFullscreenRequested()))
         glfwIconifyWindow(window);
 }
 
@@ -1245,11 +1245,22 @@ bool PumpWindowsLoadingEvents()
     return focused && !loadingFocusPending && !RsGlobal.quit && !glfwWindowShouldClose(window);
 }
 
+void ServiceWindowsLoadingProgress()
+{
+    if (!loadingDepth)
+        return;
+    static double nextPoll;
+    const double now = glfwGetTime();
+    if (now >= nextPoll) {
+        nextPoll = now + 0.025;
+        PumpWindowsLoadingEvents();
+    }
+}
+
 WindowsLoadingScope::WindowsLoadingScope()
 {
     if (++loadingDepth == 1) {
-        TraceFocusTransition("loading_begin");
-        Enhanced::SuspendFullscreenForLoading(PSGLOBAL(window));
+        TraceWindowsLoadingStage("loading_begin");
         PumpWindowsLoadingEvents();
     }
 }
@@ -1258,7 +1269,7 @@ WindowsLoadingScope::~WindowsLoadingScope()
 {
     if (loadingDepth == 1) {
         PumpWindowsLoadingEvents();
-        TraceFocusTransition("loading_end");
+        TraceWindowsLoadingStage("loading_end");
     }
     --loadingDepth;
 }
@@ -2267,8 +2278,8 @@ windowFocusCB(GLFWwindow* window, int focused) {
 #ifdef _WIN32
     if (!focused && !enhancedWindowResize)
         WindowLostFocus = true;
-    TraceNextPresent = TraceDisplayTiming && focused;
-    TraceFocusTransition(focused ? "gained" : "lost");
+    traceFirstFocusPresent = TraceLoadingFocus && focused;
+    TraceWindowsLoadingStage(focused ? "focus_gained" : "focus_lost");
 #endif
     ApplyCursorMode(window, focused && WindowAcceptsInput(window));
     if (focused) SynchroniseWindowInput(window,false);
@@ -2372,6 +2383,10 @@ main(int argc, char *argv[])
         }
         if (strcmp(argv[i],"-dxgi-composed-fullscreen")==0) {
             Enhanced::DXGIComposedFullscreen=true;
+            continue;
+        }
+        if (strcmp(argv[i],"-trace-loading-focus")==0) {
+            TraceLoadingFocus=true;
             continue;
         }
         if (strcmp(argv[i],"-trace-display-timing")==0) {
@@ -2571,7 +2586,18 @@ main(int argc, char *argv[])
 			// A focus loss that started during loading is complete only once
 			// the outer loop sees the window active again.
 			const bool loadingFocus = loadingFocusPending;
+			if (loadingFocus && !acceptsInput && TraceLoadingFocus) {
+				static double nextWaitLog;
+				const double now = glfwGetTime();
+				if (now >= nextWaitLog) {
+					nextWaitLog = now + 1.0;
+					TraceWindowsLoadingStage("waiting_for_focus");
+				}
+			}
 			if (loadingFocus && acceptsInput) {
+				TraceWindowsLoadingStage("loading_focus_resumed");
+				traceResumeFramePending = TraceLoadingFocus;
+				traceFirstFocusPresent = TraceLoadingFocus;
 				loadingFocusPending = false;
 				CPad::ResetOnWindowFocusChange(true);
 				CTimer::ResetFrameClock();
@@ -2586,11 +2612,11 @@ main(int argc, char *argv[])
 				CPad::ResetOnWindowFocusChange(!windowPaused);
 				if (focusReturned && !loadingFocus && gGameState == GS_PLAYING_GAME) {
 #ifdef _WIN32
-					TraceFocusTransition("pause_begin");
+					TraceWindowsLoadingStage("pause_begin");
 #endif
 					FrontEndMenuManager.PauseAfterWindowFocusReturns();
 #ifdef _WIN32
-					TraceFocusTransition("pause_end");
+					TraceWindowsLoadingStage("pause_end");
 #endif
 					CTimer::ResetFrameClock();
 				}
@@ -2647,9 +2673,6 @@ main(int argc, char *argv[])
 
 					case GS_INIT_ONCE:
 					{
-#ifdef _WIN32
-						WindowsLoadingScope windowLoading;
-#endif
 						//CoUninitialize();
 						
 #ifdef PS2_MENU
@@ -2678,9 +2701,6 @@ main(int argc, char *argv[])
 #ifndef PS2_MENU
 					case GS_INIT_FRONTEND:
 					{
-#ifdef _WIN32
-						WindowsLoadingScope windowLoading;
-#endif
 						LoadingScreen(nil, nil, "loadsc0");
 						
 						FrontEndMenuManager.m_bGameNotLoaded = true;
@@ -2771,8 +2791,19 @@ main(int argc, char *argv[])
 							// at the logical frame rate each rendered frame is one logical frame, so wait for
 							// one instead of for a fixed time, or the two drift and a frame gets none or two
 							int32 frameLimit = CMenuManager::GetFrameLimit();
-							if (focusReturned || frameLimit == 0 || (frameLimit == LOGICAL_FRAME_RATE ? CTimer::IsLogicalFrameDue(ms) : (1000.0f / (float)frameLimit) < ms))
+							if (focusReturned || frameLimit == 0 || (frameLimit == LOGICAL_FRAME_RATE ? CTimer::IsLogicalFrameDue(ms) : (1000.0f / (float)frameLimit) < ms)) {
+#ifdef _WIN32
+								const bool traceFrame = traceResumeFramePending;
+								traceResumeFramePending = false;
+								if (traceFrame)
+									TraceWindowsLoadingStage("resume_frame_begin");
+#endif
 								RsEventHandler(rsIDLE, (void *)TRUE);
+#ifdef _WIN32
+								if (traceFrame)
+									TraceWindowsLoadingStage("resume_frame_end");
+#endif
+							}
 						}
 						break;
 					}

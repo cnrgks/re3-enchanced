@@ -1077,3 +1077,32 @@ Discord ve Ambilight sonuçları oyun içinde doğrulanmayı bekliyor.
 Kaynak 37b4f9dd, GitHub Actions run 44635107687. OpenGL x64 derlemesi
 ve mevcut üç CI birim kontrolü geçti. Fullscreen yüklemesi, Alt+Tab
 gecikmesi, imleç tepkisi, Discord ve Ambilight oyun içinde doğrulanmayı bekliyor.
+
+### WIN-03 — v1.24 kullanıcı sonucu ve geri alma
+
+Kullanıcı çerçevesiz DXGI Fullscreen denemesinde yüklemedeki Alt+Tab
+kilitlenmesinin sürdüğünü ve imleç gecikmesinin arttığını bildirdi.
+Kurulu EXE v1.24 paketiyle SHA-256 düzeyinde eşleşiyor. Yerel günlük
+çerçevesiz DXGI sunumunun etkin olduğunu gösteriyor.
+[Kanıt](feedback/2026-11-20/v1.24-composed-alt-tab-log.txt)
+
+WIN-03 açık. Belirti exclusive moda özgü değil. v1.24'ün görüntü sunumu
+ve odak değişiklikleri kaynakta geri alındı. Üç GLFW sunum dosyası
+v1.23 kaynak sürümüyle aynı. Sonraki inceleme yükleme/odak akışına
+odaklanacak. Yeni derleme alınmadı.
+
+### WIN-03 — yükleme, pencere ve girdi ayrımı
+
+Kullanıcı kilitlenme anında imleç ve yön tuşlarının da tepki vermediğini
+bildirdi. Bu gözlem bir fare koordinatı hatasını tek başına açıklama
+olarak desteklemiyor. Windows OpenGL yükleme kapsamı, senkron model
+yüklemeleri arasında en fazla 40 Hz hızla pencere olaylarını işliyor.
+Model yükleme rutininin mevcut yeniden giriş koruması etkinleştirildi.
+Tek bir bloklayan disk/GPU çağrısı sürerken olay pompası çalışamaz.
+
+`-trace-loading-focus` ile re3-loading-focus.log dosyasına yükleme,
+model ve kanal beklemeleri, gerçek Windows foreground durumu, GLFW
+odağı, Pause açılışı ve dönüşteki ilk oyun/sunum çağrısı kaydediliyor.
+Yinelenen waiting_for_focus satırları olay döngüsünün yaşadığını gösterir.
+Çıkış satırı eksik çağrı, takılmanın yerini daraltır. Exclusive sunum
+varsayılanı ve önceki ayarlar v1.23 ile aynı. Kaynak adayı derlenmedi.

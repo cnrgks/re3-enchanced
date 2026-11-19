@@ -2074,11 +2074,15 @@ CStreaming::LoadAllRequestedModels(bool priority)
 
 	if(bInsideLoadAll)
 		return;
+	bInsideLoadAll = true;
 
 	FlushChannels();
 	imgOffset = GetCdImageOffset(CdStreamGetLastPosn());
 
 	while(ms_endRequestedList.m_prev != &ms_startRequestedList){
+#if defined(_WIN32) && defined(RW_GL3) && !defined(LIBRW_SDL2)
+		ServiceWindowsLoadingProgress();
+#endif
 		streamId = GetNextFileOnCd(0, priority);
 		if(streamId == -1)
 			break;
@@ -2087,9 +2091,15 @@ CStreaming::LoadAllRequestedModels(bool priority)
 		DecrementRef(streamId);
 
 		if(ms_aInfoForModel[streamId].GetCdPosnAndSize(posn, size)){
+#if defined(_WIN32) && defined(RW_GL3) && !defined(LIBRW_SDL2)
+			TraceWindowsLoadingStage("model_read_begin", streamId);
+#endif
 			do
 				status = CdStreamRead(0, ms_pStreamingBuffer[0], imgOffset+posn, size);
 			while(CdStreamSync(0) || status == STREAM_NONE);
+#if defined(_WIN32) && defined(RW_GL3) && !defined(LIBRW_SDL2)
+			TraceWindowsLoadingStage("model_read_end", streamId);
+#endif
 			ms_aInfoForModel[streamId].m_loadState = STREAMSTATE_READING;
 
 			MakeSpaceFor(size * CDSTREAM_SECTOR_SIZE);
@@ -2125,14 +2135,26 @@ CStreaming::FlushChannels(void)
 		ProcessLoadingChannel(1);
 
 	if(ms_channel[0].state == CHANNELSTATE_READING){
+#if defined(_WIN32) && defined(RW_GL3) && !defined(LIBRW_SDL2)
+		TraceWindowsLoadingStage("channel_wait_begin", 0);
+#endif
 		CdStreamSync(0);
+#if defined(_WIN32) && defined(RW_GL3) && !defined(LIBRW_SDL2)
+		TraceWindowsLoadingStage("channel_wait_end", 0);
+#endif
 		ProcessLoadingChannel(0);
 	}
 	if(ms_channel[0].state == CHANNELSTATE_STARTED)
 		ProcessLoadingChannel(0);
 
 	if(ms_channel[1].state == CHANNELSTATE_READING){
+#if defined(_WIN32) && defined(RW_GL3) && !defined(LIBRW_SDL2)
+		TraceWindowsLoadingStage("channel_wait_begin", 1);
+#endif
 		CdStreamSync(1);
+#if defined(_WIN32) && defined(RW_GL3) && !defined(LIBRW_SDL2)
+		TraceWindowsLoadingStage("channel_wait_end", 1);
+#endif
 		ProcessLoadingChannel(1);
 	}
 	if(ms_channel[1].state == CHANNELSTATE_STARTED)

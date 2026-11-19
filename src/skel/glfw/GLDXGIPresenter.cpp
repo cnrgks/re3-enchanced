@@ -13,7 +13,7 @@
 #include <GLFW/glfw3native.h>
 
 namespace Enhanced {
-bool DXGIComposedFullscreen=true;
+bool DXGIComposedFullscreen=false;
 
 namespace {
 typedef HANDLE (WINAPI *OpenInterop)(void *);
@@ -28,7 +28,7 @@ const GLenum AccessWriteDiscard=0x0002; // WGL_ACCESS_WRITE_DISCARD_NV
 
 struct Presenter {
     GLFWwindow *window;
-    bool failed, fallbackPending, suspended, locked, busy, latencyLimited, oldErrorLogged;
+    bool failed, suspended, locked, busy, latencyLimited, oldErrorLogged;
     HMODULE library;
     ID3D11Device *device;
     ID3D11DeviceContext *context;
@@ -132,19 +132,15 @@ void ReleaseDevice()
     Release(state.device);
     if (state.library) { FreeLibrary(state.library); state.library=nil; }
 }
-bool Fail(const char *where, HRESULT result=E_FAIL, bool loading=false)
+bool Fail(const char *where, HRESULT result=E_FAIL)
 {
     Log("%s failed hr=0x%08lX; returning to native OpenGL %s",
         where,(unsigned long)result,DXGIComposedFullscreen ? "borderless" : "fullscreen");
     ResizeGuard guard;
     ReleaseDevice();
     state.failed=true;
-    if (!DXGIComposedFullscreen) {
-        if (loading)
-            state.fallbackPending=true;
-        else
-            FallbackNativeFullscreen(state.window);
-    }
+    if (!DXGIComposedFullscreen)
+        FallbackNativeFullscreen(state.window);
     return false;
 }
 
@@ -225,7 +221,7 @@ bool EnterFullscreen()
     return true;
 }
 
-bool Initialise(GLFWwindow *window, bool loading)
+bool Initialise(GLFWwindow *window)
 {
     if (!GLAD_GL_VERSION_3_0 || !glBlitFramebuffer ||
         !glfwExtensionSupported("WGL_NV_DX_interop2")) return false;
@@ -309,13 +305,7 @@ bool Initialise(GLFWwindow *window, bool loading)
         if (FAILED(hr)) return false;
         state.mode.RefreshRate=DXGI_RATIONAL{};
     }
-    if (!loading)
-        return EnterFullscreen();
-    if (!CreateBuffers(width,height))
-        return false;
-    state.suspended=true;
-    Log("loading presentation windowed framebuffer=%dx%d",width,height);
-    return true;
+    return EnterFullscreen();
 }
 
 bool CopyFrame()
@@ -351,10 +341,14 @@ bool CopyFrame()
 bool DXGIFullscreenRequested() { return ScreenFormat==0; }
 bool DXGIComposedFullscreenRequested() { return DXGIComposedFullscreen && DXGIFullscreenRequested(); }
 
-void SuspendFullscreenForLoading(void *handle)
+void UpdateFullscreenFocus(void *handle)
 {
-    if (DXGIComposedFullscreen || !handle || state.window!=handle ||
-        !state.chain || state.suspended || state.busy)
+    if (DXGIComposedFullscreen) return;
+    GLFWwindow *window=(GLFWwindow*)handle;
+    if (!window || state.window!=window || !state.chain || state.suspended || state.busy)
+        return;
+    const bool iconified=glfwGetWindowAttrib(window,GLFW_ICONIFIED)!=0;
+    if (GetForegroundWindow() == glfwGetWin32Window(window) && glfwGetWindowAttrib(window,GLFW_FOCUSED) && !iconified)
         return;
 
     ResizeGuard guard;
@@ -362,24 +356,9 @@ void SuspendFullscreenForLoading(void *handle)
     if (state.swapFlags)
         ReleaseBuffers();
     const HRESULT hr=state.chain->SetFullscreenState(FALSE,nil);
-    if (hr!=S_OK) {
-        Log("exclusive exit deferred hr=0x%08lX",(unsigned long)hr);
-        return;
-    }
+    if (hr!=S_OK) return; // Retry after the next event pump.
     state.suspended=true;
-    Log("suspended fullscreen iconified=%d exitMs=%.2f",
-        glfwGetWindowAttrib((GLFWwindow*)handle,GLFW_ICONIFIED),1000.0*(glfwGetTime()-started));
-}
-
-void UpdateFullscreenFocus(void *handle)
-{
-    GLFWwindow *window=(GLFWwindow*)handle;
-    if (!window)
-        return;
-    if (GetForegroundWindow() == glfwGetWin32Window(window) &&
-        glfwGetWindowAttrib(window,GLFW_FOCUSED) && !glfwGetWindowAttrib(window,GLFW_ICONIFIED))
-        return;
-    SuspendFullscreenForLoading(window);
+    Log("suspended fullscreen iconified=%d exitMs=%.2f",int(iconified),1000.0*(glfwGetTime()-started));
 }
 
 void ShutdownFullscreenDXGI()
@@ -392,43 +371,27 @@ void ShutdownFullscreenDXGI()
     state=Presenter{};
 }
 
-bool PresentFullscreenDXGI(void *handle, bool vsync, bool loading, bool trace)
+bool PresentFullscreenDXGI(void *handle, bool vsync)
 {
     if (!DXGIFullscreenRequested()) return false;
     if (state.busy) return true;
     GLFWwindow *window=(GLFWwindow*)handle;
     if (state.window!=window) { ShutdownFullscreenDXGI(); state.window=window; }
-    if (state.failed) {
-        if (state.fallbackPending && !loading) {
-            state.fallbackPending=false;
-            FallbackNativeFullscreen(window);
-            return true; // The mode switch invalidates the current frame dimensions.
-        }
-        return false;
-    }
+    if (state.failed) return false;
     if (GetForegroundWindow() != glfwGetWin32Window(window) || !glfwGetWindowAttrib(window,GLFW_FOCUSED) ||
         glfwGetWindowAttrib(window,GLFW_ICONIFIED)) {
         UpdateFullscreenFocus(window);
         return true;
     }
-    if (loading && !DXGIComposedFullscreen && state.chain && !state.suspended) {
-        SuspendFullscreenForLoading(window);
-        if (!state.suspended)
-            return true;
-    }
     PresentGuard presenting;
     int renderedWidth,renderedHeight;
     glfwGetFramebufferSize(window,&renderedWidth,&renderedHeight);
-    if (!state.device && !Initialise(window,loading)) return Fail("initialise/interop/fullscreen",E_FAIL,loading);
-    if (!DXGIComposedFullscreen && !loading) {
+    if (!state.device && !Initialise(window)) return Fail("initialise/interop/fullscreen");
+    if (!DXGIComposedFullscreen) {
         BOOL fullscreen=FALSE;
         const HRESULT hr=state.chain->GetFullscreenState(&fullscreen,nil);
         if (FAILED(hr)) return Fail("GetFullscreenState",hr);
-        if (state.suspended || !fullscreen) {
-            if (trace) Log("focus t=%.3f phase=exclusive_enter_begin",glfwGetTime());
-            if (!EnterFullscreen()) return Fail("resume fullscreen");
-            if (trace) Log("focus t=%.3f phase=exclusive_enter_end",glfwGetTime());
-        }
+        if ((state.suspended || !fullscreen) && !EnterFullscreen()) return Fail("resume fullscreen");
     }
     int width,height;
     glfwGetFramebufferSize(window,&width,&height);
@@ -437,15 +400,12 @@ bool PresentFullscreenDXGI(void *handle, bool vsync, bool loading, bool trace)
         return true;
     if (width!=state.width || height!=state.height) {
         ResizeGuard guard;
-        if (!CreateBuffers(width,height)) return Fail("resize buffers",E_FAIL,loading);
+        if (!CreateBuffers(width,height)) return Fail("resize buffers");
     }
-    if (trace) Log("focus t=%.3f phase=interop_copy_begin",glfwGetTime());
-    if (!CopyFrame()) return Fail("GPU copy/interop",E_FAIL,loading);
+    if (!CopyFrame()) return Fail("GPU copy/interop");
     state.context->CopyResource(state.backBuffer,state.interopTexture);
-    if (trace) Log("focus t=%.3f phase=dxgi_present_begin",glfwGetTime());
     const HRESULT hr=state.chain->Present(vsync ? 1 : 0,0);
-    if (trace) Log("focus t=%.3f phase=dxgi_present_end hr=0x%08lX",glfwGetTime(),(unsigned long)hr);
-    if (FAILED(hr)) return Fail("Present",hr,loading);
+    if (FAILED(hr)) return Fail("Present",hr);
     return true;
 }
 }
