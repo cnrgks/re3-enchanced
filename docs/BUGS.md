@@ -979,3 +979,9 @@ WHEEL-01–03 oyun içinde doğrulanmayı bekliyor.
 - **WHEEL-04** · Çarktan farklı bir radyo istasyonu seçilince ortak geçiş sesi çalıyor. Silah çarkı ve HUD aynı mühimmat biçimleyicisini kullanıyor. İsimler sabit dikey merkezde, mühimmat ayrı bir alt satırda. Silah yuvaları sabit, envanterde bulunmayan silahların yuvası boş. Referans silah sırasına görev detonatörü için bir yuva eklendi. İki çarkta daha ince halka ve daha dar sektör araları var. [Görsel referans](feedback/2026-11-20/v1.19-wheel-layout-reference.png)
 
 INTRO-01 dışındaki değişiklikler kaynakta. Derleme ve oyun içi doğrulama bekliyor.
+
+### v1.20 OpenGL derleme sonucu
+
+Kaynak 76f5c7d5, GitHub Actions run 44620808948. OpenGL x64 derlemesi
+ve mevcut üç CI birim kontrolü geçti. UI-04, TRAINER-02/03 ve WHEEL-04
+oyun içinde doğrulanmayı bekliyor.
