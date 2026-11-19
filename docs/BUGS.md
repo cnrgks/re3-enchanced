@@ -1015,3 +1015,8 @@ doğrulanmayı bekliyor.
   boyutlandırma geri çağrısı iç içe oyun karesi başlatmıyor. Kaynak
   değişikliği hazır. Yeni oyun, kayıt yükleme ve ada geçişlerinde
   Fullscreen, Borderless ve Windowed modlarıyla doğrulama bekliyor.
+
+### v1.22 OpenGL derleme sonucu
+
+Kaynak d9246faa, GitHub Actions run 44627662981. OpenGL x64 derlemesi
+ve mevcut üç CI birim kontrolü geçti. WIN-03 oyun içinde doğrulanmayı bekliyor.
