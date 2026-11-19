@@ -34,13 +34,13 @@ geri bildirimini kaydeder; burada listelenen maddeler henüz düzeltilmiş sayı
 | VEH-01 | Kırık ön camdan sürücü hasar almıyor | Açık — kullanıcı bildirdi |
 | DIST-01 | Vehicle Distance 1× üzerindeyken araç spawn akışı bozuluyor | Açık — çarpanlar ve araç adet sınırı incelenecek |
 | DIST-02 | Pedestrian Distance 1× üzerindeyken yaya spawn akışı bozuluyor | Açık — çarpanlar ve yaya adet sınırı incelenecek |
-| GPS-01 | Elle waypoint'te üst/alt yol katmanı karışıyor | Kaynakta değiştirildi / derlenmedi |
-| GPS-02 | Rota boşlukları ve anlamsız geri dönüşler | Kaynakta değiştirildi / derlenmedi |
-| MAP-01 | Çift ev ikonu | Kaynakta değiştirildi / derlenmedi |
-| MAP-02 | Keşfedilmemiş/açılmamış adadaki ikonlar | Kısmi kaynak değişikliği / keşif kalıcılığı açık |
-| MAP-03 | Daha önce görülen mavi payphone ikonu eksik | Kaynakta değiştirildi / derlenmedi |
-| MAP-04 | Sarı MAP şeridinin tamamı kaldırılmalı | Kaynakta değiştirildi / derlenmedi |
-| MAP-05 | Back kesiliyor / hizası bozuk | Kaynakta değiştirildi / derlenmedi |
+| GPS-01 | Elle waypoint'te üst/alt yol katmanı karışıyor | v1.10 OpenGL derlendi / oyun testi bekliyor |
+| GPS-02 | Rota boşlukları ve anlamsız geri dönüşler | v1.10 OpenGL derlendi / oyun testi bekliyor |
+| MAP-01 | Çift ev ikonu | v1.10 OpenGL derlendi / oyun testi bekliyor |
+| MAP-02 | Keşfedilmemiş/açılmamış adadaki ikonlar | Kısmi değişiklik v1.10'da derlendi / keşif kalıcılığı açık |
+| MAP-03 | Daha önce görülen mavi payphone ikonu eksik | v1.10 OpenGL derlendi / oyun testi bekliyor |
+| MAP-04 | Sarı MAP şeridinin tamamı kaldırılmalı | v1.10 OpenGL derlendi / oyun testi bekliyor |
+| MAP-05 | Back kesiliyor / hizası bozuk | v1.10 OpenGL derlendi / oyun testi bekliyor |
 | INPUT-01 | OpenGL–D3D9 fare hassasiyeti farklı | Açık — kullanıcı bildirdi |
 | CAP-01 | OpenGL fullscreen/borderless yakalama | v1.9 Fullscreen ve Borderless için Discord/Ambilight kullanıcı onayı. Ana Fullscreen bağlantısı kaynakta hazır |
 | INPUT-02 | Borderless kayıtlıyken yeniden açılışta imleç sola kilitleniyor | v1.4 kaynak düzeltmesi derlendi, oyun içi doğrulama bekliyor |
@@ -120,6 +120,10 @@ Spawn mesafesi ve adet sınırı ayrı incelenmeli. Aynı rota ve koşullarda 1�
 2× ve 3× ile spawn sıklığı, eşikler ve aktif varlık sayısı karşılaştırılmalı.
 
 ### GPS-01 — elle işaretlemede üst yol
+
+**Derleme:** v1.10 Windows OpenGL x64 derlemesi ve mevcut geometri, rota,
+SCM birim testleri GitHub Actions'da geçti. Oyun testi bekliyor.
+[Derleme 44454220355](https://github.com/cnrgks/hezkore-re3-pdb-build/actions/runs/44454220355)
 
 **Gözlem:** Üst üste gelen yolların katmanı karışıyor.
 
