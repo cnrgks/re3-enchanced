@@ -93,6 +93,8 @@ static RwBool		  RwInitialised = FALSE;
 static bool enhancedWindowResize = false;
 #ifdef _WIN32
 static bool pumpingLoadingEvents = false;
+static unsigned loadingDepth;
+static bool loadingFocusPending;
 #endif
 static bool WindowAcceptsInput(GLFWwindow *window);
 
@@ -220,7 +222,7 @@ psCameraShowRaster(RwCamera *camera)
 {
 #ifdef _WIN32
     // Focus can change between drawing a loading frame and presenting it.
-    if (!WindowAcceptsInput(PSGLOBAL(window)))
+    if (!WindowAcceptsInput(PSGLOBAL(window)) || loadingFocusPending)
         return;
 #endif
     const bool vsync=CMenuManager::m_PrefsVsync!=0;
@@ -1187,7 +1189,8 @@ static void UpdateWindowFocusAfterEvents(GLFWwindow *window)
     if (!WindowLostFocus)
         return;
     WindowLostFocus = false;
-    if (!WindowAcceptsInput(window) && !glfwGetWindowAttrib(window, GLFW_ICONIFIED) &&
+    if (!loadingFocusPending && !WindowAcceptsInput(window) &&
+        !glfwGetWindowAttrib(window, GLFW_ICONIFIED) &&
         (glfwGetWindowMonitor(window) || Enhanced::Borderless || Enhanced::DXGIFullscreenRequested()))
         glfwIconifyWindow(window);
 }
@@ -1198,19 +1201,32 @@ bool PumpWindowsLoadingEvents()
     if (!window || pumpingLoadingEvents)
         return false;
 
-    const bool wasFocused = WindowFocused && !WindowIconified;
+    const bool wasFocused = WindowAcceptsInput(window);
     // A framebuffer resize may update the camera, but must not start a
     // second gameplay frame while a synchronous load is still on the stack.
     pumpingLoadingEvents = true;
     glfwPollEvents();
+    if (!wasFocused || WindowLostFocus || !WindowAcceptsInput(window))
+        loadingFocusPending = true;
     UpdateWindowFocusAfterEvents(window);
     pumpingLoadingEvents = false;
 
     const bool focused = WindowAcceptsInput(window);
-    if (focused != wasFocused)
-        CPad::ResetOnWindowFocusChange(focused);
-    ApplyCursorMode(window, focused);
-    return focused && !RsGlobal.quit && !glfwWindowShouldClose(window);
+    ApplyCursorMode(window, focused && !loadingFocusPending);
+    return focused && !loadingFocusPending && !RsGlobal.quit && !glfwWindowShouldClose(window);
+}
+
+WindowsLoadingScope::WindowsLoadingScope()
+{
+    if (++loadingDepth == 1)
+        PumpWindowsLoadingEvents();
+}
+
+WindowsLoadingScope::~WindowsLoadingScope()
+{
+    if (loadingDepth == 1)
+        PumpWindowsLoadingEvents();
+    --loadingDepth;
 }
 #endif
 
@@ -2515,20 +2531,32 @@ main(int argc, char *argv[])
 			UpdateWindowFocusAfterEvents(window);
 #endif
 			const bool acceptsInput = WindowAcceptsInput(window);
-			const bool windowPaused = gGameState == GS_PLAYING_GAME && !acceptsInput;
+#ifdef _WIN32
+			// A focus loss that started during loading is complete only once
+			// the outer loop sees the window active again.
+			const bool loadingFocus = loadingFocusPending;
+			if (loadingFocus && acceptsInput) {
+				loadingFocusPending = false;
+				CPad::ResetOnWindowFocusChange(true);
+				CTimer::ResetFrameClock();
+			}
+#else
+			const bool loadingFocus = false;
+#endif
+			const bool windowPaused = gGameState == GS_PLAYING_GAME && !acceptsInput && !loadingFocus;
 			const bool focusReturned = !windowPaused && CTimer::GetIsWindowPaused();
 			if (windowPaused != CTimer::GetIsWindowPaused()) {
 				CTimer::SetWindowPause(windowPaused);
 				CPad::ResetOnWindowFocusChange(!windowPaused);
-				if (focusReturned && gGameState == GS_PLAYING_GAME) {
+				if (focusReturned && !loadingFocus && gGameState == GS_PLAYING_GAME) {
 					FrontEndMenuManager.PauseAfterWindowFocusReturns();
 					CTimer::ResetFrameClock();
 				}
 				DMAudio.Service();
 			}
 			ApplyCursorMode(window, acceptsInput);
-			if (windowPaused) {
-				// Keep processing window events without rendering to an inactive drawable.
+			if (windowPaused || (loadingFocus && !acceptsInput)) {
+				// Let loading finish, then wait for focus without opening Pause.
 				glfwWaitEventsTimeout(0.05);
 				continue;
 			}

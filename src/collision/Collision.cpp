@@ -215,6 +215,9 @@ CCollision::LoadCollisionWhenINeedIt(bool forceChange)
 	}
 
 	if (level == CGame::currLevel || forceChange) {
+#if defined(_WIN32) && defined(RW_GL3) && !defined(LIBRW_SDL2)
+		WindowsLoadingScope windowLoading;
+#endif
 #ifdef FIX_BUGS
 		CTimer::Suspend();
 #else

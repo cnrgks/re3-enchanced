@@ -46,6 +46,15 @@ void LoadingScreen(const char *str1, const char *str2, const char *splashscreen)
 void LoadingIslandScreen(const char *levelName);
 #if defined(_WIN32) && defined(RW_GL3) && !defined(LIBRW_SDL2)
 bool PumpWindowsLoadingEvents();
+
+class WindowsLoadingScope
+{
+public:
+	WindowsLoadingScope();
+	~WindowsLoadingScope();
+	WindowsLoadingScope(const WindowsLoadingScope &) = delete;
+	WindowsLoadingScope &operator=(const WindowsLoadingScope &) = delete;
+};
 #endif
 CSprite2d *LoadSplash(const char *name);
 void DestroySplashScreen(void);

@@ -400,6 +400,10 @@ bool CGame::Initialise(void)
 bool CGame::Initialise(const char* datFile)
 #endif
 {
+#if defined(_WIN32) && defined(RW_GL3) && !defined(LIBRW_SDL2)
+	WindowsLoadingScope windowLoading;
+#endif
+
 #ifdef GTA_PS2
 	// TODO: upload VU0 collision code here
 #endif
@@ -866,6 +870,10 @@ void CGame::ShutDownForRestart(void)
 
 void CGame::InitialiseWhenRestarting(void)
 {
+#if defined(_WIN32) && defined(RW_GL3) && !defined(LIBRW_SDL2)
+	WindowsLoadingScope windowLoading;
+#endif
+
 	CRect rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 	CRGBA color(255, 255, 255, 255);
 	

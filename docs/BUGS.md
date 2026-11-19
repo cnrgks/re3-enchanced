@@ -1020,3 +1020,15 @@ doğrulanmayı bekliyor.
 
 Kaynak d9246faa, GitHub Actions run 44627662981. OpenGL x64 derlemesi
 ve mevcut üç CI birim kontrolü geçti. WIN-03 oyun içinde doğrulanmayı bekliyor.
+
+### WIN-03 — v1.22 Fullscreen kullanıcı sonucu
+
+Kullanıcı Fullscreen yüklemesinde Alt+Tab sonrası Pause menüsünün hâlâ
+açıldığını ve oyunun kilitlendiğini bildirdi. Bu deneme başarısız.
+Yeni kaynak adayı yeni oyun, kayıt yükleme ve ada geçişlerinin giriş ve
+çıkışında pencere olaylarını işliyor. Yüklemede başlayan odak kaybı
+ana GLFW döngüsü oyunu tekrar odakta görene kadar işaretli kalıyor.
+Yükleme tamamlanıyor. Oyun arka plandaysa dönüşü bekliyor ve bu geçiş için
+Pause menüsü açılmıyor. Fullscreen sunumu ana döngüye dönene kadar
+erteleniyor. Normal oynanışta başlayan Alt+Tab mevcut Pause yolunu
+izliyor. Yeni aday derleme ve oyun içi doğrulama bekliyor.
