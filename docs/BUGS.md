@@ -760,3 +760,10 @@ ve üç mevcut birim kontrolü geçti. SAV-01/02/03, DIST-01/02 ve WIN-02
 oyun içi doğrulama bekliyor. DIST denemesinde aynı rota ve Density
 değerleriyle 1×, 2× ve 3× karşılaştırılmalı. Bölge, mevcut varlıklar
 ve havuz kapasitesi gözlenen araç ve yaya sayısını etkiler.
+
+### v1.14 OpenGL derleme sonucu
+
+Kaynak f718de54, GitHub Actions run 44466953534. OpenGL x64 derlemesi
+ve üç mevcut birim kontrolü geçti. Yakın/uzak trafik ve açılış dolumu,
+Restore Defaults, hizmet blip'leri, görev autosave ve Alt-Tab dönüşü
+oyun içinde doğrulanmayı bekliyor.
