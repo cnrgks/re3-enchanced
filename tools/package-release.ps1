@@ -8,12 +8,20 @@ $sourceRoot=Split-Path $PSScriptRoot -Parent
 $primary=Join-Path $WorkspaceRoot "builds/v$Version/d3d9"
 $fallback=Join-Path $WorkspaceRoot "builds/v$Version/opengl"
 $runtime=Join-Path $WorkspaceRoot 'dependencies/runtime/x64'
-$release=Join-Path $WorkspaceRoot "releases/v$Version"
+$publishRelease=Join-Path $WorkspaceRoot "releases/v$Version"
 $zipPath=Join-Path $WorkspaceRoot "releases/re3-enhanced-v$Version.zip"
-if ((Test-Path -LiteralPath $release) -or (Test-Path -LiteralPath $zipPath)) {
+if ((Test-Path -LiteralPath $publishRelease) -or (Test-Path -LiteralPath $zipPath)) {
     throw 'Version already packaged. Increment VERSION; published packages are not overwritten.'
 }
-$commit=(git -C $sourceRoot rev-parse HEAD).Trim()
+$packagingCommit=(git -C $sourceRoot rev-parse HEAD).Trim()
+$commit=(Get-Content (Join-Path $primary 'BUILD-COMMIT.txt') -Raw).Trim()
+if (git -C $sourceRoot status --porcelain) { throw 'Source tree must be clean before packaging' }
+$changes=@(git -C $sourceRoot diff --name-only $commit $packagingCommit)
+$codeChanges=@($changes | Where-Object { $_ -notmatch '^(tools/|ENHANCED\.md$|ROADMAP\.md$|RELEASE-NOTES\.txt$)' })
+if ($codeChanges.Count) { throw 'Build source differs from current compiler inputs; rebuild first' }
+$staging=Join-Path $WorkspaceRoot ("builds/v$Version/package-"+[Guid]::NewGuid().ToString('N'))
+$release=Join-Path $staging "v$Version"
+$zipStage=Join-Path $staging "re3-enhanced-v$Version.zip"
 foreach ($build in @($primary,$fallback)) {
     if ((Get-Content (Join-Path $build 'BUILD-COMMIT.txt') -Raw).Trim() -ne $commit) {
         throw "Build/source commit mismatch: $build"
@@ -50,15 +58,25 @@ foreach($file in Get-ChildItem -LiteralPath $release -Recurse -File | Where-Obje
         [BitConverter]::ToUInt16($bytes,$pe+4) -ne 0x8664) { throw "Not x64: $($file.FullName)" }
 }
 $mainBytes=[Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes((Join-Path $game 're3.exe')))
-if ($mainBytes -notmatch '(?i)d3d9.dll' -or $mainBytes -notmatch '(?i)winmm.dll') {
+if (!$mainBytes.ToLowerInvariant().Contains('d3d9.dll') -or !$mainBytes.ToLowerInvariant().Contains('winmm.dll')) {
     throw 'Main EXE must import D3D9 and WINMM for display/ASI loading'
 }
 $files=@(Get-ChildItem -LiteralPath $release -Recurse -File | Sort-Object FullName | ForEach-Object {
     [ordered]@{path=$_.FullName.Substring($release.Length+1).Replace('\','/');bytes=$_.Length;sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash}
 })
-[ordered]@{version=$Version;sourceCommit=$commit;mainBackend='Direct3D9';fallbackBackend='OpenGL';files=$files} |
+[ordered]@{version=$Version;sourceCommit=$commit;packagingCommit=$packagingCommit;mainBackend='Direct3D9';fallbackBackend='OpenGL';files=$files} |
     ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $release 'manifest.json') -Encoding UTF8
-Compress-Archive -LiteralPath $release -DestinationPath $zipPath
+Compress-Archive -LiteralPath $release -DestinationPath $zipStage
+# Publish only after all checks and compression succeed. All moves stay within
+# the explicitly selected workspace; existing published versions stay immutable.
+$workspacePrefix=[IO.Path]::GetFullPath($WorkspaceRoot).TrimEnd('\')+'\'
+foreach($path in @($release,$publishRelease,$zipStage,$zipPath)) {
+    if (![IO.Path]::GetFullPath($path).StartsWith($workspacePrefix,[StringComparison]::OrdinalIgnoreCase)) {
+        throw 'Publish path escapes workspace'
+    }
+}
+Move-Item -LiteralPath $release -Destination $publishRelease
+Move-Item -LiteralPath $zipStage -Destination $zipPath
 Get-FileHash -LiteralPath $zipPath -Algorithm SHA256 | Format-List | Out-String |
     Set-Content -LiteralPath "$zipPath.sha256.txt" -Encoding UTF8
 Write-Output "PACKAGED v$Version source=$commit files=$($files.Count)"
