@@ -42,6 +42,8 @@ ele alınıyor. [Teşhis ve yapılan aday değişiklik](docs/OPENGL-CAPTURE.md).
 Durum: roadmap / uygulanmadı.
 
 Ctrl+M/debug arayüzünün yerine sağlıklı, düzenli bir trainer ekranı.
+Mevcut debug/trainer menüsünün Ctrl+M kısayolu değiştirilecek. Yeni tuş ve
+oyun içi/M harita kısayoluyla çakışma ileride değerlendirilecek.
 Debug'daki ayarlar da erişilebilir olmalı. Kullanıcının mevcut arayüzde gördüğü
 çok hızlı gezinme/ayar değişimi yeniden oluşmamalı. FPS etkisi şu anda yalnızca
 bir şüphe; giriş tekrar aralığı ve zaman hesabı incelenmeli. Yeni arayüzün

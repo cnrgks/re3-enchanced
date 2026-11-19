@@ -58,7 +58,8 @@ public:
 	static int32 RandomCarLimit(float trafficMultiplier);
 	static bool HasRoomForTraffic();
 	static void GenerateRandomCars(void);
-	static void GenerateOneRandomCar(void);
+	static void GenerateOneRandomCar(bool preferDistant, bool warmingUp);
+	static int32 CountNearbyTraffic(const CVector &centre);
 	static void GenerateEmergencyServicesCar(void);
 	static int32 ChooseModel(CZoneInfo*, CVector*, int*);
 	static int32 ChoosePoliceCarModel(void);
@@ -132,6 +133,7 @@ public:
 	static int32 NumPermanentCars;
 	static bool bCarsGeneratedAroundCamera;
 	static float CarDensityMultiplier;
+	static constexpr int8 TrafficWarmupFrames = 45;
 	static int8 CountDownToCarsAtStart;
 	static int32 MaxNumberOfCarsInUse;
 	static uint32 LastTimeLawEnforcerCreated;

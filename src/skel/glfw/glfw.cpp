@@ -2360,6 +2360,8 @@ main(int argc, char *argv[])
 			if (windowPaused != CTimer::GetIsWindowPaused()) {
 				CTimer::SetWindowPause(windowPaused);
 				CPad::ResetOnWindowFocusChange(!windowPaused);
+				if (!windowPaused && gGameState == GS_PLAYING_GAME)
+					FrontEndMenuManager.PauseAfterWindowFocusReturns();
 			}
 #ifdef _WIN32
             Enhanced::UpdateFullscreenFocus(PSGLOBAL(window));

@@ -31,11 +31,13 @@ sonraki düzeltmeleri ve doğrulama durumlarını kaydeder.
 | SAV-01 | F5 kaydı kendi konumunu korumalı | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
 | SAV-02 | Görev sonrası evde çatıda doğma | Kaynak değişikliği hazır — üç ada oyun doğrulaması bekliyor |
 | SAV-03 | Quicksave engelleme koşulları | Kaynakta koşullar mevcut, uyarı güncellendi — oyun doğrulaması bekliyor |
+| SAV-04 | Görev sonrası 8. slota sessiz autosave ve kayıt sonrası iyileşme | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
 | VEH-01 | Kırık ön camdan sürücü hasar almıyor | Açık — kullanıcı bildirdi |
 | DIST-01 | Vehicle Distance 1× üzerindeyken araç spawn akışı bozuluyor | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
 | DIST-02 | Pedestrian Distance 1× üzerindeyken yaya spawn akışı bozuluyor | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
 | GPS-01 | Elle waypoint'te üst/alt yol katmanı karışıyor | Kapalı — kullanıcı doğruladı |
 | GPS-02 | Rota görünürlüğü, boşluklar ve anlamsız geri dönüşler | Kapalı — kullanıcı doğruladı |
+| GPS-03 | Haritada su üstünde görünen yer altı yolu | Kapalı — kullanıcı geçişin yer altı yolu olduğunu doğruladı |
 | MAP-01 | Çift ev ikonu | Kaynakta tamamlandı / v1.10'da derlendi / oyun testi bekliyor |
 | MAP-02 | Hizmet ikonlarının keşfi, mesafesi ve hıza göre opaklığı | Kaynakta tamamlandı / son opaklık düzeltmesi derlenmedi |
 | MAP-03 | Telefon ve diğer görev ikonları keşif filtresine takılıyor | Kaynakta tamamlandı / v1.12'de derlendi / son görünürlük kuralı MAP-07'de |
@@ -48,7 +50,8 @@ sonraki düzeltmeleri ve doğrulama durumlarını kaydeder.
 | INPUT-03 | Borderless modunda imleç gecikmesi sürüyor | Kapalı — kullanıcı doğruladı |
 | INPUT-04 | Araca binmek bazen ikinci basışı gerektiriyor | Kapalı — kullanıcı doğruladı |
 | WIN-01 | Alt-Tab sırasında eski Windows çerçevesi/toolbar parlaması | Kapalı — kullanıcı artık görmediğini bildirdi |
-| WIN-02 | Odak kaybında otomatik pause | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
+| WIN-02 | Odak kaybında pause, dönüşte Pause menüsünde kalma | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
+| UI-03 | Restore Defaults onayı ve hizmet blip saydamlığı | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
 | UI-01 | Borderless, Graphics ekran biçiminin üçüncü seçeneği olmalı | Kapalı — kullanıcı doğruladı |
 
 ### SAV-01 — F5/quicksave konumu
@@ -65,6 +68,9 @@ Yalnızca görev sonrası slot menüsü ev konumunu kayda geçirir. Menü kapan�
 ev isteği temizlenir. Can doldurma mevcut manuel kayıt yolunda kalır.
 
 ### SAV-02 — görev sonrası kayıt noktasında çatıya çıkma
+
+Sonraki kullanıcı isteğiyle görev sonrası slot seçimi SAV-04'teki otomatik
+8. slot akışına taşındı. Bu bölüm ilk bildirimin bağlamını korur.
 
 **Gözlem:** Kayıt doğru adadaki eve gidiyor, fakat doğru kayıt noktası yerine çatıda doğuruyor.
 
@@ -92,6 +98,15 @@ güvenli yaya durumda F5 çalışır. Görev-sonu kayıt isteği güvenli ana ka
 **Kaynak durumu:** Görev, araç, hareket ve aranma kontrolleri mevcut güvenlik
 kapısında korunuyor. F5 uyarısı dört koşulu da söylüyor. F5 ve görev sonrası
 istek aynı karede uygunsa F5 önce açılıyor, görev sonrası istek bekliyor.
+
+### SAV-04 — görev sonrası otomatik kayıt
+
+Mission Autosave açıkken görev başarı bildirimi bir kayıt isteği oluşturuyor.
+Güvenli yaya durumuna ve açık menü olmamasına kadar bekliyor. Son slot (8)
+kullanılıyor. Kayıt tamamlanınca sol üstte `Autosaved.` gösteriliyor.
+İşlem hata verirse eski slot korunuyor ve başarısızlık bildiriliyor.
+`Heal After Saving` hem manuel hem otomatik kayda uygulanıyor.
+Otomatik kayıt manuel kaydın altı saat ilerletme işlemini çağırmıyor.
 
 ### VEH-01 — cam açıkken sürücüye isabet
 
@@ -137,6 +152,17 @@ Havuzda ambient üretimden ayrılan 16 araç ve 24 ped slotu var. Yaya grupları
 kalan bütçeye sığıyor. Eski INI dosyasındaki 2× ve 3× seçimleri korunuyor.
 Eski 1,5× seçimi 1× olarak açılıyor.
 
+**v1.13 kullanıcı sonucu:** Uzak varlıklar daha kalıcı, ancak yüksek Distance
+ayarında yakındaki trafik seyreliyor ve ilk açılışta sokaklar boş kalabiliyor.
+Yeni kaynakta 1× üretim bandı ve buna ait yakın trafik bütçesi tutuluyor.
+Ek kapasite yüksek Distance ayarlarında uzak banda gidiyor. Başlangıçta 45
+mantık karesi boyunca kare başına en fazla dört yakın üretim denemesi yapılıyor.
+Model, görüş, çarpışma, Density ve havuz kontrolleri geçerli.
+`-trace-traffic`, `re3-traffic.log` dosyasına iki saniyelik oyun zamanı
+aralıklarında yakın/uzak başarı ve deneme sayılarını, sahnedeki yakın/toplam
+sayıları, Distance, Density ve konumu yazıyor. Aynı kayıt, ayar ve rotada
+soğuk açılış ile sürüş ayrı karşılaştırılmalı. Oyun ölçümü bekliyor.
+
 ### GPS-01 — elle işaretlemede üst yol
 
 **Derleme:** v1.10 Windows OpenGL x64 derlemesi ve mevcut geometri, rota,
@@ -159,6 +185,12 @@ En yakın yol 8 birim içindeyse benzer X/Y'deki üst yol tercih ediliyor. Üst
 yol seçildiğinde arama aynı yükseklikteki yakın bağlantıları deniyor.
 Görev konumunun geçerli Z değeri korunuyor. Katman seçimi aracın/yayanın
 yol ağına dayanıyor ve uzaktaki hedef için de kullanılabiliyor.
+
+### GPS-03 — haritada su üstünde görünen yer altı yolu
+
+Kullanıcı, ekrandaki geçişin bir yer altı yolu olduğunu doğruladı.
+Bu bildirim için eklenen ada ilerleme ve yakın bariyer filtreleri geri alındı.
+[Ekran görüntüsü](feedback/2026-11-19/v1.13-gps-crossing.png)
 
 ### GPS-02 — boşluk, erken bitiş ve geri dönüş
 
@@ -329,6 +361,10 @@ akışı incelenir; sadece görüntüye bakılarak sebep kesinleştirilmez.
 
 ### WIN-02 — odak kaybında pause
 
+**Son kullanıcı isteği:** Odak dönünce oyun Pause menüsünde kalmalı. Kaynakta
+odak kaybı simülasyonu durduruyor. Oyun sırasında odak geri geldiğinde
+Pause menüsü açılıyor ve manuel devam bekleniyor. Açık menü sayfası korunuyor.
+
 **İstek:** Oyun odağı kaybettiğinde pause'a geçmeli.
 
 **Kabul:** Alt-Tab veya başka pencereye tıklamada oyun simülasyonu durur;
@@ -340,6 +376,17 @@ callback/Windows odak durumu aynı kullanıcı davranışını sağlamalı.
 duraklatıyor. Ses mevcut pause politikasını kullanıyor. Odak dönünce girdi
 geçmişi eşitleniyor ve varsa manuel pause açık kalıyor. GLFW ve mevcut
 Win32 başlangıç yolları bu durumu oyun döngüsüne iletiyor.
+
+### UI-03 — Restore Defaults onayı ve hizmet blip saydamlığı
+
+Ses, görüntü, grafik ve kontrol ayarlarından Restore Defaults seçildiğinde
+İngilizce onay sayfası açılıyor. İlk seçim No. Yes yalnızca ilgili sayfayı
+sıfırlıyor. No ve geri tuşu ayarlara dönüyor.
+
+Keşfedilmiş hizmet simgeleri görev blip'leriyle aynı radar mesafesi ve alfa
+hesabını kullanıyor. Minimap menzil dışındaki simge kenara sabitleniyor.
+Hız, ortak radar menzili üzerinden mesafe ve alfayı etkiliyor. Tam ekran
+haritada simgeler opak. Oyun doğrulaması bekliyor.
 
 ### UI-01 — ekran biçiminde üçüncü seçenek
 

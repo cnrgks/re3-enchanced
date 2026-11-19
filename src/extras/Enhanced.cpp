@@ -8,15 +8,19 @@
 #include "Frontend.h"
 #include "frontendoption.h"
 #include "Camera.h"
+#include "CarCtrl.h"
 #include "Collision.h"
 #include "CutsceneMgr.h"
 #include "FileMgr.h"
 #include "Game.h"
 #include "GenericGameStorage.h"
 #include "Hud.h"
+#include "IniFile.h"
 #include "Pad.h"
+#include "PCSave.h"
 #include "PathFind.h"
 #include "Pools.h"
+#include "Population.h"
 #include "Object.h"
 #include "Vehicle.h"
 #include "PlayerPed.h"
@@ -50,12 +54,14 @@ int8 BorderlessCaptureProbe = 1, FullscreenDXGIFlipY = 1;
 int8 BorderlessCaptureProbe = 0, FullscreenDXGIFlipY = 1;
 #endif
 static float radarRange = 120.0f;
-static bool homeSaveRequested;
 static bool homeSaveActive;
 static CVector homeSavePosition;
 static float radarZoom = 1.0f;
 static uint32 radarTime;
 static bool missionSavePending;
+bool TraceTraffic = false;
+TrafficSpawnStats VehicleSpawnStats, PedSpawnStats;
+static uint32 trafficReportTime;
 static std::vector<CVector> route;
 static int routeCount;
 static CRGBA routeColour(230,35,35,230);
@@ -74,17 +80,6 @@ float PedRangeMultiplier()
 {
     return 1.0f + Clamp(int(PedDistance), 0, 2);
 }
-bool BeginHomeSave()
-{
-    homeSaveActive=false;
-#ifdef MISSION_REPLAY
-    if (IsQuickSave) return false;
-#endif
-    homeSaveActive = homeSaveRequested;
-    return homeSaveActive;
-}
-void EndHomeSave() { homeSaveActive = false; }
-void ClearHomeSaveRequest() { homeSaveRequested = false; }
 CVector SavePosition(const CVector &original)
 {
     return homeSaveActive ? homeSavePosition : original;
@@ -96,14 +91,20 @@ wchar *GetText(const char *key)
     struct Entry { const char *key; const char *value; wchar wide[120]; };
     static Entry strings[] = {
         { "ENHANCE", "ENHANCED OPTIONS" },
+        { "EN_DEFT", "RESTORE DEFAULTS" },
+        { "EN_DEFP", "Are you sure you want to restore the default settings?" },
+        { "EN_NO", "No" },
+        { "EN_YES", "Yes" },
         { "EN_QSAV", "F5 SAVE MENU" },
-        { "EN_AUTO", "SAVE MENU AFTER MISSION" },
+        { "EN_AUTO", "MISSION AUTOSAVE (SLOT 8)" },
+        { "EN_ASOK", "Autosaved." },
+        { "EN_ASER", "Autosave failed." },
         { "EN_RADR", "SMOOTH RADAR ZOOM (T)" },
         { "EN_GPS", "MISSION GPS" },
         { "EN_MAP", "PAUSE MAP" },
         { "EN_VLOD", "HIGH DETAIL VEHICLES" },
         { "EN_PLOD", "HIGH DETAIL PEDESTRIANS" },
-        { "EN_HEAL", "HEAL AFTER MANUAL SAVE" },
+        { "EN_HEAL", "HEAL AFTER SAVING" },
         { "EN_GLSS", "BREAKABLE WINDSHIELDS" },
         { "EN_BORD", "BORDERLESS FULLSCREEN" },
         { "EN_BRDL", "BORDERLESS" },
@@ -148,7 +149,10 @@ static bool SafeToSave()
 void Reset()
 {
     missionSavePending = false;
-    homeSaveRequested = homeSaveActive = false;
+    homeSaveActive = false;
+    VehicleSpawnStats = {};
+    PedSpawnStats = {};
+    trafficReportTime = CTimer::GetTimeInMilliseconds();
     ResetServices();
     radarZoom = 1.0f;
     radarTime = 0;
@@ -199,13 +203,6 @@ float BlipScale()
         return Clamp(CMenuManager::fMapSize/(SCREEN_HEIGHT*2.0f),0.55f,1.0f);
 #endif
     return EnhancedMath::RadarIconScale(radarRange);
-}
-
-void AfterSuccessfulSave()
-{
-    // Only manual saves call this; autosave does not become periodic healing.
-    if (HealAfterSave && FindPlayerPed())
-        FindPlayerPed()->m_fHealth = Max(FindPlayerPed()->m_fHealth, 100.0f);
 }
 
 wchar *MapOptionDraw(bool *disabled, bool)
@@ -462,18 +459,48 @@ void WaypointChanged()
     UpdateRoute();
 }
 
+static void ReportTraffic()
+{
+    const uint32 now = CTimer::GetTimeInMilliseconds();
+    if (now < trafficReportTime) trafficReportTime = now;
+    const uint32 elapsed = now - trafficReportTime;
+    if (elapsed < 2000) return;
+
+    if (FILE *log = fopen("re3-traffic.log", "a")) {
+        const CVector centre = FindPlayerCentreOfWorld(CWorld::PlayerInFocus);
+        int32 totalPeds;
+        const int32 nearbyPeds = CPopulation::CountNearbyTraffic(centre, &totalPeds);
+        fprintf(log, "time=%u interval_ms=%u x=%.1f y=%.1f "
+            "cars distance=%.0f density=%.2f near=%d total=%d "
+            "near_attempts=%u near_spawned=%u far_attempts=%u far_spawned=%u "
+            "peds distance=%.0f density=%.2f near=%d total=%d "
+            "near_attempts=%u near_spawned=%u far_attempts=%u far_spawned=%u\n",
+            now, elapsed, centre.x, centre.y,
+            VehicleRangeMultiplier(), CIniFile::CarNumberMultiplier,
+            CCarCtrl::CountNearbyTraffic(centre), CCarCtrl::NumRandomCars,
+            VehicleSpawnStats.attempts[0], VehicleSpawnStats.spawned[0],
+            VehicleSpawnStats.attempts[1], VehicleSpawnStats.spawned[1],
+            PedRangeMultiplier(), CIniFile::PedNumberMultiplier,
+            nearbyPeds, totalPeds,
+            PedSpawnStats.attempts[0], PedSpawnStats.spawned[0],
+            PedSpawnStats.attempts[1], PedSpawnStats.spawned[1]);
+        fclose(log);
+    }
+    trafficReportTime = now;
+    VehicleSpawnStats = {};
+    PedSpawnStats = {};
+}
+
 void Process()
 {
     // Also clamp settings loaded from edited ini files before using as indexes.
-    if (!FrontEndMenuManager.m_bMenuActive && !FrontEndMenuManager.m_bSaveMenuActive)
-        homeSaveRequested = false;
     AutoSave = AutoSave != 0;
     RadarZoom = RadarZoom != 0;
     if (!GameReady()) return;
+    if (TraceTraffic) ReportTraffic();
     if (!AutoSave) missionSavePending = false;
     if (QuickSave && CPad::GetPad(0)->GetFJustDown(4)) {
         if (SafeToSave()) {
-            ClearHomeSaveRequest();
             FrontEndMenuManager.m_bSaveMenuActive = true;
             return;
         }
@@ -481,9 +508,11 @@ void Process()
     }
     if (missionSavePending && SafeToSave() &&
         FindHomePosition(FindPlayerCoors(), homeSavePosition)) {
-        homeSaveRequested = true;
-        FrontEndMenuManager.m_bSaveMenuActive = true;
         missionSavePending = false;
+        homeSaveActive = true;
+        const bool saved = PcSaveHelper.SaveSlot(SLOT_COUNT - 1, true);
+        homeSaveActive = false;
+        CHud::SetHelpMessage(GetText(saved ? "EN_ASOK" : "EN_ASER"), false);
     }
     UpdateRoute();
 }

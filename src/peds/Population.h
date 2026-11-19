@@ -75,11 +75,11 @@ public:
 	static int32 ChooseGangOccupation(int);
 	static void FindCollisionZoneForCoors(CVector*, int*, eLevelName*);
 	static void FindClosestZoneForCoors(CVector*, int*, eLevelName, eLevelName);
-	static void GeneratePedsAtStartOfGame();
 	static float PedCreationDistMultiplier();
 	static CPed *AddPed(ePedType pedType, uint32 mi, CVector const &coors);
 	static int32 AmbientPedSlotsAvailable();
-	static void AddToPopulation(float, float, float, float);
+	static void AddToPopulation(bool preferDistant, bool warmingUp);
+	static int32 CountNearbyTraffic(const CVector &centre, int32 *total = nil);
 	static void ManagePopulation(void);
 	static void MoveCarsAndPedsOutOfAbandonedZones(void);
 	static void ConvertToRealObject(CDummyObject*);

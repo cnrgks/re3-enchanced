@@ -4212,7 +4212,7 @@ CMenuManager::Process(void)
 	else
 #endif
 	// Just a hack by R* to not make game continuously resume/pause. But we it seems we can live with it.
-	if (pad->GetEscapeJustDown())
+	if (pad->GetEscapeJustDown() && m_nCurrScreen != MENUPAGE_RESTORE_DEFAULTS)
 		RequestFrontEndStartUp();
 
 	SwitchMenuOnAndOff();
@@ -4245,7 +4245,6 @@ CMenuManager::Process(void)
 			int8 SaveSlot = PcSaveHelper.SaveSlot(m_nCurrSaveSlot);
 			PcSaveHelper.PopulateSlotInfo();
 			if (SaveSlot && PcSaveHelper.nErrorCode == SAVESTATUS_SUCCESSFUL) {
-                Enhanced::AfterSuccessfulSave();
 				ChangeScreen(MENUPAGE_SAVE_SUCCESSFUL, 0, true, false);
             } else
 				SaveLoadFileError_SetUpErrorScreen();
@@ -4372,6 +4371,9 @@ CMenuManager::Process(void)
 			DMAudio.Service();
 	}
 }
+
+static int32 restoreDefaultsScreen;
+static int32 restoreDefaultsOption;
 
 void
 CMenuManager::ProcessButtonPresses(void)
@@ -5173,7 +5175,26 @@ CMenuManager::ProcessButtonPresses(void)
 					m_nCurrExLayer = HOVEROPTION_LIST;
 					m_bSkinsEnumerated = false;
 					break;
-				case MENUACTION_RESTOREDEF:
+				case MENUACTION_RESTOREDEF: {
+					if (m_nCurrScreen != MENUPAGE_RESTORE_DEFAULTS) {
+						restoreDefaultsScreen = m_nCurrScreen;
+						restoreDefaultsOption = m_nCurrOption;
+						ChangeScreen(MENUPAGE_RESTORE_DEFAULTS, 1, true, true);
+						return;
+					}
+					const bool confirmed = m_nCurrOption == 2;
+					ChangeScreen(restoreDefaultsScreen, restoreDefaultsOption, true, true);
+					if (!confirmed)
+						return;
+#if defined(CUSTOM_FRONTEND_OPTIONS) && defined(GRAPHICS_MENU_OPTIONS)
+					extern void RestoreDefGraphics(int8);
+					extern void RestoreDefDisplay(int8);
+					if (m_nCurrScreen == MENUPAGE_GRAPHICS_SETTINGS) {
+						RestoreDefGraphics(FEOPTION_ACTION_SELECT);
+					} else if (m_nCurrScreen == MENUPAGE_DISPLAY_SETTINGS) {
+						RestoreDefDisplay(FEOPTION_ACTION_SELECT);
+					} else
+#endif
 					if (m_nCurrScreen == MENUPAGE_SOUND_SETTINGS) {
 						m_PrefsSfxVolume = 102;
 						m_PrefsSpeakers = 0;
@@ -5252,7 +5273,8 @@ CMenuManager::ProcessButtonPresses(void)
 #endif
 					}
 					SetHelperText(2);
-					break;
+					return;
+				}
 				case MENUACTION_CTRLMETHOD:
 #ifndef TIDY_UP_PBP
 					if (m_ControlMethod == CONTROL_CLASSIC) {
@@ -5321,6 +5343,11 @@ CMenuManager::ProcessButtonPresses(void)
 	}
 
 	if (goBack) {
+		if (m_nCurrScreen == MENUPAGE_RESTORE_DEFAULTS) {
+			DMAudio.PlayFrontEndSound(SOUND_FRONTEND_MENU_BACK, 0);
+			ChangeScreen(restoreDefaultsScreen, restoreDefaultsOption, true, true);
+			return;
+		}
 		ResetHelperText();
 		DMAudio.PlayFrontEndSound(SOUND_FRONTEND_MENU_BACK, 0);
 #ifdef PS2_LIKE_MENU
@@ -5696,6 +5723,16 @@ CMenuManager::RequestFrontEndStartUp()
 }
 
 void
+CMenuManager::PauseAfterWindowFocusReturns()
+{
+	if (m_bMenuActive || m_bGameNotLoaded || m_bWantToRestart || m_bWantToLoad)
+		return;
+	RequestFrontEndStartUp();
+	SwitchMenuOnAndOff();
+	LoadAllTextures();
+}
+
+void
 CMenuManager::ResetHelperText() 
 {
 	m_nHelperTextMsgId = 0;
@@ -5848,8 +5885,6 @@ CMenuManager::SwitchMenuOnAndOff()
 	}
 */
 	if (m_bMenuActive != menuWasActive) {
-		if (!m_bMenuActive)
-			Enhanced::ClearHomeSaveRequest();
 		m_bMenuStateChanged = true;
 		
 		// In case we're windowed, keep mouse centered while in game. Done in main.cpp in other conditions.

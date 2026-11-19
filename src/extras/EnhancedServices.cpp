@@ -138,7 +138,7 @@ static void RememberService(int sprite, const CVector &position, bool fallback)
     if (serviceCount < int(ARRAY_SIZE(services))) services[serviceCount++] = {sprite, position, fallback};
 }
 
-bool IsServiceBlip(const sRadarTrace &trace)
+static bool IsServiceBlip(const sRadarTrace &trace)
 {
     return IsServiceSprite(trace.m_eRadarSprite) && !CRadar::IsMissionSpriteBlip(trace);
 }
@@ -154,11 +154,8 @@ bool ServiceBlipVisible(const sRadarTrace &trace, float radarDistance)
     }
     if (!IsServiceBlip(trace)) return true;
     if (!IsUnlocked(trace.m_vecPos)) return false;
-    const bool inMap = CMenuManager::bMenuMapActive;
-    if (!inMap) {
-        if (radarDistance > 1.0f) return false;
+    if (!CMenuManager::bMenuMapActive && radarDistance <= 1.0f)
         RememberService(sprite, trace.m_vecPos, false);
-    }
     return FindDiscovered(sprite, trace.m_vecPos) != nil;
 #else
     return true;
@@ -248,8 +245,7 @@ void DrawServices()
         if (!service.fallback || !IsUnlocked(service.position)) continue;
         CVector2D radar, screen;
         CRadar::TransformRealWorldPointToRadarSpace(radar,CVector2D(service.position));
-        const float radarDistance = radar.Magnitude();
-        if (!inMap && radarDistance > 1.0f) continue;
+        const float radarDistance = CRadar::LimitRadarPoint(radar);
         bool hasRadarBlip = false;
         for (const sRadarTrace &trace : CRadar::ms_RadarTrace) {
             if (!trace.m_bInUse || trace.m_eRadarSprite != service.sprite ||
@@ -258,17 +254,12 @@ void DrawServices()
             if ((trace.m_eBlipDisplay != BLIP_DISPLAY_BOTH && trace.m_eBlipDisplay != BLIP_DISPLAY_BLIP_ONLY) ||
                 (trace.m_eBlipType == BLIP_CONTACT_POINT && hideContactPoints) ||
                 !SameService(service, trace.m_eRadarSprite, trace.m_vecPos)) continue;
-            if (!inMap && !CRadar::IsMissionSpriteBlip(trace)) {
-                CVector2D nativeRadar;
-                CRadar::TransformRealWorldPointToRadarSpace(nativeRadar, trace.m_vec2DPos);
-                if (nativeRadar.MagnitudeSqr() > 1.0f) continue;
-            }
             hasRadarBlip = true;
             break;
         }
         if (hasRadarBlip) continue;
         CRadar::TransformRadarPointToScreenSpace(screen,radar);
-        CRadar::DrawRadarSprite(service.sprite,screen.x,screen.y,CRadar::CalculateBlipAlpha(radarDistance, true));
+        CRadar::DrawRadarSprite(service.sprite,screen.x,screen.y,CRadar::CalculateBlipAlpha(radarDistance));
     }
 #endif
 }

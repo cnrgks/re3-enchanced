@@ -113,23 +113,40 @@ CCarCtrl::GenerateRandomCars()
 {
 	if (CCutsceneMgr::IsRunning())
 		return;
-	if (NumRandomCars < 30.0f * Enhanced::VehicleRangeMultiplier()){
-		if (CountDownToCarsAtStart == 0){
-			GenerateOneRandomCar();
+	if (CStreaming::ms_numVehiclesLoaded > 0) {
+		const bool warmingUp = CountDownToCarsAtStart > 0;
+		if (warmingUp) {
+			if (CountDownToCarsAtStart == TrafficWarmupFrames)
+				CTheCarGenerators::GenerateEvenIfPlayerIsCloseCounter = 20;
+			--CountDownToCarsAtStart;
 		}
-		else if (--CountDownToCarsAtStart == 0) {
-			for (int i = 0; i < 50; i++)
-				GenerateOneRandomCar();
-			CTheCarGenerators::GenerateEvenIfPlayerIsCloseCounter = 20;
-		}
+		const bool preferDistant = !warmingUp && (CTimer::GetFrameCounter() & 3) == 0;
+		const int attempts = warmingUp ? 4 : 1;
+		for (int i = 0; i < attempts; ++i)
+			GenerateOneRandomCar(preferDistant, warmingUp);
 	}
 	/* Approximately once per 4 seconds. */
 	if ((CTimer::GetTimeInMilliseconds() & 0xFFFFF000) != (CTimer::GetPreviousTimeInMilliseconds() & 0xFFFFF000))
 		GenerateEmergencyServicesCar();
 }
 
+int32
+CCarCtrl::CountNearbyTraffic(const CVector &centre)
+{
+	const auto pool = CPools::GetVehiclePool();
+	const float radius = 130.0f * TheCamera.GenerationDistMultiplier;
+	int32 count = 0;
+	for (int i = 0; i < pool->GetSize(); ++i) {
+		CVehicle *vehicle = pool->GetSlot(i);
+		if (vehicle && vehicle->VehicleCreatedBy == RANDOM_VEHICLE &&
+			(vehicle->GetPosition() - centre).MagnitudeSqr2D() <= sq(radius))
+			++count;
+	}
+	return count;
+}
+
 void
-CCarCtrl::GenerateOneRandomCar()
+CCarCtrl::GenerateOneRandomCar(bool preferDistant, bool warmingUp)
 {
 	static int32 unk = 0;
 	CPlayerInfo* pPlayer = &CWorld::Players[CWorld::PlayerInFocus];
@@ -138,9 +155,25 @@ CCarCtrl::GenerateOneRandomCar()
 	CZoneInfo zone;
 	CTheZones::GetZoneInfoForTimeOfDay(&vecTargetPos, &zone);
 	pPlayer->m_nTrafficMultiplier = pPlayer->m_fRoadDensity * zone.carDensity;
-	if (NumRandomCars >= RandomCarLimit(pPlayer->m_nTrafficMultiplier) ||
-		!HasRoomForTraffic() || CPopulation::AmbientPedSlotsAvailable() < 4)
+	const int32 totalLimit = RandomCarLimit(pPlayer->m_nTrafficMultiplier);
+	if (NumRandomCars >= totalLimit || !HasRoomForTraffic() || CPopulation::AmbientPedSlotsAvailable() < 4)
 		return;
+
+	const float fullRange = Enhanced::VehicleRangeMultiplier();
+	bool distant = false;
+	if (fullRange > 1.0f) {
+		const int32 otherCars = NumFiretrucksOnDuty + NumAmbulancesOnDuty + NumParkedCars +
+			NumMissionCars + NumLawEnforcerCars;
+		const int32 baseLimit = totalLimit / int32(fullRange);
+		const int32 nearLimit = Min(baseLimit, Max(0, MaxNumberOfCarsInUse - otherCars));
+		const int32 liveLimit = Min(totalLimit, MaxNumberOfCarsInUse * int32(fullRange) - otherCars);
+		const int32 nearby = CountNearbyTraffic(vecTargetPos);
+		const bool nearHasRoom = nearby < nearLimit;
+		const bool distantHasRoom = NumRandomCars - nearby < liveLimit - nearLimit;
+		distant = distantHasRoom && !warmingUp && (preferDistant || !nearHasRoom);
+		if (!distant && !nearHasRoom)
+			return;
+	}
 	CWanted* pWanted = pPlayer->m_pPed->m_pWanted;
 	int carClass;
 	int carModel;
@@ -180,7 +213,7 @@ CCarCtrl::GenerateOneRandomCar()
 		frontX = frontY = 0.707f; /* 45 degrees */
 		angleLimit = -1.0f;
 		invertAngleLimitTest = true;
-		preferredDistance = 40.0f * Enhanced::VehicleRangeMultiplier();
+		preferredDistance = 40.0f;
 		/* BUG: testForCollision not initialized in original game. */
 		testForCollision = false;
 	}else if (!pPlayerVehicle){
@@ -194,14 +227,14 @@ CCarCtrl::GenerateOneRandomCar()
 			/* Forward to his current direction (camera direction). */
 			angleLimit = 0.707f; /* 45 degrees */
 			invertAngleLimitTest = true;
-			preferredDistance = 120.0f * (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier());
+			preferredDistance = 120.0f * TheCamera.GenerationDistMultiplier;
 			break;
 		case 1:
 			/* Spawn a vehicle close to player to his side. */
 			/* Kinda not within camera angle. */
 			angleLimit = 0.707f; /* 45 degrees */
 			invertAngleLimitTest = false;
-			preferredDistance = 40.0f * Enhanced::VehicleRangeMultiplier();
+			preferredDistance = 40.0f;
 			break;
 		}
 	}else if (fPlayerVehicleSpeed > 0.4f){ /* 72 km/h */
@@ -216,21 +249,21 @@ CCarCtrl::GenerateOneRandomCar()
 			/* Spawn a vehicle in a very narrow gap in front of a player */
 			angleLimit = 0.85f; /* approx 30 degrees */
 			invertAngleLimitTest = true;
-			preferredDistance = 120.0f * (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier());
+			preferredDistance = 120.0f * TheCamera.GenerationDistMultiplier;
 			break;
 		case 2:
 			/* Spawn a vehicle relatively far away from player. */
 			/* Forward to his current direction (camera direction). */
 			angleLimit = 0.707f; /* 45 degrees */
 			invertAngleLimitTest = true;
-			preferredDistance = 120.0f * (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier());
+			preferredDistance = 120.0f * TheCamera.GenerationDistMultiplier;
 			break;
 		case 3:
 			/* Spawn a vehicle close to player to his side. */
 			/* Kinda not within camera angle. */
 			angleLimit = 0.707f; /* 45 degrees */
 			invertAngleLimitTest = false;
-			preferredDistance = 40.0f * Enhanced::VehicleRangeMultiplier();
+			preferredDistance = 40.0f;
 			break;
 		}
 	}else if (fPlayerVehicleSpeed > 0.1f){ /* 18 km/h */
@@ -244,14 +277,14 @@ CCarCtrl::GenerateOneRandomCar()
 			/* Spawn a vehicle in a very narrow gap in front of a player */
 			angleLimit = 0.85f; /* approx 30 degrees */
 			invertAngleLimitTest = true;
-			preferredDistance = 120.0f * (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier());
+			preferredDistance = 120.0f * TheCamera.GenerationDistMultiplier;
 			break;
 		case 1:
 			/* Spawn a vehicle relatively far away from player. */
 			/* Forward to his current direction (camera direction). */
 			angleLimit = 0.707f; /* 45 degrees */
 			invertAngleLimitTest = true;
-			preferredDistance = 120.0f * (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier());
+			preferredDistance = 120.0f * TheCamera.GenerationDistMultiplier;
 			break;
 		case 2:
 		case 3:
@@ -259,7 +292,7 @@ CCarCtrl::GenerateOneRandomCar()
 			/* Kinda not within camera angle. */
 			angleLimit = 0.707f; /* 45 degrees */
 			invertAngleLimitTest = false;
-			preferredDistance = 40.0f * Enhanced::VehicleRangeMultiplier();
+			preferredDistance = 40.0f;
 			break;
 		}
 	}else{
@@ -274,17 +307,25 @@ CCarCtrl::GenerateOneRandomCar()
 			/* Forward to his current direction (camera direction). */
 			angleLimit = 0.707f; /* 45 degrees */
 			invertAngleLimitTest = true;
-			preferredDistance = 120.0f * (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier());
+			preferredDistance = 120.0f * TheCamera.GenerationDistMultiplier;
 			break;
 		case 1:
 			/* Spawn a vehicle close to player to his side. */
 			/* Kinda not within camera angle. */
 			angleLimit = 0.707f; /* 45 degrees */
 			invertAngleLimitTest = false;
-			preferredDistance = 40.0f * Enhanced::VehicleRangeMultiplier();
+			preferredDistance = 40.0f;
 			break;
 		}
 	}
+	if (distant) {
+		// A distant attempt uses the forward ring even when the native profile picked a side spawn.
+		angleLimit = 0.707f;
+		invertAngleLimitTest = true;
+		preferredDistance = 120.0f * TheCamera.GenerationDistMultiplier * fullRange;
+	}
+	const float creationRange = distant ? fullRange : 1.0f;
+	if (Enhanced::TraceTraffic) ++Enhanced::VehicleSpawnStats.attempts[distant];
 	if (!ThePaths.NewGenerateCarCreationCoors(vecTargetPos.x, vecTargetPos.y, frontX, frontY,
 		preferredDistance, angleLimit, invertAngleLimitTest, &spawnPosition, &curNodeId, &nextNodeId,
 		&positionBetweenNodes, carClass == COPS && pWanted->GetWantedLevel() >= 1))
@@ -294,7 +335,7 @@ CCarCtrl::GenerateOneRandomCar()
 	if (colliding)
 		/* If something is already present in spawn position, do not create vehicle*/
 		return;
-	if (!ThePaths.TestCoorsCloseness(vecTargetPos, PATH_CAR, spawnPosition, Enhanced::VehicleRangeMultiplier()))
+	if (!ThePaths.TestCoorsCloseness(vecTargetPos, PATH_CAR, spawnPosition, creationRange))
 		/* Testing if spawn position can reach target position via valid path. */
 		return;
 	int16 idInNode = 0;
@@ -563,21 +604,21 @@ CCarCtrl::GenerateOneRandomCar()
 	}
 	CVisibilityPlugins::SetClumpAlpha(pVehicle->GetClump(), 0);
 	if (!pVehicle->GetIsOnScreen()){
-		float offscreenLimit = 50.0f * Enhanced::VehicleRangeMultiplier();
+		float offscreenLimit = 50.0f;
 #ifdef EXTENDED_OFFSCREEN_DESPAWN_RANGE
-		if (Enhanced::VehicleRangeMultiplier() > 1.0f)
-			offscreenLimit = 130.0f * TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier();
+		if (distant)
+			offscreenLimit = 130.0f * TheCamera.GenerationDistMultiplier * creationRange;
 #endif
 		if ((vecTargetPos - pVehicle->GetPosition()).Magnitude2D() > offscreenLimit) {
 			/* Too far away cars that are not visible aren't needed. */
 			delete pVehicle;
 			return;
 		}
-	}else if((vecTargetPos - pVehicle->GetPosition()).Magnitude2D() > (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier()) * 130.0f ||
-		(vecTargetPos - pVehicle->GetPosition()).Magnitude2D() < (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier()) * 110.0f){
+	}else if((vecTargetPos - pVehicle->GetPosition()).Magnitude2D() > (TheCamera.GenerationDistMultiplier * creationRange) * 130.0f ||
+		(vecTargetPos - pVehicle->GetPosition()).Magnitude2D() < (TheCamera.GenerationDistMultiplier * creationRange) * 110.0f){
 		delete pVehicle;
 		return;
-	}else if((TheCamera.GetPosition() - pVehicle->GetPosition()).Magnitude2D() < 90.0f * (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier())){
+	}else if((TheCamera.GetPosition() - pVehicle->GetPosition()).Magnitude2D() < 90.0f * (TheCamera.GenerationDistMultiplier * creationRange)){
 		delete pVehicle;
 		return;
 	}
@@ -602,6 +643,7 @@ CCarCtrl::GenerateOneRandomCar()
 	}
 	pVehicleModel->AvoidSameVehicleColour(&pVehicle->m_currentColour1, &pVehicle->m_currentColour2);
 	CWorld::Add(pVehicle);
+	if (Enhanced::TraceTraffic) ++Enhanced::VehicleSpawnStats.spawned[distant];
 	if (carClass == COPS)
 		CCarAI::AddPoliceCarOccupants(pVehicle);
 	else
@@ -1972,7 +2014,7 @@ void CCarCtrl::Init(void)
 	LastTimeLawEnforcerCreated = 0;
 #endif
 	bCarsGeneratedAroundCamera = false;
-	CountDownToCarsAtStart = 2;
+	CountDownToCarsAtStart = TrafficWarmupFrames;
 	CarDensityMultiplier = 1.0f;
 	for (int i = 0; i < MAX_CARS_TO_KEEP; i++)
 		apCarsToKeep[i] = nil;
@@ -1998,7 +2040,7 @@ void CCarCtrl::ReInit(void)
 	LastTimeAmbulanceCreated = 0;
 	LastTimeLawEnforcerCreated = 0;
 #endif
-	CountDownToCarsAtStart = 2;
+	CountDownToCarsAtStart = TrafficWarmupFrames;
 	CarDensityMultiplier = 1.0f;
 	for (int i = 0; i < MAX_CARS_TO_KEEP; i++)
 		apCarsToKeep[i] = nil;

@@ -2498,6 +2498,8 @@ WinMain(HINSTANCE instance,
 						if (windowPaused != CTimer::GetIsWindowPaused()) {
 							CTimer::SetWindowPause(windowPaused);
 							CPad::ResetOnWindowFocusChange(!windowPaused);
+							if (!windowPaused)
+								FrontEndMenuManager.PauseAfterWindowFocusReturns();
 						}
 						float ms = (float)CTimer::GetCurrentTimeInCycles() / (float)CTimer::GetCyclesPerMillisecond();
 						if ( RwInitialised )

@@ -13,6 +13,7 @@
 #include "platform.h"
 #include "main.h"
 #include "MemoryHeap.h"
+#include "Enhanced.h"
 
 static RwBool               DefaultVideoMode = TRUE;
 
@@ -139,6 +140,10 @@ RsInputDeviceAttach(RsInputDeviceType inputDevice,
 static RwBool
 rsCommandLine(RwChar *arg)
 {
+	if (!strcmp(arg, RWSTRING("-trace-traffic"))) {
+		Enhanced::TraceTraffic = true;
+		return TRUE;
+	}
 	RsEventHandler(rsFILELOAD, arg);
 
 	return TRUE;

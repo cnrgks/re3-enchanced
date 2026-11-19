@@ -9,6 +9,12 @@ extern int8 QuickSave, AutoSave, RadarZoom, GPS, MenuMap;
 extern int8 VehicleDistance, PedDistance, ScreenFormat;
 extern int8 BorderlessCaptureProbe, FullscreenDXGIFlipY;
 extern bool TraceVehicleEntry;
+extern bool TraceTraffic;
+struct TrafficSpawnStats {
+    uint32 attempts[2];
+    uint32 spawned[2];
+};
+extern TrafficSpawnStats VehicleSpawnStats, PedSpawnStats;
 void ApplyScreenFormatSettings();
 extern int8 VehicleDetail, PedDetail, HealAfterSave, BreakableWindscreen, Borderless;
 
@@ -26,18 +32,13 @@ void WindowModeChanged(int8 before, int8 after);
 void ApplyWindowMode(bool newWindow = false);
 #endif
 bool ProcessWindscreenShot(const CVector &source, const CVector &target, CEntity *shooter, bool hit, CColPoint &point, CEntity *&entity, bool hitOccupants = true);
-void AfterSuccessfulSave();
 void ResetServices();
 void DiscoverServices();
-bool IsServiceBlip(const sRadarTrace &trace);
 bool ServiceBlipVisible(const sRadarTrace &trace, float radarDistance);
 void SaveServiceDiscovery(uint8 *buffer, uint32 capacity);
 void LoadServiceDiscovery(const uint8 *buffer, uint32 size);
 void DrawServices();
 void DrawHomeAndPhoneBlips();
-bool BeginHomeSave();
-void EndHomeSave();
-void ClearHomeSaveRequest();
 CVector SavePosition(const CVector &original);
 float VehicleRangeMultiplier();
 float PedRangeMultiplier();

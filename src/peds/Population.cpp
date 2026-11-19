@@ -25,7 +25,7 @@
 #include "Shadows.h"
 #include "Bike.h"
 
-#define MIN_CREATION_DIST		40.0f // not for start of the game (look at the GeneratePedsAtStartOfGame)
+#define MIN_CREATION_DIST		40.0f
 #define CREATION_RANGE			10.0f // added over the MIN_CREATION_DIST.
 #define OFFSCREEN_CREATION_MULT	0.5f
 #define PED_REMOVE_DIST			(MIN_CREATION_DIST + CREATION_RANGE + 1.0f)
@@ -63,6 +63,7 @@ uint32 CPopulation::ms_nNumCop;
 bool CPopulation::bZoneChangeHasHappened;
 uint32 CPopulation::ms_nNumEmergency;
 int8 CPopulation::m_CountDownToPedsAtStart;
+static constexpr int8 PedWarmupFrames = 45;
 uint32 CPopulation::ms_nNumGang1;
 uint32 CPopulation::ms_nNumGang2;
 uint32 CPopulation::ms_nTotalPeds;
@@ -103,7 +104,7 @@ CPopulation::Initialise()
 	m_AllRandomPedsThisType = -1;
 	PedDensityMultiplier = 1.0f;
 	bZoneChangeHasHappened = false;
-	m_CountDownToPedsAtStart = 2;
+	m_CountDownToPedsAtStart = PedWarmupFrames;
 	
 	ms_nTotalMissionPeds = 0;
 	ms_nTotalPeds = 0;
@@ -421,45 +422,19 @@ CPopulation::FindClosestZoneForCoors(CVector *coors, int *safeZoneOut, eLevelNam
 void
 CPopulation::Update()
 {
-	if (!CReplay::IsPlayingBack()) {
-		ManagePopulation();
-		MoveCarsAndPedsOutOfAbandonedZones();
-		if (m_CountDownToPedsAtStart != 0) {
-			if (--m_CountDownToPedsAtStart == 0)
-				GeneratePedsAtStartOfGame();
-		} else {
-			ms_nTotalCivPeds = ms_nNumCivFemale + ms_nNumCivMale;
-			ms_nTotalGangPeds = ms_nNumGang9 + ms_nNumGang8 + ms_nNumGang7
-				+ ms_nNumGang6 + ms_nNumGang5 + ms_nNumGang4 + ms_nNumGang3
-				+ ms_nNumGang2 + ms_nNumGang1;
-			ms_nTotalPeds = ms_nNumDummy + ms_nNumEmergency + ms_nNumCop
-				+ ms_nTotalGangPeds + ms_nNumCivFemale + ms_nNumCivMale;
-			if (!CCutsceneMgr::IsRunning()) {
-				float pcdm = PedCreationDistMultiplier();
-				AddToPopulation(pcdm * (MIN_CREATION_DIST * TheCamera.GenerationDistMultiplier),
-					pcdm * ((MIN_CREATION_DIST + CREATION_RANGE) * TheCamera.GenerationDistMultiplier),
-					pcdm * ((MIN_CREATION_DIST + CREATION_RANGE) * OFFSCREEN_CREATION_MULT - CREATION_RANGE),
-					pcdm * (MIN_CREATION_DIST + CREATION_RANGE) * OFFSCREEN_CREATION_MULT);
-			}
-		}
-	}
-}
+	if (CReplay::IsPlayingBack())
+		return;
+	ManagePopulation();
+	MoveCarsAndPedsOutOfAbandonedZones();
+	if (CCutsceneMgr::IsRunning())
+		return;
 
-void
-CPopulation::GeneratePedsAtStartOfGame()
-{
-	for (int i = 0; i < 50; i++) {
-		ms_nTotalCivPeds = ms_nNumCivFemale + ms_nNumCivMale;
-		ms_nTotalGangPeds = ms_nNumGang9 + ms_nNumGang8 + ms_nNumGang7
-			+ ms_nNumGang6 + ms_nNumGang5 + ms_nNumGang4
-			+ ms_nNumGang3 + ms_nNumGang2 + ms_nNumGang1;
-		ms_nTotalPeds = ms_nNumDummy + ms_nNumEmergency + ms_nNumCop
-			+ ms_nTotalGangPeds + ms_nNumCivFemale + ms_nNumCivMale;
-
-		// Min dist is 10.0f only for start of the game (naturally)
-		AddToPopulation(10.0f, PedCreationDistMultiplier() * (MIN_CREATION_DIST + CREATION_RANGE),
-			10.0f, PedCreationDistMultiplier() * (MIN_CREATION_DIST + CREATION_RANGE));
-	}
+	const bool warmingUp = m_CountDownToPedsAtStart > 0;
+	if (warmingUp) --m_CountDownToPedsAtStart;
+	const bool preferDistant = !warmingUp && (CTimer::GetFrameCounter() & 3) == 0;
+	const int attempts = warmingUp ? 4 : 1;
+	for (int i = 0; i < attempts; ++i)
+		AddToPopulation(preferDistant, warmingUp);
 }
 
 bool
@@ -578,8 +553,28 @@ CPopulation::AmbientPedSlotsAvailable()
 	return Max(0, available);
 }
 
+int32
+CPopulation::CountNearbyTraffic(const CVector &centre, int32 *total)
+{
+	const auto pool = CPools::GetPedPool();
+	const float radius = (MIN_CREATION_DIST + CREATION_RANGE) * TheCamera.GenerationDistMultiplier *
+		PedCreationDistMultiplier() / Enhanced::PedRangeMultiplier();
+	int32 nearby = 0;
+	int32 all = 0;
+	for (int i = 0; i < pool->GetSize(); ++i) {
+		CPed *ped = pool->GetSlot(i);
+		if (!ped || ped->IsPlayer() || ped->CharCreatedBy != RANDOM_CHAR || ped->bInVehicle || ped->m_fHealth <= 0.0f)
+			continue;
+		++all;
+		if ((ped->GetPosition() - centre).MagnitudeSqr2D() <= sq(radius))
+			++nearby;
+	}
+	if (total) *total = all;
+	return nearby;
+}
+
 void
-CPopulation::AddToPopulation(float minDist, float maxDist, float minDistOffScreen, float maxDistOffScreen)
+CPopulation::AddToPopulation(bool preferDistant, bool warmingUp)
 {
 	uint32 pedTypeToAdd;
 	int32 modelToAdd;
@@ -601,17 +596,46 @@ CPopulation::AddToPopulation(float minDist, float maxDist, float minDistOffScree
 				|| CCarCtrl::NumRandomCars >= CCarCtrl::RandomCarLimit(playerInfo->m_nTrafficMultiplier)
 				|| !CCarCtrl::HasRoomForTraffic())) {
 			addCop = true;
-			minDist = PedCreationDistMultiplier() * MIN_CREATION_DIST;
-			maxDist = PedCreationDistMultiplier() * (MIN_CREATION_DIST + CREATION_RANGE);
 		}
 	}
 	const float areaPedBudget = (zoneInfo.pedDensity + zoneInfo.carDensity) * playerInfo->m_fRoadDensity *
 		PedDensityMultiplier * CIniFile::PedNumberMultiplier;
 	const int32 basePedLimit = int32(ceilf(Clamp(areaPedBudget, 0.0f, float(Max(0, MaxNumberOfPedsInUse)))));
-	const int32 pedLimit = basePedLimit * int32(Enhanced::PedRangeMultiplier());
-	const int32 openBudget = addCop ? 1 : pedLimit - int32(ms_nTotalPeds);
+	ms_nTotalCivPeds = ms_nNumCivFemale + ms_nNumCivMale;
+	ms_nTotalGangPeds = ms_nNumGang9 + ms_nNumGang8 + ms_nNumGang7 + ms_nNumGang6 +
+		ms_nNumGang5 + ms_nNumGang4 + ms_nNumGang3 + ms_nNumGang2 + ms_nNumGang1;
+	ms_nTotalPeds = ms_nNumDummy + ms_nNumEmergency + ms_nNumCop + ms_nTotalGangPeds + ms_nTotalCivPeds;
+
+	const float fullRange = Enhanced::PedRangeMultiplier();
+	const int32 total = int32(ms_nTotalPeds);
+	int32 openBudget = addCop ? 1 : basePedLimit * int32(fullRange) - total;
+	bool distant = false;
+	if (fullRange > 1.0f && !addCop && openBudget > 0) {
+		const int32 nearby = CountNearbyTraffic(playerCentreOfWorld);
+		const int32 nearRoom = basePedLimit - nearby;
+		const int32 distantRoom = basePedLimit * (int32(fullRange) - 1) - (total - nearby);
+		distant = distantRoom > 0 && !warmingUp && (preferDistant || nearRoom <= 0);
+		openBudget = Min(openBudget, distant ? distantRoom : nearRoom);
+	}
 
 	if (openBudget > 0) {
+		const float nativeRange = PedCreationDistMultiplier() / fullRange;
+		const float creationRange = distant ? nativeRange * fullRange : nativeRange;
+		const float cameraRange = addCop ? 1.0f : TheCamera.GenerationDistMultiplier;
+		const float minDist = creationRange * MIN_CREATION_DIST * cameraRange;
+		const float maxDist = creationRange * (MIN_CREATION_DIST + CREATION_RANGE) * cameraRange;
+		const float offscreenRange = nativeRange * (MIN_CREATION_DIST + CREATION_RANGE) * OFFSCREEN_CREATION_MULT;
+		float minDistOffScreen = warmingUp ? 10.0f : offscreenRange - nativeRange * CREATION_RANGE;
+		float maxDistOffScreen = warmingUp ? maxDist : offscreenRange;
+#ifdef EXTENDED_OFFSCREEN_DESPAWN_RANGE
+		if (distant) {
+			minDistOffScreen = nativeRange * PED_REMOVE_DIST * cameraRange;
+			maxDistOffScreen = maxDist;
+		}
+#else
+		if (distant)
+			maxDistOffScreen = minDistOffScreen;
+#endif
 		int decisionThreshold = CGeneral::GetRandomNumberInRange(0, 1000);
 		if (decisionThreshold < zoneInfo.copDensity || addCop) {
 			pedTypeToAdd = PEDTYPE_COP;
@@ -660,6 +684,7 @@ CPopulation::AddToPopulation(float minDist, float maxDist, float minDistOffScree
 		CVector generatedCoors;
 		int node1, node2;
 		float randomPos;
+		if (Enhanced::TraceTraffic) ++Enhanced::PedSpawnStats.attempts[distant];
 		bool foundCoors = !!ThePaths.GeneratePedCreationCoors(playerCentreOfWorld.x, playerCentreOfWorld.y, minDist, maxDist, minDistOffScreen, maxDistOffScreen,
 			&generatedCoors, &node1, &node2, &randomPos, nil);
 
@@ -723,12 +748,13 @@ CPopulation::AddToPopulation(float minDist, float maxDist, float minDistOffScree
 			}
 			bool farEnoughToAdd = true;
 			if (TheCamera.IsSphereVisible(generatedCoors, 2.0f)) {
-				if (PedCreationDistMultiplier() * MIN_CREATION_DIST > (generatedCoors - playerCentreOfWorld).Magnitude2D())
+				if (minDist > (generatedCoors - playerCentreOfWorld).Magnitude2D())
 					farEnoughToAdd = false;
 			}
 			if (!farEnoughToAdd)
 				break;
 			CPed *newPed = AddPed((ePedType)pedTypeToAdd, modelToAdd, generatedCoors);
+			if (Enhanced::TraceTraffic) ++Enhanced::PedSpawnStats.spawned[distant];
 			newPed->SetWanderPath(CGeneral::GetRandomNumberInRange(0, 8));
 
 			if (i != 0) {

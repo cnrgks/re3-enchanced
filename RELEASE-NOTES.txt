@@ -1,4 +1,4 @@
-RE3 ENHANCED v1.13 - OPENGL x64
+RE3 ENHANCED v1.14 - OPENGL x64
 
 KURULUM
 Oyunu kapat ve mevcut re3.exe/re3.pdb ciftini yedekle. Paketin game
@@ -7,18 +7,24 @@ degildir. Mevcut ini ve kayitlari koru. x64 ASI Loader, CLEO Redux ve
 runtime kutuphaneleri dahildir.
 
 KAYIT, TRAFIK VE ODAK
-F5 mevcut konumu kaydeder. Gorev sonrasi kayit ilgili adanin ev kayit
-bolgesini kullanir. Distance secenekleri 1x, 2x ve 3x. Arac ve yaya
-adet tavanlari, kendi Density ayarindan hesaplanan 1x tavaninin kati
-olarak belirlenir. Fiziksel havuz korumalari gecerlidir. Pencere odagi
-kayboldugunda oyun duraklatilir. Oyun ici dogrulama bekliyor.
+F5 mevcut konumu kaydeder. Mission Autosave aciksa gorevden sonra
+oyun guvenli anda ilgili adanin ev konumunu 8. slota kaydeder.
+Basarili yazimdan sonra Autosaved. mesaji gorunur. Heal After Saving
+iki kayit turune de uygulanir. Alt-Tab donusunde oyun Pause menusunde
+kalir. Restore Defaults secenekleri onay ister.
+
+Distance 2x ve 3x, 1x yakin uretim bandini koruyup uzak bandi ekler.
+Arac ve yaya adet tavanlari kendi Density ayarindan hesaplanir.
+Acilista yakin trafik kademeli doldurulur. -trace-traffic ile
+re3-traffic.log dosyasina yakin/uzak uretim ve mevcut sayilar yazilir.
+Ayni kayit, rota ve Density ile 1x, 2x ve 3x karsilastirilabilir.
 
 GPS VE HARITA
 Elle konan waypoint GPS rotasini acar. Enhanced Options altindaki
 Mission GPS ayari yalnizca otomatik gorev rotasini kontrol eder.
 Ammu-Nation, 8-Ball bomba garaji ve Pay 'n' Spray minimap alanina
-girince kesfedilir. Kesif PC oyun kaydinda saklanir. Hiz arttikca
-bu hizmetlerin minimap simgeleri saydamlasir. Telefon gorevleri ve
+girince kesfedilir. Kesif PC oyun kaydinda saklanir. Bu hizmetlerin
+simge saydamligi gorev simgeleriyle ayni radar hesabini kullanir. Telefon gorevleri ve
 diger gorev simgeleri oyunun kendi gorunurluk kurallarini kullanir.
 Oyun icinde M haritayi acar. Bu sekilde acilan haritadan M, Esc
 veya Back ile dogrudan oyuna donulur. Oyun ici deneme bekliyor.

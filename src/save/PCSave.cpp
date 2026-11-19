@@ -42,7 +42,7 @@ C_PcSave::DeleteSlot(int32 slot)
 }
 
 bool
-C_PcSave::SaveSlot(int32 slot)
+C_PcSave::SaveSlot(int32 slot, bool autosave)
 {
     CPlayerPed *player = FindPlayerPed();
     const float previousHealth = player ? player->m_fHealth : 0.0f;
@@ -53,31 +53,53 @@ C_PcSave::SaveSlot(int32 slot)
 	MakeValidSaveName(slot);
 	PcSaveHelper.nErrorCode = SAVESTATUS_SUCCESSFUL;
 	_psGetUserFilesFolder();
-	int file = CFileMgr::OpenFile(ValidSaveName, "wb");
-	if (file != 0) {
-#ifdef MISSION_REPLAY
-		if (!IsQuickSave)
-#endif
-			DoGameSpecificStuffBeforeSave();
-        if (heal) player->m_fHealth = Max(previousHealth, 100.0f);
-		const bool homeSave = Enhanced::BeginHomeSave();
-        const bool saved = GenericSave(file);
-        if (homeSave) Enhanced::EndHomeSave();
-		if (saved) {
-			if (!!CFileMgr::CloseFile(file)) {
-				nErrorCode = SAVESTATUS_ERR_SAVE_CLOSE;
-                if (heal) player->m_fHealth = previousHealth;
-                return false;
-            }
-			return true;
-		}
-        if (CFileMgr::CloseFile(file) != 0)
-            nErrorCode = SAVESTATUS_ERR_SAVE_CLOSE;
-        if (heal) player->m_fHealth = previousHealth;
+	char temporaryName[sizeof(ValidSaveName) + sizeof(".tmp")];
+	snprintf(temporaryName, sizeof(temporaryName), "%s.tmp", ValidSaveName);
+	const int file = CFileMgr::OpenFile(autosave ? temporaryName : ValidSaveName, "wb");
+	if (file == 0) {
+		nErrorCode = SAVESTATUS_ERR_SAVE_CREATE;
 		return false;
 	}
-	PcSaveHelper.nErrorCode = SAVESTATUS_ERR_SAVE_CREATE;
-	return false;
+
+	if (!autosave
+#ifdef MISSION_REPLAY
+	    && !IsQuickSave
+#endif
+	)
+		DoGameSpecificStuffBeforeSave();
+	if (heal) player->m_fHealth = Max(previousHealth, 100.0f);
+	bool saved = GenericSave(file);
+	if (CFileMgr::CloseFile(file) != 0) {
+		nErrorCode = SAVESTATUS_ERR_SAVE_CLOSE;
+		saved = false;
+	}
+	if (autosave && saved) {
+		// Preserve the old slot until the replacement is fully written and closed.
+#ifdef _WIN32
+		saved = MoveFileExA(temporaryName, ValidSaveName, MOVEFILE_REPLACE_EXISTING) != 0;
+#else
+		char *sourcePath = casepath(temporaryName);
+		char *targetPath = casepath(ValidSaveName);
+		saved = rename(sourcePath ? sourcePath : temporaryName, targetPath ? targetPath : ValidSaveName) == 0;
+		free(sourcePath);
+		free(targetPath);
+#endif
+		if (!saved)
+			nErrorCode = SAVESTATUS_ERR_SAVE_WRITE;
+	}
+	if (!saved) {
+		if (autosave) {
+#ifdef _WIN32
+			DeleteFile(temporaryName);
+#else
+			char *path = casepath(temporaryName);
+			unlink(path ? path : temporaryName);
+			free(path);
+#endif
+		}
+		if (heal) player->m_fHealth = previousHealth;
+	}
+	return saved;
 }
 
 bool

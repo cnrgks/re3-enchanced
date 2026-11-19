@@ -134,7 +134,7 @@ CGameLogic::Update()
 			TheCamera.SetMotionBlur(0, 0, 0, 0, MOTION_BLUR_NONE);
 			CPad::GetPad(0)->StopShaking(0);
 			CReferences::RemoveReferencesToPlayer();
-			CCarCtrl::CountDownToCarsAtStart = 2;
+			CCarCtrl::CountDownToCarsAtStart = CCarCtrl::TrafficWarmupFrames;
 			CPad::GetPad(CWorld::PlayerInFocus)->DisablePlayerControls = PLAYERCONTROL_ENABLED;
 			if (CRestart::bFadeInAfterNextDeath) { 
 				TheCamera.SetFadeColour(200, 200, 200);
@@ -217,7 +217,7 @@ CGameLogic::Update()
 			TheCamera.SetMotionBlur(0, 0, 0, 0, MOTION_BLUR_NONE);
 			CPad::GetPad(0)->StopShaking(0);
 			CReferences::RemoveReferencesToPlayer();
-			CCarCtrl::CountDownToCarsAtStart = 2;
+			CCarCtrl::CountDownToCarsAtStart = CCarCtrl::TrafficWarmupFrames;
 			CPad::GetPad(CWorld::PlayerInFocus)->DisablePlayerControls = PLAYERCONTROL_ENABLED;
 			if (CRestart::bFadeInAfterNextArrest) {
 				TheCamera.SetFadeColour(0, 0, 0);
@@ -267,7 +267,7 @@ CGameLogic::Update()
 			TheCamera.SetMotionBlur(0, 0, 0, 0, MOTION_BLUR_NONE);
 			CPad::GetPad(0)->StopShaking(0);
 			CReferences::RemoveReferencesToPlayer();
-			CCarCtrl::CountDownToCarsAtStart = 2;
+			CCarCtrl::CountDownToCarsAtStart = CCarCtrl::TrafficWarmupFrames;
 			CPad::GetPad(CWorld::PlayerInFocus)->DisablePlayerControls = PLAYERCONTROL_ENABLED;
 			TheCamera.SetFadeColour(0, 0, 0);
 			TheCamera.Fade(4.0f, FADE_IN);
