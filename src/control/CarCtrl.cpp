@@ -1,4 +1,5 @@
 #include "common.h"
+#include "Enhanced.h"
 
 #include "CarCtrl.h"
 
@@ -117,7 +118,7 @@ CCarCtrl::GenerateOneRandomCar()
 	CZoneInfo zone;
 	CTheZones::GetZoneInfoForTimeOfDay(&vecTargetPos, &zone);
 	pPlayer->m_nTrafficMultiplier = pPlayer->m_fRoadDensity * zone.carDensity;
-	if (NumRandomCars >= pPlayer->m_nTrafficMultiplier * CarDensityMultiplier * CIniFile::CarNumberMultiplier)
+	if (NumRandomCars >= pPlayer->m_nTrafficMultiplier * CarDensityMultiplier * CIniFile::CarNumberMultiplier * Sqrt(Enhanced::VehicleRangeMultiplier()))
 		return;
 	if (NumFiretrucksOnDuty + NumAmbulancesOnDuty + NumParkedCars + NumMissionCars + NumLawEnforcerCars + NumRandomCars >= MaxNumberOfCarsInUse)
 		return;
@@ -160,7 +161,7 @@ CCarCtrl::GenerateOneRandomCar()
 		frontX = frontY = 0.707f; /* 45 degrees */
 		angleLimit = -1.0f;
 		invertAngleLimitTest = true;
-		preferredDistance = 40.0f;
+		preferredDistance = 40.0f * Enhanced::VehicleRangeMultiplier();
 		/* BUG: testForCollision not initialized in original game. */
 		testForCollision = false;
 	}else if (!pPlayerVehicle){
@@ -174,14 +175,14 @@ CCarCtrl::GenerateOneRandomCar()
 			/* Forward to his current direction (camera direction). */
 			angleLimit = 0.707f; /* 45 degrees */
 			invertAngleLimitTest = true;
-			preferredDistance = 120.0f * TheCamera.GenerationDistMultiplier;
+			preferredDistance = 120.0f * (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier());
 			break;
 		case 1:
 			/* Spawn a vehicle close to player to his side. */
 			/* Kinda not within camera angle. */
 			angleLimit = 0.707f; /* 45 degrees */
 			invertAngleLimitTest = false;
-			preferredDistance = 40.0f;
+			preferredDistance = 40.0f * Enhanced::VehicleRangeMultiplier();
 			break;
 		}
 	}else if (fPlayerVehicleSpeed > 0.4f){ /* 72 km/h */
@@ -196,21 +197,21 @@ CCarCtrl::GenerateOneRandomCar()
 			/* Spawn a vehicle in a very narrow gap in front of a player */
 			angleLimit = 0.85f; /* approx 30 degrees */
 			invertAngleLimitTest = true;
-			preferredDistance = 120.0f * TheCamera.GenerationDistMultiplier;
+			preferredDistance = 120.0f * (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier());
 			break;
 		case 2:
 			/* Spawn a vehicle relatively far away from player. */
 			/* Forward to his current direction (camera direction). */
 			angleLimit = 0.707f; /* 45 degrees */
 			invertAngleLimitTest = true;
-			preferredDistance = 120.0f * TheCamera.GenerationDistMultiplier;
+			preferredDistance = 120.0f * (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier());
 			break;
 		case 3:
 			/* Spawn a vehicle close to player to his side. */
 			/* Kinda not within camera angle. */
 			angleLimit = 0.707f; /* 45 degrees */
 			invertAngleLimitTest = false;
-			preferredDistance = 40.0f;
+			preferredDistance = 40.0f * Enhanced::VehicleRangeMultiplier();
 			break;
 		}
 	}else if (fPlayerVehicleSpeed > 0.1f){ /* 18 km/h */
@@ -224,14 +225,14 @@ CCarCtrl::GenerateOneRandomCar()
 			/* Spawn a vehicle in a very narrow gap in front of a player */
 			angleLimit = 0.85f; /* approx 30 degrees */
 			invertAngleLimitTest = true;
-			preferredDistance = 120.0f * TheCamera.GenerationDistMultiplier;
+			preferredDistance = 120.0f * (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier());
 			break;
 		case 1:
 			/* Spawn a vehicle relatively far away from player. */
 			/* Forward to his current direction (camera direction). */
 			angleLimit = 0.707f; /* 45 degrees */
 			invertAngleLimitTest = true;
-			preferredDistance = 120.0f * TheCamera.GenerationDistMultiplier;
+			preferredDistance = 120.0f * (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier());
 			break;
 		case 2:
 		case 3:
@@ -239,7 +240,7 @@ CCarCtrl::GenerateOneRandomCar()
 			/* Kinda not within camera angle. */
 			angleLimit = 0.707f; /* 45 degrees */
 			invertAngleLimitTest = false;
-			preferredDistance = 40.0f;
+			preferredDistance = 40.0f * Enhanced::VehicleRangeMultiplier();
 			break;
 		}
 	}else{
@@ -254,14 +255,14 @@ CCarCtrl::GenerateOneRandomCar()
 			/* Forward to his current direction (camera direction). */
 			angleLimit = 0.707f; /* 45 degrees */
 			invertAngleLimitTest = true;
-			preferredDistance = 120.0f * TheCamera.GenerationDistMultiplier;
+			preferredDistance = 120.0f * (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier());
 			break;
 		case 1:
 			/* Spawn a vehicle close to player to his side. */
 			/* Kinda not within camera angle. */
 			angleLimit = 0.707f; /* 45 degrees */
 			invertAngleLimitTest = false;
-			preferredDistance = 40.0f;
+			preferredDistance = 40.0f * Enhanced::VehicleRangeMultiplier();
 			break;
 		}
 	}
@@ -548,11 +549,11 @@ CCarCtrl::GenerateOneRandomCar()
 			delete pVehicle;
 			return;
 		}
-	}else if((vecTargetPos - pVehicle->GetPosition()).Magnitude2D() > TheCamera.GenerationDistMultiplier * 130.0f ||
-		(vecTargetPos - pVehicle->GetPosition()).Magnitude2D() < TheCamera.GenerationDistMultiplier * 110.0f){
+	}else if((vecTargetPos - pVehicle->GetPosition()).Magnitude2D() > (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier()) * 130.0f ||
+		(vecTargetPos - pVehicle->GetPosition()).Magnitude2D() < (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier()) * 110.0f){
 		delete pVehicle;
 		return;
-	}else if((TheCamera.GetPosition() - pVehicle->GetPosition()).Magnitude2D() < 90.0f * TheCamera.GenerationDistMultiplier){
+	}else if((TheCamera.GetPosition() - pVehicle->GetPosition()).Magnitude2D() < 90.0f * (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier())){
 		delete pVehicle;
 		return;
 	}
@@ -730,7 +731,7 @@ CCarCtrl::PossiblyRemoveVehicle(CVehicle* pVehicle)
 			return;
 		}
 		float distanceToPlayer = (pVehicle->GetPosition() - vecPlayerPos).Magnitude2D();
-		float threshold = 50.0f;
+		float threshold = 50.0f * Enhanced::VehicleRangeMultiplier();
 #ifndef EXTENDED_OFFSCREEN_DESPAWN_RANGE
 		if (pVehicle->GetIsOnScreen() ||
 			TheCamera.Cams[TheCamera.ActiveCam].LookingLeft ||
@@ -745,7 +746,7 @@ CCarCtrl::PossiblyRemoveVehicle(CVehicle* pVehicle)
 			)
 #endif
 		{
-			threshold = 130.0f * TheCamera.GenerationDistMultiplier;
+			threshold = 130.0f * (TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier());
 		}
 		if (pVehicle->bExtendedRange)
 			threshold *= 1.5f;

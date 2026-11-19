@@ -60,7 +60,10 @@ C_PcSave::SaveSlot(int32 slot)
 #endif
 			DoGameSpecificStuffBeforeSave();
         if (heal) player->m_fHealth = Max(previousHealth, 100.0f);
-		if (GenericSave(file)) {
+		const bool homeSave = Enhanced::BeginHomeSave();
+        const bool saved = GenericSave(file);
+        if (homeSave) Enhanced::EndHomeSave();
+		if (saved) {
 			if (!!CFileMgr::CloseFile(file)) {
 				nErrorCode = SAVESTATUS_ERR_SAVE_CLOSE;
                 if (heal) player->m_fHealth = previousHealth;

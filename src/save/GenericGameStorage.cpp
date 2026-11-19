@@ -148,9 +148,10 @@ GenericSave(int file)
 	WriteDataToBufferPointer(buf, SIZE_OF_ONE_GAME_IN_BYTES);
 #endif
 	WriteDataToBufferPointer(buf, CGame::currLevel);
-	WriteDataToBufferPointer(buf, TheCamera.GetPosition().x);
-	WriteDataToBufferPointer(buf, TheCamera.GetPosition().y);
-	WriteDataToBufferPointer(buf, TheCamera.GetPosition().z);
+	const CVector savedCamera = Enhanced::SavePosition(TheCamera.GetPosition());
+	WriteDataToBufferPointer(buf, savedCamera.x);
+	WriteDataToBufferPointer(buf, savedCamera.y);
+	WriteDataToBufferPointer(buf, savedCamera.z);
 	WriteDataToBufferPointer(buf, CClock::ms_nMillisecondsPerGameMinute);
 	WriteDataToBufferPointer(buf, CClock::ms_nLastClockTick);
 	WriteDataToBufferPointer(buf, CClock::ms_nGameClockHours);
@@ -433,7 +434,7 @@ bool
 CheckSlotDataValid(int32 slot)
 {
 	PcSaveHelper.nErrorCode = SAVESTATUS_SUCCESSFUL;
-	if (slot == -2 ? Enhanced::ValidateAutosave(LoadFileName) : CheckDataNotCorrupt(slot, LoadFileName)) {
+	if (CheckDataNotCorrupt(slot, LoadFileName)) {
 		CStreaming::DeleteAllRwObjects();
 		return true;
 	}

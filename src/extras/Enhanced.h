@@ -2,8 +2,10 @@
 
 // Built-in features. These do not change any game's class layout or save format.
 class CEntity;
+class CColPoint;
 namespace Enhanced {
 extern int8 QuickSave, AutoSave, RadarZoom, GPS, MenuMap;
+extern int8 VehicleDistance, PedDistance;
 extern int8 VehicleDetail, PedDetail, HealAfterSave, BreakableWindscreen, Borderless;
 
 wchar *GetText(const char *key);
@@ -19,10 +21,16 @@ void WindowModeChanged(int8 before, int8 after);
 #if defined(RW_GL3) && !defined(LIBRW_SDL2)
 void ApplyWindowMode(bool newWindow = false);
 #endif
-void ProcessWindscreenShot(const CVector &source, const CVector &target, CEntity *shooter);
+bool ProcessWindscreenShot(const CVector &source, const CVector &target, CEntity *shooter, bool hit, CColPoint &point, CEntity *&entity, bool hitOccupants = true);
 void AfterSuccessfulSave();
-bool ValidateAutosave(char *destination);
-void LoadAutosave(int8 action);
+void ResetServices();
+void RememberService(int sprite, const CVector &position);
+void DrawServices();
+bool BeginHomeSave();
+void EndHomeSave();
+CVector SavePosition(const CVector &original);
+float VehicleRangeMultiplier();
+float PedRangeMultiplier();
 void OpenMap(int8 action);
 wchar *MapOptionDraw(bool *disabled, bool hovering);
 }

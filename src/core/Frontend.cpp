@@ -546,6 +546,15 @@ CMenuManager::GetPreviousPageOption()
 void
 CMenuManager::ProcessList(bool &goBack, bool &optionSelected)
 {
+#ifdef SCROLLABLE_PAGES
+    if (SCREEN_HAS_AUTO_SCROLLBAR && (CPad::GetPad(0)->GetMouseWheelUpJustDown() || CPad::GetPad(0)->GetMouseWheelDownJustDown())) {
+        const int step = CPad::GetPad(0)->GetMouseWheelUpJustDown() ? -3 : 3;
+        m_nFirstVisibleRowOnList = Clamp(int(m_nFirstVisibleRowOnList)+step, 0, int(m_nTotalListRow)-MAX_VISIBLE_OPTION);
+        m_nScrollbarTopMargin = (SCROLLBAR_MAX_HEIGHT / m_nTotalListRow) * m_nFirstVisibleRowOnList;
+        m_bShowMouse = true;
+        return;
+    }
+#endif
 	if (m_nCurrScreen == MENUPAGE_SKIN_SELECT) {
 		m_nTotalListRow = m_nSkinsTotal;
 	}
@@ -1330,9 +1339,9 @@ CMenuManager::Draw()
 		wchar *backTx = TheText.Get("FEDS_TB");
 		CFont::SetDropShadowPosition(1);
 		CFont::SetDropColor(CRGBA(0, 0, 0, FadeIn(255)));
-		CFont::PrintString(MENU_X(60.0f), SCREEN_SCALE_FROM_BOTTOM(120.0f), backTx);
+		CFont::PrintString(SCREEN_STRETCH_X(20.0f), SCREEN_SCALE_FROM_BOTTOM(94.0f), backTx);
 		CFont::SetDropShadowPosition(0);
-		if (!CheckHover(MENU_X(30.0f), MENU_X(30.0f) + CFont::GetStringWidth(backTx), SCREEN_SCALE_FROM_BOTTOM(125.0f), SCREEN_SCALE_FROM_BOTTOM(105.0f))) {
+		if (!CheckHover(SCREEN_STRETCH_X(20.0f), SCREEN_STRETCH_X(20.0f) + CFont::GetStringWidth(backTx), SCREEN_SCALE_FROM_BOTTOM(96.0f), SCREEN_SCALE_FROM_BOTTOM(76.0f))) {
 			m_nHoverOption = HOVEROPTION_NOT_HOVERING;
 			m_nCurrOption = m_nOptionMouseHovering = 0;
 		} else {
@@ -2628,7 +2637,7 @@ CMenuManager::DrawFrontEndSaveZone()
 	// Draw mouse
 	RwRenderStateSet(rwRENDERSTATETEXTUREFILTER, (void*)rwFILTERLINEAR);
 	RwRenderStateSet(rwRENDERSTATETEXTUREADDRESS, (void*)rwTEXTUREADDRESSCLAMP);
-	if (m_bShowMouse) {
+	if (m_bShowMouse && m_nCurrScreen != MENUPAGE_MAP) {
 		RwRenderStateSet(rwRENDERSTATESRCBLEND, (void*)rwBLENDSRCALPHA);
 		RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDINVSRCALPHA);
 		RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, (void*)TRUE);
@@ -2835,7 +2844,7 @@ CMenuManager::DrawFrontEndNormal()
 	// Draw mouse
 	RwRenderStateSet(rwRENDERSTATETEXTUREFILTER, (void*)rwFILTERLINEAR);
 	RwRenderStateSet(rwRENDERSTATETEXTUREADDRESS, (void*)rwTEXTUREADDRESSCLAMP);
-	if (m_bShowMouse) {
+	if (m_bShowMouse && m_nCurrScreen != MENUPAGE_MAP) {
 		RwRenderStateSet(rwRENDERSTATESRCBLEND, (void*)rwBLENDSRCALPHA);
 		RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDINVSRCALPHA);
 		RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, (void*)TRUE);
@@ -3048,7 +3057,7 @@ CMenuManager::DrawFrontEndNormal()
 	// Draw mouse
 	RwRenderStateSet(rwRENDERSTATETEXTUREFILTER, (void*)rwFILTERLINEAR);
 	RwRenderStateSet(rwRENDERSTATETEXTUREADDRESS, (void*)rwTEXTUREADDRESSCLAMP);
-	if (m_bShowMouse) {
+	if (m_bShowMouse && m_nCurrScreen != MENUPAGE_MAP) {
 		RwRenderStateSet(rwRENDERSTATESRCBLEND, (void*)rwBLENDSRCALPHA);
 		RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDINVSRCALPHA);
 		RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, (void*)TRUE);
@@ -6541,44 +6550,7 @@ CMenuManager::PrintMap(void)
 		SCREEN_STRETCH_FROM_RIGHT(11.0f), SCREEN_STRETCH_FROM_BOTTOM(59.0f)),
 		CRGBA(235, 170, 50, 255));
 
-	CFont::SetScale(MENU_X(0.4f), MENU_Y(0.7f));
-	CFont::SetFontStyle(FONT_LOCALE(FONT_BANK));
-	CFont::SetColor(CRGBA(HEADER_COLOR.r, HEADER_COLOR.g, HEADER_COLOR.b, FadeIn(255)));
 
-	float nextX = MENU_X(30.0f), nextY = 95.0f;
-	wchar *text;
-#ifdef MORE_LANGUAGES
-#define TEXT_PIECE(key,extraSpace) \
-	text = TheText.Get(key);\
-	CFont::PrintString(nextX, SCREEN_SCALE_FROM_BOTTOM(nextY), text);\
-	if (CFont::IsJapanese())\
-		nextX += CFont::GetStringWidth_Jap(text) + MENU_X(extraSpace);\
-	else\
-		nextX += CFont::GetStringWidth(text, true) + MENU_X(extraSpace);
-#else
-#define TEXT_PIECE(key,extraSpace) \
-	text = TheText.Get(key); CFont::PrintString(nextX, SCREEN_SCALE_FROM_BOTTOM(nextY), text); nextX += CFont::GetStringWidth(text, true) + MENU_X(extraSpace);
-#endif
-
-	TEXT_PIECE("FEC_MWF", 3.0f);
-	TEXT_PIECE("FEC_PGU", 1.0f);
-	TEXT_PIECE("FEC_IBT", 1.0f);
-	TEXT_PIECE("FEC_ZIN", 20.0f);
-	TEXT_PIECE("FEC_MWB", 3.0f);
-	TEXT_PIECE("FEC_PGD", 1.0f);
-	TEXT_PIECE("FEC_IBT", 1.0f);
-	CFont::PrintString(nextX, SCREEN_SCALE_FROM_BOTTOM(nextY), TheText.Get("FEC_ZOT")); nextX = MENU_X(30.0f); nextY -= 11.0f;
-	TEXT_PIECE("FEC_UPA", 2.0f);
-	TEXT_PIECE("FEC_DWA", 2.0f);
-	TEXT_PIECE("FEC_LFA", 2.0f);
-	TEXT_PIECE("FEC_RFA", 2.0f);
-	TEXT_PIECE("FEC_MSL", 1.0f);
-	TEXT_PIECE("FEC_IBT", 1.0f);
-	CFont::PrintString(nextX, SCREEN_SCALE_FROM_BOTTOM(nextY), TheText.Get("FEC_MOV")); nextX = MENU_X(30.0f); nextY -= 11.0f;
-	TEXT_PIECE("FEC_MSR", 2.0f);
-	TEXT_PIECE("FEC_IBT", 1.0f);
-	CFont::PrintString(nextX, SCREEN_SCALE_FROM_BOTTOM(nextY), TheText.Get("FEM_TWP"));
-#undef TEXT_PIECE
 }
 
 #undef ZOOM

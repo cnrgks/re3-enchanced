@@ -1,4 +1,5 @@
 #include "common.h"
+#include "Enhanced.h"
 
 #include "Game.h"
 #include "General.h"
@@ -481,10 +482,10 @@ CPopulation::PedCreationDistMultiplier()
 {
 	CVehicle *veh = FindPlayerVehicle();
 	if (!veh)
-		return 1.0f;
+		return Enhanced::PedRangeMultiplier();
 
 	float vehSpeed = veh->m_vecMoveSpeed.Magnitude2D();
-	return Clamp(vehSpeed - 0.1f + 1.0f, 1.0f, 1.5f);
+	return Clamp(vehSpeed - 0.1f + 1.0f, 1.0f, 1.5f) * Enhanced::PedRangeMultiplier();
 }
 
 CPed*
@@ -594,7 +595,7 @@ CPopulation::AddToPopulation(float minDist, float maxDist, float minDistOffScree
 		}
 	}
 	// Yeah, float
-	float maxPossiblePedsForArea = (zoneInfo.pedDensity + zoneInfo.carDensity) * playerInfo->m_fRoadDensity * PedDensityMultiplier * CIniFile::PedNumberMultiplier;
+	float maxPossiblePedsForArea = (zoneInfo.pedDensity + zoneInfo.carDensity) * playerInfo->m_fRoadDensity * PedDensityMultiplier * CIniFile::PedNumberMultiplier * Sqrt(Enhanced::PedRangeMultiplier());
 	maxPossiblePedsForArea = Min(maxPossiblePedsForArea, MaxNumberOfPedsInUse);
 
 	if (ms_nTotalPeds < maxPossiblePedsForArea || addCop) {

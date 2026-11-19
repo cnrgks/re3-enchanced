@@ -505,7 +505,8 @@ void CRadar::DrawBlips()
 		RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDINVSRCALPHA);
 		RwRenderStateSet(rwRENDERSTATEFOGENABLE, (void*)FALSE);
 
-        Enhanced::DrawRoute(); // below every blip, including the player arrow
+        Enhanced::DrawRoute();
+        Enhanced::DrawServices(); // below every blip, including the player arrow
 		CVector2D out;
 		CVector2D in = CVector2D(0.0f, 0.0f);
 		TransformRadarPointToScreenSpace(out, in);
@@ -932,9 +933,9 @@ void CRadar::DrawRadarSprite(uint16 sprite, float x, float y, uint8 alpha)
 void CRadar::DrawRotatingRadarSprite(CSprite2d* sprite, float x, float y, float angle, int32 alpha)
 {
 	CVector curPosn[4];
-	const float sizeX = SCREEN_SCALE_X(8.0f);
+	const float sizeX = SCREEN_SCALE_X(8.0f * Enhanced::BlipScale());
 	const float correctedAngle = angle - PI / 4.f;
-	const float sizeY = SCREEN_SCALE_Y(8.0f);
+	const float sizeY = SCREEN_SCALE_Y(8.0f * Enhanced::BlipScale());
 
 	for (uint32 i = 0; i < 4; i++) {
 		const float cornerAngle = i * HALFPI + correctedAngle;
@@ -1182,6 +1183,8 @@ void CRadar::SetBlipSprite(int32 i, int32 icon)
 	int index = CRadar::GetActualBlipArrayIndex(i);
 	if (index != -1) {
 		ms_RadarTrace[index].m_eRadarSprite = icon;
+        if (ms_RadarTrace[index].m_eBlipType == BLIP_COORD || ms_RadarTrace[index].m_eBlipType == BLIP_CONTACT_POINT)
+            Enhanced::RememberService(icon, ms_RadarTrace[index].m_vecPos);
 	}
 }
 

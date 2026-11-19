@@ -1,4 +1,5 @@
 #include "common.h"
+#include "Enhanced.h"
 
 #include "main.h"
 #include "Pools.h"
@@ -8526,9 +8527,10 @@ void
 CPed::Save(uint8*& buf)
 {
 	ZeroSaveBuf(buf, 52);
-	CopyToBuf(buf, GetPosition().x);
-	CopyToBuf(buf, GetPosition().y);
-	CopyToBuf(buf, GetPosition().z);
+	const CVector savePosition = IsPlayer() ? Enhanced::SavePosition(GetPosition()) : GetPosition();
+	CopyToBuf(buf, savePosition.x);
+	CopyToBuf(buf, savePosition.y);
+	CopyToBuf(buf, savePosition.z);
 	ZeroSaveBuf(buf, 288);
 	CopyToBuf(buf, CharCreatedBy);
 	ZeroSaveBuf(buf, 351);

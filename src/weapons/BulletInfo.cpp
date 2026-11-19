@@ -114,7 +114,7 @@ void CBulletInfo::Update(void)
 		CColPoint point;
 		CEntity* pHitEntity;
         bool hit=CWorld::ProcessLineOfSight(vecOldPos, vecNewPos, point, pHitEntity, true, true, true, true, true, true);
-        Enhanced::ProcessWindscreenShot(vecOldPos,hit ? point.point : vecNewPos,pBullet->m_pSource);
+        hit=Enhanced::ProcessWindscreenShot(vecOldPos,vecNewPos,pBullet->m_pSource,hit,point,pHitEntity);
 		if (hit) {
 			if (pBullet->m_pSource && (pHitEntity->IsPed() || pHitEntity->IsVehicle()))
 				CStats::InstantHitsHitByPlayer++;

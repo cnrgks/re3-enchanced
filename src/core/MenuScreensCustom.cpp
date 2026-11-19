@@ -396,6 +396,7 @@ void ControllerTypeAfterChange(int8 before, int8 after)
 }
 #endif
 
+static const char *enhancedDistances[] = { "EN_100", "EN_150", "EN_200", "EN_300" };
 CMenuScreenCustom aScreens[MENUPAGES] = {
 	// MENUPAGE_NONE = 0
 	{ "", MENUPAGE_DISABLED, MENUPAGE_DISABLED, nil, nil, },
@@ -936,7 +937,6 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
        new CCustomScreenLayout({MENUSPRITE_MAINMENU, 50, 0, 20, FONT_HEADING, FESCREEN_LEFT_ALIGN, true, MEDIUMTEXT_X_SCALE, MEDIUMTEXT_Y_SCALE}), nil,
        MENUACTION_CFO_SELECT, "EN_QSAV", { new CCFOSelect(&Enhanced::QuickSave, "Enhanced", "QuickSave", off_on, 2, false) },
        MENUACTION_CFO_SELECT, "EN_AUTO", { new CCFOSelect(&Enhanced::AutoSave, "Enhanced", "AutoSave", off_on, 2, false) },
-       MENUACTION_CFO_DYNAMIC, "EN_LOAD", { new CCFODynamic(nil, nil, nil, nil, Enhanced::LoadAutosave) },
        MENUACTION_CFO_SELECT, "EN_RADR", { new CCFOSelect(&Enhanced::RadarZoom, "Enhanced", "RadarZoom", off_on, 2, false) },
        MENUACTION_CFO_SELECT, "EN_GPS", { new CCFOSelect(&Enhanced::GPS, "Enhanced", "GPS", off_on, 2, false) },
        MENUACTION_CFO_SELECT, "EN_MAP", { new CCFOSelect(&Enhanced::MenuMap, "Enhanced", "MenuMap", off_on, 2, false) },
@@ -944,7 +944,9 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
        MENUACTION_CFO_SELECT, "EN_PLOD", { new CCFOSelect(&Enhanced::PedDetail, "Enhanced", "PedDetail", off_on, 2, false) },
        MENUACTION_CFO_SELECT, "EN_HEAL", { new CCFOSelect(&Enhanced::HealAfterSave, "Enhanced", "HealAfterSave", off_on, 2, false) },
        MENUACTION_CFO_SELECT, "EN_GLSS", { new CCFOSelect(&Enhanced::BreakableWindscreen, "Enhanced", "BreakableWindscreen", off_on, 2, false) },
-       MENUACTION_CFO_SELECT, "EN_BORD", { new CCFOSelect(&Enhanced::Borderless, "Enhanced", "Borderless", off_on, 2, false, Enhanced::WindowModeChanged) },
+       MENUACTION_CFO_SELECT, "EN_BORD", { new CCFOSelect(&Enhanced::Borderless, "Enhanced", "Borderless", off_on, 2, true, Enhanced::WindowModeChanged, true) },
+       MENUACTION_CFO_SELECT, "EN_VDST", { new CCFOSelect(&Enhanced::VehicleDistance, "Enhanced", "VehicleDistance", enhancedDistances, 4, false) },
+       MENUACTION_CFO_SELECT, "EN_PDST", { new CCFOSelect(&Enhanced::PedDistance, "Enhanced", "PedDistance", enhancedDistances, 4, false) },
        MENUACTION_CHANGEMENU, "FEDS_TB", { nil, SAVESLOT_NONE, MENUPAGE_NONE },
    },
 

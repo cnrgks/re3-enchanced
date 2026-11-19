@@ -34,7 +34,17 @@
 namespace Enhanced {
 int8 QuickSave = 0, AutoSave = 0, RadarZoom = 0;
 int8 GPS = 0, MenuMap = 1, VehicleDetail = 0, PedDetail = 0, HealAfterSave = 0;
-int8 BreakableWindscreen = 0, Borderless = 0;
+int8 BreakableWindscreen = 0;
+#ifdef RW_D3D9
+int8 Borderless = 1;
+#else
+int8 Borderless = 0;
+#endif
+int8 VehicleDistance = 0, PedDistance = 0;
+static float radarRange = 120.0f;
+static bool homeSaveRequested;
+static bool homeSaveActive;
+static CVector homeSavePosition;
 static float radarZoom = 1.0f;
 static uint32 radarTime;
 static bool missionSavePending;
@@ -47,6 +57,33 @@ static uint32 routeLastUpdate;
 static CVector routeTarget;
 static CVector routeStart;
 
+bool FindHomePosition(const CVector &current, CVector &home);
+float VehicleRangeMultiplier()
+{
+    const float values[] = {1.0f,1.5f,2.0f,3.0f};
+    return values[Clamp(int(VehicleDistance),0,3)];
+}
+float PedRangeMultiplier()
+{
+    const float values[] = {1.0f,1.5f,2.0f,3.0f};
+    return values[Clamp(int(PedDistance),0,3)];
+}
+bool BeginHomeSave()
+{
+    homeSaveActive=false;
+#ifdef MISSION_REPLAY
+    if (IsQuickSave) return false;
+#endif
+    if (!homeSaveRequested || !FindPlayerPed()) return false;
+    homeSaveActive=FindHomePosition(FindPlayerCoors(),homeSavePosition);
+    return homeSaveActive;
+}
+void EndHomeSave() { homeSaveActive=false; }
+CVector SavePosition(const CVector &original)
+{
+    return homeSaveActive ? homeSavePosition : original;
+}
+
 // Local strings keep the GXT files intact, including all existing translations.
 wchar *GetText(const char *key)
 {
@@ -54,8 +91,7 @@ wchar *GetText(const char *key)
     static Entry strings[] = {
         { "ENHANCE", "ENHANCED OPTIONS" },
         { "EN_QSAV", "F5 SAVE MENU" },
-        { "EN_AUTO", "AUTOSAVE AFTER MISSION" },
-        { "EN_LOAD", "LOAD AUTOSAVE" },
+        { "EN_AUTO", "SAVE MENU AFTER MISSION" },
         { "EN_RADR", "SMOOTH RADAR ZOOM (T)" },
         { "EN_GPS", "GPS ROUTE" },
         { "EN_MAP", "PAUSE MAP" },
@@ -64,8 +100,10 @@ wchar *GetText(const char *key)
         { "EN_HEAL", "HEAL AFTER MANUAL SAVE" },
         { "EN_GLSS", "BREAKABLE WINDSHIELDS" },
         { "EN_BORD", "BORDERLESS FULLSCREEN" },
-        { "EN_DONE", "Autosave completed." },
-        { "EN_FAIL", "Autosave failed. Previous autosave kept." },
+        { "EN_VDST", "VEHICLE DISTANCE" },
+        { "EN_PDST", "PEDESTRIAN DISTANCE" },
+        { "EN_100", "1X" }, { "EN_150", "1.5X" },
+        { "EN_200", "2X" }, { "EN_300", "3X" },
         { "EN_SAFE", "Save unavailable: stand still, outside missions, without a wanted level." },
     };
     for (unsigned i = 0; i < ARRAY_SIZE(strings); ++i) {
@@ -103,6 +141,8 @@ static bool SafeToSave()
 void Reset()
 {
     missionSavePending = false;
+    homeSaveRequested = homeSaveActive = false;
+    ResetServices();
     radarZoom = 1.0f;
     radarTime = 0;
     routeCount = 0;
@@ -118,6 +158,8 @@ void WindowModeChanged(int8, int8)
 {
 #if defined(RW_GL3) && !defined(LIBRW_SDL2)
     ApplyWindowMode();
+#elif defined(RW_D3D9)
+    _psSelectScreenVM(FrontEndMenuManager.m_nPrefsVideoMode);
 #endif
 }
 
@@ -126,9 +168,10 @@ float RadarRange(float nativeRange)
     const uint32 now = CTimer::GetTimeInMillisecondsPauseMode();
     const float dt = radarTime ? Min(now-radarTime,100u)*0.001f : 0.0f;
     radarTime = now;
-    const float target = RadarZoom && CPad::GetPad(0)->GetChar('T') ? 3.0f : 1.0f;
+    const float target = RadarZoom && CPad::GetPad(0)->GetChar('T') ? 2.25f : 1.0f;
     radarZoom = EnhancedMath::SmoothZoom(radarZoom,target,dt);
-    return nativeRange*radarZoom;
+    radarRange = nativeRange*radarZoom;
+    return radarRange;
 }
 
 float BlipScale()
@@ -137,7 +180,7 @@ float BlipScale()
     if (CMenuManager::bMenuMapActive)
         return Clamp(CMenuManager::fMapSize/(SCREEN_HEIGHT*2.0f),0.55f,1.0f);
 #endif
-    return Clamp(1.0f/Sqrt(radarZoom),0.55f,1.0f);
+    return Clamp(1.0f/Sqrt(Max(1.0f,radarRange/120.0f)),0.35f,1.0f);
 }
 
 void AfterSuccessfulSave()
@@ -145,82 +188,6 @@ void AfterSuccessfulSave()
     // Only manual saves call this; autosave does not become periodic healing.
     if (HealAfterSave && FindPlayerPed())
         FindPlayerPed()->m_fHealth = Max(FindPlayerPed()->m_fHealth, 100.0f);
-}
-
-static void AutosavePrefix(char *out, size_t size)
-{
-    snprintf(out, size, "%s-enhanced-auto", DefaultPCSaveFileName);
-}
-
-bool ValidateAutosave(char *destination)
-{
-    // Reuse the native checksum validator with an isolated save prefix.
-    // Eight manual slots and mission-retry saves are never overwritten.
-    char original[sizeof(DefaultPCSaveFileName)];
-    strcpy(original, DefaultPCSaveFileName);
-    char prefix[sizeof(DefaultPCSaveFileName)];
-    AutosavePrefix(prefix, sizeof(prefix));
-    strcpy(DefaultPCSaveFileName, prefix);
-    bool result = CheckDataNotCorrupt(0, destination);
-    strcpy(DefaultPCSaveFileName, original);
-    return result;
-}
-
-static bool SaveAutosave()
-{
-    if (!CStats::LastMissionPassedName[0]) return false;
-    char prefix[260], target[300], temporary[304];
-    AutosavePrefix(prefix, sizeof(prefix));
-    snprintf(target, sizeof(target), "%s1.b", prefix);
-    snprintf(temporary, sizeof(temporary), "%s-tmp1.b", prefix);
-    if (strlen(temporary) >= sizeof(ValidSaveName)) return false;
-    char oldValidName[sizeof(ValidSaveName)];
-    strcpy(oldValidName, ValidSaveName);
-    // Same native serializer, but no safehouse time skip or stamina mutation.
-    // The old autosave is replaced only after writing and closing successfully.
-    strncpy(ValidSaveName, temporary, sizeof(ValidSaveName)-1);
-    ValidSaveName[sizeof(ValidSaveName)-1] = '\0';
-    CFileMgr::SetDir("");
-    int file = CFileMgr::OpenFile(temporary, "wb");
-    bool ok = false;
-    if (file) {
-        CTimer::Suspend();
-        ok = GenericSave(file);
-        if (CFileMgr::GetErrorReadWrite(file)) ok = false;
-        if (CFileMgr::CloseFile(file) != 0) ok = false;
-        CTimer::Resume();
-    }
-    strcpy(ValidSaveName, oldValidName);
-    if (ok) {
-        // The original file layer's error accessor tests EOF, not ferror.
-        // Validate the actual bytes on disk before replacing a good autosave.
-        char originalPrefix[sizeof(DefaultPCSaveFileName)], validated[300];
-        strcpy(originalPrefix, DefaultPCSaveFileName);
-        snprintf(DefaultPCSaveFileName, sizeof(DefaultPCSaveFileName), "%s-tmp", prefix);
-        ok = CheckDataNotCorrupt(0, validated);
-        strcpy(DefaultPCSaveFileName, originalPrefix);
-    }
-    if (ok) {
-#ifdef _WIN32
-        ok = MoveFileExA(temporary, target, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != 0;
-#else
-        ok = rename(temporary, target) == 0;
-#endif
-    }
-    if (!ok) remove(temporary);
-    return ok;
-}
-
-void LoadAutosave(int8 action)
-{
-    if (action != FEOPTION_ACTION_SELECT) return;
-    char name[300];
-    if (!ValidateAutosave(name)) {
-        FrontEndMenuManager.SetHelperText(1);
-        return;
-    }
-    FrontEndMenuManager.m_nCurrSaveSlot = -2; // private sentinel, never an array index
-    ChangeScreen(MENUPAGE_LOAD_SLOT_CONFIRM, 1);
 }
 
 wchar *MapOptionDraw(bool *disabled, bool)
@@ -383,19 +350,21 @@ void WaypointChanged()
 void Process()
 {
     // Also clamp settings loaded from edited ini files before using as indexes.
+    if (!FrontEndMenuManager.m_bMenuActive && !FrontEndMenuManager.m_bSaveMenuActive)
+        homeSaveRequested = false;
     AutoSave = AutoSave != 0;
     RadarZoom = RadarZoom != 0;
     if (!GameReady()) return;
     if (QuickSave && CPad::GetPad(0)->GetFJustDown(4)) {
-        if (SafeToSave()) FrontEndMenuManager.m_bSaveMenuActive = true;
+        if (SafeToSave()) { homeSaveRequested=true; FrontEndMenuManager.m_bSaveMenuActive = true; }
         else CHud::SetHelpMessage(GetText("EN_SAFE"), false);
     }
     if (!AutoSave) {
         missionSavePending = false;
     } else {
         if (missionSavePending && SafeToSave()) {
-            const bool ok = SaveAutosave();
-            CHud::SetHelpMessage(GetText(ok ? "EN_DONE" : "EN_FAIL"), false);
+            homeSaveRequested = true;
+            FrontEndMenuManager.m_bSaveMenuActive = true;
             missionSavePending = false;
         }
     }

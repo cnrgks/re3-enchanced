@@ -14,6 +14,14 @@ concurrency:
 
 jobs:
   build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: win-amd64-librw_d3d9-oal
+            artifact: re3-enhanced-x64-d3d9-exe-pdb
+          - platform: win-amd64-librw_gl3_glfw-oal
+            artifact: re3-enhanced-x64-exe-pdb
     runs-on: windows-2022
     timeout-minutes: 45
     defaults:
@@ -47,6 +55,10 @@ jobs:
           if errorlevel 1 exit /b 1
           enhanced_route_test.exe
           if errorlevel 1 exit /b 1
+          cl /nologo /EHsc /W4 /WX /std:c++14 tests/enhanced_script.cpp /Fe:enhanced_script_test.exe
+          if errorlevel 1 exit /b 1
+          enhanced_script_test.exe
+          if errorlevel 1 exit /b 1
 
       - name: Generate Visual Studio project
         run: |
@@ -55,13 +67,13 @@ jobs:
 
       - name: Build matching EXE and full PDB
         run: |
-          & msbuild build/re3.sln /m /p:Configuration=Release /p:Platform=win-amd64-librw_gl3_glfw-oal /p:PlatformToolset=v143 /p:WindowsTargetPlatformVersion=10.0 /p:DebugSymbols=true /p:DebugType=full /p:GenerateDebugInformation=true
+          & msbuild build/re3.sln /m /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:PlatformToolset=v143 /p:WindowsTargetPlatformVersion=10.0 /p:DebugSymbols=true /p:DebugType=full /p:GenerateDebugInformation=true
           if ($LASTEXITCODE -ne 0) { throw 'MSBuild failed' }
 
       - name: Prepare package
         run: |
           $ErrorActionPreference = 'Stop'
-          $outputDir = 'bin/win-amd64-librw_gl3_glfw-oal/Release'
+          $outputDir = 'bin/${{ matrix.platform }}/Release'
           foreach ($fileName in @('re3.exe', 're3.pdb')) {
             $sourceFile = Join-Path $outputDir $fileName
             if (!(Test-Path -LiteralPath $sourceFile)) { throw "Missing build output: $sourceFile" }
@@ -75,7 +87,7 @@ jobs:
       - name: Upload game files with matching PDB
         uses: actions/upload-artifact@v4
         with:
-          name: re3-enhanced-x64-exe-pdb
+          name: ${{ matrix.artifact }}
           path: gamefiles/
           if-no-files-found: error
           retention-days: 14

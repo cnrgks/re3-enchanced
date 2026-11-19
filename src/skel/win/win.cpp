@@ -41,6 +41,7 @@
 #define WITHD3D
 #define WITHDINPUT
 #include "common.h"
+#include "Enhanced.h"
 #if (defined(_MSC_VER))
 #include <tchar.h>
 #endif /* (defined(_MSC_VER)) */
@@ -1557,8 +1558,15 @@ psSelectDevice()
 	RwEngineGetVideoModeInfo(&vm, GcurSelVM);
 
 #ifdef IMPROVED_VIDEOMODE
-	if (FrontEndMenuManager.m_nPrefsWindowed)
+	if (FrontEndMenuManager.m_nPrefsWindowed || Enhanced::Borderless)
 		GcurSelVM = bestWndMode;
+
+    if (Enhanced::Borderless) {
+        MONITORINFO monitor = { sizeof(MONITORINFO) };
+        GetMonitorInfo(MonitorFromWindow(PSGLOBAL(window),MONITOR_DEFAULTTONEAREST),&monitor);
+        vm.width=monitor.rcMonitor.right-monitor.rcMonitor.left;
+        vm.height=monitor.rcMonitor.bottom-monitor.rcMonitor.top;
+    }
 
 	// Now GcurSelVM is 0 but vm has sizes(and fullscreen flag) of the video mode we want, that's why we changed the rwVIDEOMODEEXCLUSIVE conditions below
 	FrontEndMenuManager.m_nPrefsWidth = vm.width;
@@ -1578,7 +1586,7 @@ psSelectDevice()
 	}
 
 #ifdef IMPROVED_VIDEOMODE
-	if (!FrontEndMenuManager.m_nPrefsWindowed)
+	if (!FrontEndMenuManager.m_nPrefsWindowed && !Enhanced::Borderless)
 #else
 	if (vm.flags & rwVIDEOMODEEXCLUSIVE)
 #endif
@@ -1595,7 +1603,7 @@ psSelectDevice()
 	}
 	
 #ifdef IMPROVED_VIDEOMODE
-	if (!FrontEndMenuManager.m_nPrefsWindowed)
+	if (!FrontEndMenuManager.m_nPrefsWindowed && !Enhanced::Borderless)
 #else
 	if (vm.flags & rwVIDEOMODEEXCLUSIVE)
 #endif
@@ -1617,16 +1625,21 @@ psSelectDevice()
 		rect.left = rect.top = 0;
 		rect.right = FrontEndMenuManager.m_nPrefsWidth;
 		rect.bottom = FrontEndMenuManager.m_nPrefsHeight;
-		AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
-
-		// center it
-		int spaceX = GetSystemMetrics(SM_CXSCREEN) - (rect.right-rect.left);
-		int spaceY = GetSystemMetrics(SM_CYSCREEN) - (rect.bottom-rect.top);
-
-		SetWindowLong(PSGLOBAL(window), GWL_STYLE, WS_VISIBLE | WS_OVERLAPPEDWINDOW);
-		SetWindowPos(PSGLOBAL(window), HWND_NOTOPMOST, spaceX/2, spaceY/2,
-			(rect.right - rect.left),
-			(rect.bottom - rect.top), 0);
+        if (Enhanced::Borderless) {
+            MONITORINFO monitor = { sizeof(MONITORINFO) };
+            GetMonitorInfo(MonitorFromWindow(PSGLOBAL(window),MONITOR_DEFAULTTONEAREST),&monitor);
+            SetWindowLongPtr(PSGLOBAL(window),GWL_STYLE,WS_VISIBLE|WS_POPUP);
+            SetWindowPos(PSGLOBAL(window),HWND_NOTOPMOST,monitor.rcMonitor.left,monitor.rcMonitor.top,
+                monitor.rcMonitor.right-monitor.rcMonitor.left,monitor.rcMonitor.bottom-monitor.rcMonitor.top,
+                SWP_FRAMECHANGED|SWP_SHOWWINDOW);
+        } else {
+            AdjustWindowRect(&rect,WS_OVERLAPPEDWINDOW,FALSE);
+            const int spaceX=GetSystemMetrics(SM_CXSCREEN)-(rect.right-rect.left);
+            const int spaceY=GetSystemMetrics(SM_CYSCREEN)-(rect.bottom-rect.top);
+            SetWindowLongPtr(PSGLOBAL(window),GWL_STYLE,WS_VISIBLE|WS_OVERLAPPEDWINDOW);
+            SetWindowPos(PSGLOBAL(window),HWND_NOTOPMOST,spaceX/2,spaceY/2,
+                rect.right-rect.left,rect.bottom-rect.top,SWP_FRAMECHANGED);
+        }
 
 		// Have to get actual size because the window perhaps didn't fit
 		GetClientRect(PSGLOBAL(window), &rect);
