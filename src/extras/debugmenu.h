@@ -152,6 +152,7 @@ void DebugMenuInit(void);
 void DebugMenuShutdown(void);
 void DebugMenuProcess(void);
 void DebugMenuClose(void);
+bool DebugMenuIsOpen(void);
 void DebugMenuRender(void);
 
 

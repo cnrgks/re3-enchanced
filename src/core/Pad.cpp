@@ -1,6 +1,7 @@
 #define WITHDINPUT
 #include "common.h"
 #include "Enhanced.h"
+#include "debugmenu.h"
 #include <cmath>
 #include "crossplatform.h"
 #include "platform.h"
@@ -631,14 +632,20 @@ void CPad::UpdateMouse()
 
 float CPad::GetMouseXThisFrame()
 {
-	return Enhanced::IsSelectionWheelOpen() || IsPlayerControlsDisabledBy(PLAYERCONTROL_TRAINER)
-		? 0.0f : MouseXThisFrame;
+#ifdef DEBUGMENU
+	if (DebugMenuIsOpen())
+		return 0.0f;
+#endif
+	return Enhanced::IsSelectionWheelOpen() ? 0.0f : MouseXThisFrame;
 }
 
 float CPad::GetMouseYThisFrame()
 {
-	return Enhanced::IsSelectionWheelOpen() || IsPlayerControlsDisabledBy(PLAYERCONTROL_TRAINER)
-		? 0.0f : MouseYThisFrame;
+#ifdef DEBUGMENU
+	if (DebugMenuIsOpen())
+		return 0.0f;
+#endif
+	return Enhanced::IsSelectionWheelOpen() ? 0.0f : MouseYThisFrame;
 }
 
 // Called once per logical frame. Hands over what the rendered frames since the last one

@@ -969,3 +969,13 @@ Kaynak değişiklikleri derleme ve oyun içi doğrulama bekliyor.
 Kaynak 295ef910, GitHub Actions run 44616298965. OpenGL x64 derlemesi
 ve mevcut üç CI birim kontrolü geçti. INTRO-01, TRAINER-01 ve
 WHEEL-01–03 oyun içinde doğrulanmayı bekliyor.
+
+### v1.19 kullanıcı geri bildirimi
+
+- **INTRO-01** · Kullanıcı açılış videosundaki Windows imleci hatasının düzeldiğini doğruladı.
+- **UI-04** · Options ana listesindeki Gameplay satırı artık sayfanın Gameplay Setup başlığıyla aynı metni kullanıyor.
+- **TRAINER-02** · F8 açıkken NPC'lerin durakladığı bildirildi. Trainer klavye ile çalışıyor. Oyun girdisi yerel pad durumunda tüketiliyor ve AI tarafından okunan genel oyuncu kontrol bayrağı kullanılmıyor. Şehirde yürüyen yayalar ve trafik ile doğrulanacak.
+- **TRAINER-03** · Trainer ile oluşturulan araçların sessiz kaldığı bildirildi. Parklı araç motoru normal sürücü girişiyle başlıyor. Ses varlığı havuzu, 140 ped ve 110 araç kapasitesinin üstünde ortak ses kaynakları için de yer bırakacak şekilde genişletildi. Havuz doluluğunun bildirilen sorundaki rolü henüz doğrulanmadı. Normal ve yoğun dünyada araca giriş, motor, korna ve çarpışma sesi kontrol edilecek.
+- **WHEEL-04** · Çarktan farklı bir radyo istasyonu seçilince ortak geçiş sesi çalıyor. Silah çarkı ve HUD aynı mühimmat biçimleyicisini kullanıyor. İsimler sabit dikey merkezde, mühimmat ayrı bir alt satırda. Silah yuvaları sabit, envanterde bulunmayan silahların yuvası boş. Referans silah sırasına görev detonatörü için bir yuva eklendi. İki çarkta daha ince halka ve daha dar sektör araları var. [Görsel referans](feedback/2026-11-20/v1.19-wheel-layout-reference.png)
+
+INTRO-01 dışındaki değişiklikler kaynakta. Derleme ve oyun içi doğrulama bekliyor.

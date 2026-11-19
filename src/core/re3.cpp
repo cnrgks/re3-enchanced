@@ -757,6 +757,8 @@ SpawnCar(int id)
 		v->GetMatrix().GetPosition().z += 4.0f;
 		v->SetOrientation(0.0f, 0.0f, 3.49f);
 		v->SetStatus(STATUS_ABANDONED);
+		v->bEngineOn = false; // Normal driver entry starts the engine and its sound.
+		v->m_nZoneLevel = CTheZones::GetLevelFromPosition(&v->GetPosition());
 		v->m_nDoorLock = CARLOCK_UNLOCKED;
 		CWorld::Add(v);
 	}

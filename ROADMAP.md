@@ -1,7 +1,7 @@
 # re3 Enhanced — roadmap
 
-Güncelleme 20 Kasım 2026. Son paket **v1.19 OpenGL**. Bu sayfadaki son
-v1.18 geri bildirimlerine ait değişiklikler derlendi. Oyun içi doğrulama bekliyor.
+Güncelleme 20 Kasım 2026. Son paket **v1.19 OpenGL**. Son kullanıcı
+geri bildirimlerine ait kaynak değişiklikleri derleme ve oyun içi doğrulama bekliyor.
 
 ## Geliştirmedeki özellikler
 
@@ -12,11 +12,10 @@ Referans görseldeki kategori yolu, kaydırılabilir liste, seçili satır, sır
 sayacı ve tuş yardımı GTA III renkleriyle yeniden tasarlandı. Enter alt
 menüyü açar veya komutu çalıştırır, Esc veya Backspace bir üst kategoriye döner ve ana listede trainer’ı kapatır.
 F8 herhangi bir seviyeden kapatır.
-Oklar ve fare ile gezinilebilir. Tuş tekrar süresi oyun hızından bağımsız
-saatle ölçülür ve giriş oyun güncellemesinde işlenir.
+Trainer klavye ile kullanılır. Tuş tekrarı oyun hızından bağımsızdır.
 
-Doğrulama: farklı FPS sınırlarında gezinme ve ayar değişimi, fareyle seçim,
-uzun araç listeleri ve menü kapanınca oyun kontrollerinin geri gelmesi.
+Doğrulama: farklı FPS sınırlarında gezinme, uzun araç listeleri, trainer açıkken
+NPC ve trafik hareketi, oluşturulan araçların sesi ve kapanışta oyun kontrolleri.
 
 ### RM-02 — Radyo çarkı
 
@@ -24,7 +23,8 @@ Gameplay Setup içindeki **Radio Wheel** açıkken araçta **R** basılı
 tutulur. Fare, oklar veya scroll ile seçim yapılır; R bırakılınca istasyona
 geçilir. R basılı değilken scroll klasik istasyon göstergesiyle çalışır.
 İstasyon adları ortak oyun metninden alınır, yerleşik logolar korunur.
-MP3 yuvası parça mevcutsa gösterilir. Radio Off en alttadır.
+MP3 yuvası parça mevcutsa gösterilir. Radio Off en alttadır. Çarktan farklı
+bir istasyon seçilince ortak geçiş sesi çalar.
 
 Doğrulama: istasyon değiştirme, radyoyu kapatıp tekrar açma, MP3 durumu,
 görev radyosu ve polis/telsizli araçlar. Kontrolcü erişimi sonraki iterasyonda.
@@ -32,8 +32,9 @@ görev radyosu ve polis/telsizli araçlar. Kontrolcü erişimi sonraki iterasyon
 ### RM-03 — Silah çarkı
 
 Gameplay Setup içindeki **Weapon Wheel** açıkken yaya olarak **Tab**
-basılı tutulur. GTA III HUD ikonları, kullanılabilir silahlar ve seçilen
-silahın şarjör/toplam mühimmatı gösterilir. Unarmed en alttadır. Tab
+basılı tutulur. GTA III HUD ikonları sabit silah yuvalarında gösterilir.
+Sahip olunmayan silahların yuvası boş kalır. İsim merkezde, HUD ile aynı
+biçimdeki mühimmat bağımsız alt satırdadır. Unarmed en alttadır. Tab
 bırakılınca seçili silah kuşanılır. Oyun hızı ve oyun sesi perdesi çark
 açıkken düşer, kapanışta geri döner. İki çark da dik yazı tipi kullanır
 ve uzun adları merkezdeki boşluğa sığdırır. Alt kontrol satırı kaldırıldı.
@@ -43,7 +44,7 @@ silah kuşanma ve zaman akışının geri dönmesi. Kontrolcü erişimi sonraki 
 
 ### RM-06 — Skip Intros
 
-Windows'ta **Options → Gameplay → Skip Intros** varsayılan OFF. OFF iken
+Windows'ta **Options → Gameplay Setup → Skip Intros** varsayılan OFF. OFF iken
 oyun kurulumundaki Rockstar ve GTA açılış videoları oynatılmaya çalışılır.
 ON iken açılış videoları atlanır. Tercih `[General] NoMovies` olarak
 saklanır. Windows OpenGL/GLFW oynatımı sistemin DirectShow desteğini kullanır,

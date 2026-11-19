@@ -129,8 +129,6 @@ enum EntryType
 	MENUVAR_INT,
 	MENUVAR_FLOAT,
 	MENUVAR_CMD,
-
-	MENUSCROLL	// dummy
 };
 
 struct Menu
@@ -155,7 +153,6 @@ struct Menu
 	int selection;
 	MenuEntry *selectedEntry;	// updated by update
 	void changeSelection(int newsel);
-	void changeSelection(MenuEntry *e);
 
 	void update(void);
 	void draw(void);
@@ -178,7 +175,7 @@ struct MenuEntry_Var : MenuEntry
 	int vartype;
 	bool wrapAround;
 
-	virtual void processInput(bool mouseOver, bool selected) = 0;
+	virtual void processInput() = 0;
 	int getValWidth(void) { return maxvallen; }
 	virtual void getValStr(char *str, int len) = 0;
 	MenuEntry_Var(const char *name, int type);
@@ -214,7 +211,7 @@ struct MenuEntry_##NAME : MenuEntry_Int														       \
 	const char *fmt;															       \
 	const char **strings;															       \
 																		       \
-	void processInput(bool mouseOver, bool selected);														       \
+	void processInput();														       \
 	void getValStr(char *str, int len);													       \
 																		       \
 	void setStrings(const char **strings);													       \
@@ -233,7 +230,7 @@ struct MenuEntry_##NAME : MenuEntry_Var												 \
 	TriggerFunc triggerFunc;												 \
 	const char *fmt;													 \
 																 \
-	void processInput(bool mouseOver, bool selected);												 \
+	void processInput();												 \
 	void getValStr(char *str, int len);											 \
 																 \
 	MenuEntry_##NAME(const char *name, TYPE *ptr, TriggerFunc triggerFunc, TYPE step, TYPE lowerBound, TYPE upperBound);	 \
@@ -245,7 +242,7 @@ struct MenuEntry_Cmd : MenuEntry_Var
 {
 	TriggerFunc triggerFunc;
 
-	void processInput(bool mouseOver, bool selected);
+	void processInput();
 	void getValStr(char *str, int len);
 
 	MenuEntry_Cmd(const char *name, TriggerFunc triggerFunc);
@@ -264,11 +261,6 @@ Menu *findMenu(const char *name);
 	X(pgupjustdown, rsPGUP) \
 	X(pgdnjustdown, rsPGDN)
 
-#define MUHBUTTONS \
-	X(button1justdown, 1) \
-	X(button2justdown, 2) \
-	X(button3justdown, 3)
-
 #define REPEATDELAY 700
 #define REPEATINTERVAL 50
 #define X(var, keycode) static int var;
@@ -279,16 +271,10 @@ static int repeattime;
 static int lastkeydown;
 static int *keyptr;
 
-static int buttondown[3];
-static int lastbuttondown;
-static int *buttonptr;
-static int button1justdown, button2justdown, button3justdown;
-static float mouseX, mouseY;
-
 static int menuOn;
 static int menuInitialized;
 static int screenWidth, screenHeight;
-static RwRaster *cursor, *arrow;
+static RwRaster *arrow;
 
 static constexpr int panelLeft = 20;
 static constexpr int panelTop = 36;
@@ -299,26 +285,14 @@ static constexpr int rowLeading = 8;
 static constexpr int rowPadding = 12;
 
 
-void drawMouse(void);
 void drawArrow(RwRect r, int direction, int style);
 
 Menu toplevel;
 Menu *activeMenu = &toplevel;
-Menu *mouseOverMenu;
-MenuEntry *mouseOverEntry;
-MenuEntry scrollUpEntry("SCROLLUP"), scrollDownEntry("SCROLLDOWN");	// dummies
-
 
 #define KEYJUSTDOWN(k) ControlsManager.GetIsKeyboardKeyJustDown((RsKeyCodes)k)
 #define KEYDOWN(k) ControlsManager.GetIsKeyboardKeyDown((RsKeyCodes)k)
 
-
-bool
-isMouseInRect(RwRect r)
-{
-	return (mouseX >= r.x && mouseX < r.x+r.w &&
-		mouseY >= r.y && mouseY < r.y+r.h);
-}
 
 /*
  * MenuEntry
@@ -372,7 +346,7 @@ MenuEntry_##NAME::findStringLen(void){				     \
 	return maxlen;						     \
 }								     \
 void								     \
-MenuEntry_##NAME::processInput(bool mouseOver, bool selected)				     \
+MenuEntry_##NAME::processInput()				     \
 {								     \
 	TYPE v, oldv;						     \
 	int overflow = 0;					     \
@@ -381,12 +355,12 @@ MenuEntry_##NAME::processInput(bool mouseOver, bool selected)				     \
 	v = *this->variable;					     \
 	oldv = v;						     \
 								     \
-	if((selected && leftjustdown) || (mouseOver && button3justdown)){					     \
+	if(leftjustdown){					     \
 		v -= this->step;				     \
 		if(v > oldv)					     \
 			underflow = 1;				     \
 	}							     \
-	if((selected && rightjustdown) || (mouseOver && button1justdown)){					     \
+	if(rightjustdown){					     \
 		v += this->step;				     \
 		if(v < oldv)					     \
 			overflow = 1;				     \
@@ -463,7 +437,7 @@ MenuEntry_##NAME::getValStr(char *str, int len)												     \
 	snprintf(str, len, this->fmt, *this->variable);											     \
 }																	     \
 void																	     \
-MenuEntry_##NAME::processInput(bool mouseOver, bool selected)													     \
+MenuEntry_##NAME::processInput()													     \
 {																	     \
 	float v, oldv;															     \
 	int overflow = 0;					     \
@@ -472,12 +446,12 @@ MenuEntry_##NAME::processInput(bool mouseOver, bool selected)													     \
 	v = *this->variable;														     \
 	oldv = v;															     \
 																	     \
-	if((selected && leftjustdown) || (mouseOver && button3justdown)){					     \
+	if(leftjustdown){					     \
 		v -= this->step;				     \
 		if(v > oldv)					     \
 			underflow = 1;				     \
 	}							     \
-	if((selected && rightjustdown) || (mouseOver && button1justdown)){					     \
+	if(rightjustdown){					     \
 		v += this->step;				     \
 		if(v < oldv)					     \
 			overflow = 1;				     \
@@ -505,10 +479,9 @@ FLOATTYPES
  */
 
 void
-MenuEntry_Cmd::processInput(bool mouseOver, bool selected)
+MenuEntry_Cmd::processInput()
 {
-	// Don't execute on button3
-	if(this->triggerFunc && (selected && (leftjustdown || rightjustdown) || (mouseOver && button1justdown)))
+	if(this->triggerFunc && (leftjustdown || rightjustdown))
 		this->triggerFunc();
 }
 
@@ -550,23 +523,6 @@ Menu::changeSelection(int newsel){
 	if(selection < scrollStart) scrollStart = selection;
 	if(selection >= scrollStart+numVisible) scrollStart = selection-numVisible+1;
 }
-
-void
-Menu::changeSelection(MenuEntry *sel)
-{
-	MenuEntry *e;
-	int i = 0;
-	for(e = this->entries; e; e = e->next){
-		if(e == sel){
-			this->selection = i;
-			this->selectedEntry = sel;
-			break;
-		}
-		i++;
-	}
-}
-
-
 
 MenuEntry*
 Menu::findEntry(const char *entryname)
@@ -663,13 +619,10 @@ Menu::draw(void)
 		if (i < scrollStart)
 			continue;
 		const RwRect &row = entry->r;
-		if (i == selection || entry == mouseOverEntry) {
-			// Flush queued text before drawing the next row's background.
+		if (i == selection) {
 			RtCharsetBufferFlush();
-			DrawTrainerRect(row.x, row.y, row.w, row.h,
-			                i == selection ? CRGBA(44, 97, 107, 250) : CRGBA(39, 53, 61, 235));
-			if (i == selection)
-				DrawTrainerRect(row.x, row.y, 3, row.h, CRGBA(231, 192, 105, 255));
+			DrawTrainerRect(row.x, row.y, row.w, row.h, CRGBA(44, 97, 107, 250));
+			DrawTrainerRect(row.x, row.y, 3, row.h, CRGBA(231, 192, 105, 255));
 		}
 
 		const int textY = row.y + rowLeading / 2;
@@ -688,9 +641,9 @@ Menu::draw(void)
 
 	RtCharsetBufferFlush();
 	if (isScrollingUp)
-		drawArrow(scrollUpR, -1, isMouseInRect(scrollUpR));
+		drawArrow(scrollUpR, -1, false);
 	if (isScrollingDown)
-		drawArrow(scrollDownR, 1, isMouseInRect(scrollDownR));
+		drawArrow(scrollDownR, 1, false);
 }
 
 Menu::~Menu(void)
@@ -757,10 +710,6 @@ findMenu(const char *name)
  * ****************
  */
 
-static uint8 cursorPx[] = {
-#include "cursor.inc"
-};
-
 static uint8 arrowPx[] = {
 #include "arrow.inc"
 };
@@ -771,17 +720,7 @@ DebugMenuInit(void)
 	createMenuFont();
 
 	RwInt32 w, h, d, flags;
-	RwImage *img = RwImageCreate(16, 16, 32);
-	assert(img);
-	RwImageSetPixels(img, cursorPx);
-	RwImageSetStride(img, RwImageGetWidth(img)*4);
-	RwImageFindRasterFormat(img, rwRASTERTYPETEXTURE, &w, &h, &d, &flags);
-	cursor = RwRasterCreate(w, h, d, flags);
-	cursor = RwRasterSetFromImage(cursor, img);
-	assert(cursor);
-	RwImageDestroy(img);
-
-	img = RwImageCreate(32, 16, 32);
+	RwImage *img = RwImageCreate(32, 16, 32);
 	assert(img);
 	RwImageSetPixels(img, arrowPx);
 	RwImageSetStride(img, RwImageGetWidth(img)*4);
@@ -801,8 +740,6 @@ DebugMenuShutdown(void)
 	DebugMenuClose();
 	if(menuInitialized){
 		destroyMenuFont();
-		RwRasterDestroy(cursor);
-		cursor = nil;
 		RwRasterDestroy(arrow);
 		arrow = nil;
 
@@ -810,8 +747,6 @@ DebugMenuShutdown(void)
 		new (&toplevel) Menu();
 
 		activeMenu = &toplevel;
-		mouseOverMenu = nil;
-		mouseOverEntry = nil;
 	}
 	menuInitialized = false;
 }
@@ -847,150 +782,33 @@ processInput(void)
 		}
 	}
 
-	// Also for mouse buttons
-#define X(var, num)							  \
-	if(var){							  \
-		repeattime = downtime = CTimer::GetTimeInMillisecondsPauseMode();	  \
-		lastbuttondown = num;					  \
-		buttonptr = &var;					  \
-	}
-	MUHBUTTONS
-#undef X
-	if(lastbuttondown){
-		if(buttondown[lastbuttondown-1]){
-			int curtime = CTimer::GetTimeInMillisecondsPauseMode();
-			if(curtime - downtime > REPEATDELAY){
-				if(curtime - repeattime > REPEATINTERVAL){
-					repeattime = curtime;
-					*buttonptr = 1;
-				}
-			}
-		}else{
-			lastbuttondown = 0;
-		}
-	}
-
-	mouseOverMenu = isMouseInRect(activeMenu->r) ? activeMenu : nil;
-	mouseOverEntry = nil;
-	if(mouseOverMenu){
-		// Walk all visibile entries and figure out which one the mouse is over
-		MenuEntry *e;
-		int i = 0;
-		for(e = mouseOverMenu->entries; e; e = e->next){
-			if(i >= mouseOverMenu->scrollStart+mouseOverMenu->numVisible)
-				break;
-			if(i >= mouseOverMenu->scrollStart){
-				RwRect r = e->r;
-				r.w = mouseOverMenu->r.w;	// span the whole menu
-				if(isMouseInRect(r)){
-					mouseOverEntry = e;
-					break;
-				}
-			}
-			i++;
-		}
-		if(mouseOverMenu->isScrollingUp && isMouseInRect(mouseOverMenu->scrollUpR)){
-			mouseOverEntry = &scrollUpEntry;
-			mouseOverEntry->r = mouseOverMenu->scrollUpR;
-			mouseOverEntry->menu = mouseOverMenu;
-			mouseOverEntry->type = MENUSCROLL;
-		}
-		if(mouseOverMenu->isScrollingDown && isMouseInRect(mouseOverMenu->scrollDownR)){
-			mouseOverEntry = &scrollDownEntry;
-			mouseOverEntry->r = mouseOverMenu->scrollDownR;
-			mouseOverEntry->menu = mouseOverMenu;
-			mouseOverEntry->type = MENUSCROLL;
-		}
-	}
-
-	if(pgupjustdown)
+	if (pgupjustdown)
 		activeMenu->scroll(shift ? -5 : -1);
-	if(pgdnjustdown)
+	if (pgdnjustdown)
 		activeMenu->scroll(shift ? 5 : 1);
-	if(downjustdown)
+	if (downjustdown)
 		activeMenu->changeSelection(activeMenu->selection + (shift ? 5 : 1));
-	if(upjustdown)
+	if (upjustdown)
 		activeMenu->changeSelection(activeMenu->selection - (shift ? 5 : 1));
 
-	if(CPad::NewMouseControllerState.WHEELUP){
-		if(mouseOverMenu)
-			activeMenu = mouseOverMenu;
-		activeMenu->scroll(shift ? -5 : -1);
-	}
-	if(CPad::NewMouseControllerState.WHEELDN){
-		if(mouseOverMenu)
-			activeMenu = mouseOverMenu;
-		activeMenu->scroll(shift ? 5 : 1);
-	}
-
-	if(mouseOverEntry == &scrollUpEntry){
-		if(button1justdown){
-			activeMenu = mouseOverEntry->menu;
-			activeMenu->scroll(shift ? -5 : -1);
-		}
-	}
-	if(mouseOverEntry == &scrollDownEntry){
-		if(button1justdown){
-			activeMenu = mouseOverEntry->menu;
-			activeMenu->scroll(shift ? 5 : 1);
-		}
-	}
-
-	// Have to call this before processInput below because menu entry can change
-	if((button1justdown || button3justdown) && mouseOverEntry){
-		activeMenu = mouseOverEntry->menu;
-		activeMenu->changeSelection(mouseOverEntry);
-	}
 	activeMenu->update();
-	if ((KEYJUSTDOWN(rsENTER) || button1justdown) && activeMenu->selectedEntry) {
-		MenuEntry *entry = activeMenu->selectedEntry;
-		if (entry->type == MENUSUB && (!button1justdown || mouseOverEntry == entry)) {
-			activeMenu = ((MenuEntry_Sub *)entry)->submenu;
-			return;
-		}
-		if (KEYJUSTDOWN(rsENTER) && entry->type == MENUVAR &&
-		    ((MenuEntry_Var *)entry)->vartype == MENUVAR_CMD) {
-			MenuEntry_Cmd *command = (MenuEntry_Cmd *)entry;
+	MenuEntry *entry = activeMenu->selectedEntry;
+	if (!entry)
+		return;
+	if (KEYJUSTDOWN(rsENTER) && entry->type == MENUSUB) {
+		activeMenu = ((MenuEntry_Sub *)entry)->submenu;
+		return;
+	}
+	if (entry->type == MENUVAR) {
+		MenuEntry_Var *value = (MenuEntry_Var *)entry;
+		if (KEYJUSTDOWN(rsENTER) && value->vartype == MENUVAR_CMD) {
+			MenuEntry_Cmd *command = (MenuEntry_Cmd *)value;
 			if (command->triggerFunc)
 				command->triggerFunc();
-			return;
+		} else {
+			value->processInput();
 		}
 	}
-	if (mouseOverEntry && mouseOverEntry->type == MENUVAR)
-		((MenuEntry_Var *)mouseOverEntry)->processInput(true, mouseOverEntry == activeMenu->selectedEntry);
-	if (activeMenu->selectedEntry && activeMenu->selectedEntry->type == MENUVAR &&
-	    mouseOverEntry != activeMenu->selectedEntry)
-		((MenuEntry_Var *)activeMenu->selectedEntry)->processInput(false, true);
-}
-
-void
-updateMouse(void)
-{
-	CPad *pad = CPad::GetPad(0);
-	int dirX = 1;
-	int dirY = 1;
-
-	if(MousePointerStateHelper.bInvertHorizontally) dirX = -1;
-	if(MousePointerStateHelper.bInvertVertically) dirY = -1;
-
-	mouseX += pad->NewMouseControllerState.x*dirX;
-	mouseY += pad->NewMouseControllerState.y*dirY;
-
-	if(mouseX < 0.0f) mouseX = 0.0f;
-	if(mouseY < 0.0f) mouseY = 0.0f;
-	if(mouseX >= screenWidth) mouseX = screenWidth;
-	if(mouseY >= screenHeight) mouseY = screenHeight;
-
-	button1justdown = pad->NewMouseControllerState.LMB && !pad->OldMouseControllerState.LMB;
-	button2justdown = pad->NewMouseControllerState.MMB && !pad->OldMouseControllerState.MMB;
-	button3justdown = pad->NewMouseControllerState.RMB && !pad->OldMouseControllerState.RMB;
-	buttondown[0] = pad->NewMouseControllerState.LMB;
-	buttondown[1] = pad->NewMouseControllerState.MMB;
-	buttondown[2] = pad->NewMouseControllerState.RMB;
-
-	// Zero the mouse position so the camera won't move
-	pad->NewMouseControllerState.x = 0.0f;
-	pad->NewMouseControllerState.y = 0.0f;
 }
 
 static void
@@ -1011,10 +829,13 @@ DebugMenuClose(void)
 		return;
 	menuOn = false;
 	activeMenu = &toplevel;
-	CPad::GetPad(0)->SetEnablePlayerControls(PLAYERCONTROL_TRAINER);
-	lastkeydown = lastbuttondown = 0;
-	mouseOverMenu = nil;
-	mouseOverEntry = nil;
+	lastkeydown = 0;
+}
+
+bool
+DebugMenuIsOpen(void)
+{
+	return menuOn != 0;
 }
 
 void
@@ -1038,24 +859,25 @@ DebugMenuProcess(void)
 	}
 	if (!menuOn)
 		return;
+	// Consume local input while the trainer has focus without setting
+	// the global player-control flag consulted by world and AI code.
+	pad->NewState.Clear();
+	pad->OldState.Clear();
+	pad->NewMouseControllerState.Clear();
 	if (pad->GetEscapeJustDown() || pad->GetBackspaceJustDown()) {
 		pad->ConsumeEscapeJustDown();
 		if (activeMenu->parent) {
 			activeMenu = activeMenu->parent;
-			mouseOverMenu = nil;
-			mouseOverEntry = nil;
 		} else {
 			DebugMenuClose();
 		}
 		return;
 	}
 
-	pad->SetDisablePlayerControls(PLAYERCONTROL_TRAINER);
 	if (!menuInitialized)
 		DebugMenuInit();
 	screenWidth = SCREEN_WIDTH;
 	screenHeight = SCREEN_HEIGHT;
-	updateMouse();
 	LayoutTrainer();
 	processInput();
 }
@@ -1106,7 +928,6 @@ DebugMenuRender(void)
 	PrintTrainerLabel("Esc / Backspace: Back   F8: Close", panelLeft + rowPadding,
 	                  list.y + list.h + 13, list.w - 2 * rowPadding);
 	RtCharsetBufferFlush();
-	drawMouse();
 }
 
 void
@@ -1211,70 +1032,6 @@ drawArrow(RwRect r, int direction, int style)
 	RwIm2DRenderIndexedPrimitive(rwPRIMTYPETRILIST, arrowVerts, 4, indices, 6);
 }
 
-void
-drawMouse(void)
-{
-	static RwImVertexIndex indices[] = { 0, 1, 2, 2, 1, 3 };
-	static RwIm2DVertex vertices[4];
-	RwIm2DVertex *vert;
-	RwCamera *cam;
-	cam = RwCameraGetCurrentCamera();
-	float x = mouseX;
-	float y = mouseY;
-	float w = RwRasterGetWidth(cursor);
-	float h = RwRasterGetHeight(cursor);
-	float recipz = 1.0f/RwCameraGetNearClipPlane(cam);
-
-	float umin = HALFPX / w;
-	float vmin = HALFPX / h;
-	float umax = (w + HALFPX) / w;
-	float vmax = (h + HALFPX) / h;
-
-	vert = vertices;
-	RwIm2DVertexSetScreenX(vert, x);
-	RwIm2DVertexSetScreenY(vert, y);
-	RwIm2DVertexSetScreenZ(vert, RwIm2DGetNearScreenZ());
-	RwIm2DVertexSetCameraZ(vert, RwCameraGetNearClipPlane(cam));
-	RwIm2DVertexSetRecipCameraZ(vert, recipz);
-	RwIm2DVertexSetIntRGBA(vert, 255, 255, 255, 255);
-	RwIm2DVertexSetU(vert, umin, recipz);
-	RwIm2DVertexSetV(vert, vmin, recipz);
-	vert++;
-
-	RwIm2DVertexSetScreenX(vert, x+w);
-	RwIm2DVertexSetScreenY(vert, y);
-	RwIm2DVertexSetScreenZ(vert, RwIm2DGetNearScreenZ());
-	RwIm2DVertexSetCameraZ(vert, RwCameraGetNearClipPlane(cam));
-	RwIm2DVertexSetRecipCameraZ(vert, recipz);
-	RwIm2DVertexSetIntRGBA(vert, 255, 255, 255, 255);
-	RwIm2DVertexSetU(vert, umax, recipz);
-	RwIm2DVertexSetV(vert, vmin, recipz);
-	vert++;
-
-	RwIm2DVertexSetScreenX(vert, x);
-	RwIm2DVertexSetScreenY(vert, y+h);
-	RwIm2DVertexSetScreenZ(vert, RwIm2DGetNearScreenZ());
-	RwIm2DVertexSetCameraZ(vert, RwCameraGetNearClipPlane(cam));
-	RwIm2DVertexSetRecipCameraZ(vert, recipz);
-	RwIm2DVertexSetIntRGBA(vert, 255, 255, 255, 255);
-	RwIm2DVertexSetU(vert, umin, recipz);
-	RwIm2DVertexSetV(vert, vmax, recipz);
-	vert++;
-
-	RwIm2DVertexSetScreenX(vert, x+w);
-	RwIm2DVertexSetScreenY(vert, y+h);
-	RwIm2DVertexSetScreenZ(vert, RwIm2DGetNearScreenZ());
-	RwIm2DVertexSetCameraZ(vert, RwCameraGetNearClipPlane(cam));
-	RwIm2DVertexSetRecipCameraZ(vert, recipz);
-	RwIm2DVertexSetIntRGBA(vert, 255, 255, 255, 255);
-	RwIm2DVertexSetU(vert, umax, recipz);
-	RwIm2DVertexSetV(vert, vmax, recipz);
-	vert++;
-
-	RwRenderStateSet(rwRENDERSTATETEXTURERASTER, cursor);
-	RwRenderStateSet(rwRENDERSTATETEXTUREFILTER, (void*)rwFILTERLINEAR);
-	RwIm2DRenderIndexedPrimitive(rwPRIMTYPETRILIST, vertices, 4, indices, 6);
-}
 
 
 

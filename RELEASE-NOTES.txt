@@ -1,4 +1,4 @@
-RE3 ENHANCED v1.19 - OPENGL x64
+RE3 ENHANCED v1.20 - OPENGL x64
 
 KURULUM
 Oyunu kapat ve mevcut re3.exe/re3.pdb ciftini yedekle. Paketin game
@@ -6,13 +6,13 @@ klasorunun icerigini GTA III kurulumuna kopyala. Oyun verileri dahil
 degildir. Mevcut ini ve kayitlari koru. x64 ASI Loader, CLEO Redux ve
 runtime kutuphaneleri dahildir.
 
-v1.19 DENEMELERI
-F8: trainer. Esc ve Backspace geri gider; ana listede trainer'i kapatir.
-Aracta R basili: radyo carki. R olmadan scroll: klasik radyo gostergesi.
-Yaya olarak Tab basili: silah carki ve daha dusuk oyun sesi perdesi.
-R veya Tab birakildiginda secim uygulanir.
+v1.20 DENEMELERI
 Options > Gameplay Setup: Radio Wheel ve Weapon Wheel ayarlari.
-Skip Intros kapaliyken acilis videolari oynatilir ve Windows imleci gizlenir.
+F8: klavyeyle trainer. Acikken NPC ve trafik hareketini gozle.
+Trainer ile arac olusturup motor, korna ve carpisma seslerini dene.
+Aracta R basili: radyo carki. R olmadan scroll: klasik radyo gostergesi.
+R birakildiginda farkli istasyona gecis tik sesini kontrol et.
+Yaya olarak Tab basili: sabit silah yuvalari. Mermi yazisini HUD ile karsilastir.
 Graphics > Distant and Crowded World varsayilan kapali.
 
 v1.16 DENEMELERI

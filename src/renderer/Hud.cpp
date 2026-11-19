@@ -367,6 +367,26 @@ void CHud::SetVehicleName(wchar *name)
 	m_pVehicleName = name;
 }
 
+bool CHud::FormatWeaponAmmo(const CWeapon &weapon, wchar *text)
+{
+	const eWeaponType type = weapon.m_eWeaponType;
+	if (CDarkel::FrenzyOnGoing() || type == WEAPONTYPE_UNARMED || type == WEAPONTYPE_BASEBALLBAT)
+		return false;
+
+	const int32 clipCapacity = CWeaponInfo::GetWeaponInfo(type)->m_nAmountofAmmunition;
+	const int32 inClip = weapon.m_nAmmoInClip;
+	const int32 total = weapon.m_nAmmoTotal;
+	char ascii[32];
+	if (clipCapacity <= 1 || clipCapacity >= 1000) {
+		snprintf(ascii, sizeof(ascii), "%d", total);
+	} else {
+		const int32 units = type == WEAPONTYPE_FLAMETHROWER ? 10 : 1;
+		snprintf(ascii, sizeof(ascii), "%d-%d", Min((total - inClip) / units, 9999), inClip / units);
+	}
+	AsciiToUnicode(ascii, text);
+	return true;
+}
+
 void CHud::Draw()
 {
 	// disable hud via second controller
@@ -561,29 +581,6 @@ void CHud::Draw()
 		/*
 			DrawAmmo
 		*/
-		int32 AmmoAmount = CWeaponInfo::GetWeaponInfo(FindPlayerPed()->GetWeapon()->m_eWeaponType)->m_nAmountofAmmunition;
-		int32 AmmoInClip = FindPlayerPed()->m_weapons[FindPlayerPed()->m_currentWeapon].m_nAmmoInClip;
-		int32 TotalAmmo = FindPlayerPed()->m_weapons[FindPlayerPed()->m_currentWeapon].m_nAmmoTotal;
-		int32 Ammo, Clip;
-
-		if (AmmoAmount <= 1 || AmmoAmount >= 1000)
-			sprintf(sTemp, "%d", TotalAmmo);
-		else {
-			if (WeaponType == WEAPONTYPE_FLAMETHROWER) {
-				Clip = AmmoInClip / 10;
-
-				Ammo = Min((TotalAmmo - AmmoInClip) / 10, 9999);
-			}
-			else {
-				Clip = AmmoInClip;
-
-				Ammo = Min(TotalAmmo - AmmoInClip, 9999);
-			}
-
-			sprintf(sTemp, "%d-%d", Ammo, Clip);
-		}
-
-		AsciiToUnicode(sTemp, sPrint);
 
 		/*
 			DrawWeaponIcon
@@ -612,7 +609,7 @@ void CHud::Draw()
 		CFont::SetPropOn();
 		CFont::SetFontStyle(FONT_BANK);
 
-		if (!CDarkel::FrenzyOnGoing() && WeaponType != WEAPONTYPE_UNARMED && WeaponType != WEAPONTYPE_BASEBALLBAT) {
+		if (FormatWeaponAmmo(*FindPlayerPed()->GetWeapon(), sPrint)) {
 			CFont::SetColor(AMMO_COLOR);
 			CFont::PrintString(SCREEN_SCALE_FROM_RIGHT(AMMO_X), SCREEN_SCALE_Y(73.0f), sPrint);
 		}

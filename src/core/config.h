@@ -129,7 +129,7 @@ enum Config {
 	NUM_PED_COMMENTS_SLOTS = 20,
 
 	NUM_SOUND_QUEUES = 2,
-	NUM_AUDIOENTITIES = 200,
+	NUM_AUDIOENTITIES = NUMPEDS + NUMVEHICLES + 64, // room for physical entities and shared sound sources
 
 	NUM_SCRIPT_MAX_ENTITIES = 40,
 

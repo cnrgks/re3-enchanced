@@ -403,6 +403,7 @@ cMusicManager::SelectCarStation(uint8 station)
 		return;
 
 	vehicle->m_nRadioStation = station;
+	AudioManager.PlayOneShot(AudioManager.m_nFrontEndEntity, SOUND_FRONTEND_RADIO_CHANGE, 1.0f);
 	gRetuneCounter = 0;
 	gNumRetunePresses = 0;
 	m_bSetNextStation = TRUE;
@@ -625,13 +626,15 @@ cMusicManager::ServiceGameMode()
 		if (gRetuneCounter)
 			AudioManager.DoPoliceRadioCrackle();
 		if (m_bSetNextStation) {
+			const bool classicRetune = gNumRetunePresses != 0;
 			m_bSetNextStation = FALSE;
 			m_nPlayingTrack = m_nNextTrack;
 			m_nNextTrack = GetNextCarTuning();
 			if (m_nNextTrack == RADIO_OFF || m_nNextTrack == STREAMED_SOUND_CITY_AMBIENT || m_nNextTrack == STREAMED_SOUND_WATER_AMBIENT)
 				bRadioOff = TRUE;
 
-			if (m_nPlayingTrack == STREAMED_SOUND_CITY_AMBIENT || m_nPlayingTrack == STREAMED_SOUND_WATER_AMBIENT)
+			if (classicRetune && (m_nPlayingTrack == STREAMED_SOUND_CITY_AMBIENT ||
+			                      m_nPlayingTrack == STREAMED_SOUND_WATER_AMBIENT))
 				AudioManager.PlayOneShot(AudioManager.m_nFrontEndEntity, SOUND_FRONTEND_RADIO_CHANGE, 0.0f);
 		}
 		if (m_nNextTrack < RADIO_OFF) {

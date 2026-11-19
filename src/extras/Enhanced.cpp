@@ -3,6 +3,7 @@
 #include "crossplatform.h"
 #include "platform.h"
 #include "Enhanced.h"
+#include "debugmenu.h"
 #include "Darkel.h"
 #include "DMAudio.h"
 #include "Font.h"
@@ -111,7 +112,6 @@ wchar *GetText(const char *key)
 {
     struct Entry { const char *key; const char *value; wchar wide[120]; };
     static Entry strings[] = {
-        { "EN_GAME", "GAMEPLAY" },
         { "EN_GSET", "GAMEPLAY SETUP" },
         { "EN_DEFT", "RESTORE DEFAULTS" },
         { "EN_DEFP", "Are you sure you want to restore the default settings?" },
@@ -215,29 +215,45 @@ void CancelSelectionWheelIfUnavailable()
         CloseSelectionWheel();
 }
 
+// Clockwise from the bottom. A missing item leaves its sector intact.
+// The detonator uses its own slot for missions that supply it.
+static const uint8 weaponWheelSlots[] = {
+    WEAPONTYPE_UNARMED, WEAPONTYPE_ROCKETLAUNCHER, WEAPONTYPE_FLAMETHROWER,
+    WEAPONTYPE_DETONATOR, WEAPONTYPE_BASEBALLBAT, WEAPONTYPE_MOLOTOV,
+    WEAPONTYPE_GRENADE, WEAPONTYPE_COLT45, WEAPONTYPE_UZI, WEAPONTYPE_AK47,
+    WEAPONTYPE_M16, WEAPONTYPE_SHOTGUN, WEAPONTYPE_SNIPERRIFLE,
+};
+static_assert(ARRAY_SIZE(weaponWheelSlots) == WEAPONTYPE_TOTAL_INVENTORY_WEAPONS, "Weapon wheel slots");
+
 static int CollectWheelEntries(uint8 *entries)
 {
-    int count = 0;
-    if (selectionWheel == SelectionWheel::Radio) {
-        entries[count++] = RADIO_OFF;
-        for (int i = HEAD_RADIO; i <= CHATTERBOX; ++i)
-            entries[count++] = i;
-        if (DMAudio.IsMP3RadioChannelAvailable())
-            entries[count++] = USERTRACK;
-    } else {
-        CPlayerPed *player = FindPlayerPed();
-        for (int i = 0; i < WEAPONTYPE_TOTAL_INVENTORY_WEAPONS; ++i) {
-            if (player->HasWeapon(i) &&
-                (i <= WEAPONTYPE_BASEBALLBAT || i == WEAPONTYPE_DETONATOR ||
-                    player->GetWeapon(i).m_nAmmoTotal > 0))
-                entries[count++] = i;
-        }
+    if (selectionWheel == SelectionWheel::Weapon) {
+        memcpy(entries, weaponWheelSlots, sizeof(weaponWheelSlots));
+        return ARRAY_SIZE(weaponWheelSlots);
     }
+
+    int count = 0;
+    entries[count++] = RADIO_OFF;
+    for (int i = HEAD_RADIO; i <= CHATTERBOX; ++i)
+        entries[count++] = i;
+    if (DMAudio.IsMP3RadioChannelAvailable())
+        entries[count++] = USERTRACK;
     return count;
+}
+
+static bool WheelEntryAvailable(uint8 entry, CPlayerPed *player)
+{
+    return selectionWheel == SelectionWheel::Radio || player->HasWeapon(entry);
 }
 
 void ProcessSelectionWheel()
 {
+#ifdef DEBUGMENU
+    if (DebugMenuIsOpen()) {
+        CloseSelectionWheel();
+        return;
+    }
+#endif
     if (!GameReady() || CPad::GetPad(0)->ArePlayerControlsDisabled()) {
         CloseSelectionWheel();
         return;
@@ -274,13 +290,19 @@ void ProcessSelectionWheel()
     int selected = 0;
     while (selected + 1 < count && entries[selected] != wheelSelection)
         ++selected;
-    if (entries[selected] != wheelSelection)
+    if (entries[selected] != wheelSelection || !WheelEntryAvailable(entries[selected], player))
         selected = 0;
     const int scroll = radio ? int(pad->GetMouseWheelUp()) - int(pad->GetMouseWheelDown()) : 0;
     const int direction = scroll ? scroll : int(pad->GetRightJustDown()) - int(pad->GetLeftJustDown());
     if (direction) {
         wheelPointer = CVector2D(0.0f, 0.0f);
-        selected = (selected + count + direction) % count;
+        for (int step = 1; step < count; ++step) {
+            const int next = (selected + count + direction * step) % count;
+            if (WheelEntryAvailable(entries[next], player)) {
+                selected = next;
+                break;
+            }
+        }
     } else if (pad->GetMouseX() != 0.0f || pad->GetMouseY() != 0.0f) {
         const float dx = MousePointerStateHelper.bInvertHorizontally ? -pad->GetMouseX() : pad->GetMouseX();
         const float dy = MousePointerStateHelper.bInvertVertically ? -pad->GetMouseY() : pad->GetMouseY();
@@ -289,7 +311,9 @@ void ProcessSelectionWheel()
         const float distance = Sqrt(SQR(wheelPointer.x) + SQR(wheelPointer.y));
         if (distance >= 12.0f) {
             const float angle = Atan2(wheelPointer.y, wheelPointer.x) - HALFPI + TWOPI;
-            selected = int(angle / (TWOPI / count) + 0.5f) % count;
+            const int pointedSlot = int(angle / (TWOPI / count) + 0.5f) % count;
+            if (WheelEntryAvailable(entries[pointedSlot], player))
+                selected = pointedSlot;
             if (distance > 48.0f) {
                 wheelPointer.x *= 48.0f / distance;
                 wheelPointer.y *= 48.0f / distance;
@@ -351,7 +375,7 @@ void FreeSelectionWheelTextures()
     wheelRadioIconsLoaded = false;
 }
 
-static void PrintWheelText(float x, float y, wchar *label, float size, float maxWidth)
+static void PrintWheelText(float x, float centreY, wchar *label, float size, float maxWidth)
 {
     const float width = SCREEN_SCALE_X(size);
     const float height = SCREEN_SCALE_Y(size * 1.4f);
@@ -359,9 +383,15 @@ static void PrintWheelText(float x, float y, wchar *label, float size, float max
     const float textWidth = CFont::GetStringWidth(label, true);
     if (textWidth > maxWidth) {
         const float fit = maxWidth / textWidth;
-        CFont::SetScale(width * fit, height * fit);
+        CFont::SetScale(width * fit, height);
     }
-    CFont::PrintString(x, y, label);
+    // Match the font renderer's glyph height so width fitting cannot move the baseline.
+    float halfGlyphHeight = height * 10.0f;
+#ifdef MORE_LANGUAGES
+    if (CFont::IsJapaneseFont())
+        halfGlyphHeight = height * (20.0f / 2.75f);
+#endif
+    CFont::PrintString(x, centreY - halfGlyphHeight, label);
 }
 
 static wchar *WheelLabel(bool radio, uint8 entry, wchar *weaponName)
@@ -378,6 +408,7 @@ void DrawSelectionWheel()
         return;
 
     const bool radio = selectionWheel == SelectionWheel::Radio;
+    CPlayerPed *player = FindPlayerPed();
     if (radio)
         LoadSelectionWheelTextures();
 
@@ -387,13 +418,14 @@ void DrawSelectionWheel()
         return;
 
     const float x = SCREEN_WIDTH * 0.5f;
-    const float y = SCREEN_HEIGHT * 0.46f;
+    const float y = SCREEN_HEIGHT * 0.5f;
     const float scale = Min(SCREEN_WIDTH / 640.0f, SCREEN_HEIGHT / 448.0f);
     const float radius = 126.0f * scale;
-    const float iconRadius = 97.0f * scale;
+    const float inner = 82.0f * scale;
+    const float iconRadius = (radius + inner) * 0.5f;
     const float sectorAngle = TWOPI / count;
-    const float halfSector = TWOPI / Max(count, 5) * 0.44f;
-    const float half = 17.0f * scale;
+    const float halfSector = sectorAngle * 0.48f;
+    const float half = 16.0f * scale;
     CSprite2d segment;
     CSprite2d::DrawRect(CRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT), CRGBA(5, 10, 16, 96));
     RwRenderStateSet(rwRENDERSTATEZTESTENABLE, (void *)FALSE);
@@ -415,10 +447,10 @@ void DrawSelectionWheel()
         const float angle = HALFPI + i * sectorAngle;
         const float start = angle - halfSector;
         const float end = angle + halfSector;
-        const float inner = 71.0f * scale;
-        const CRGBA colour = entry == wheelSelection
-            ? CRGBA(56, 112, 126, 245) : CRGBA(13, 24, 32, 230);
-        constexpr int steps = 6;
+        const bool available = WheelEntryAvailable(entry, player);
+        const CRGBA colour = entry == wheelSelection && available
+            ? CRGBA(126, 163, 168, 245) : CRGBA(13, 24, 32, 190);
+        constexpr int steps = 10;
         for (int step = 0; step < steps; ++step) {
             const float a = start + (end - start) * step / steps;
             const float b = start + (end - start) * (step + 1) / steps;
@@ -427,6 +459,9 @@ void DrawSelectionWheel()
                          x + Cos(a) * radius, y + Sin(a) * radius,
                          x + Cos(b) * radius, y + Sin(b) * radius, colour);
         }
+
+        if (!available)
+            continue;
 
         const float iconX = x + Cos(angle) * iconRadius;
         const float iconY = y + Sin(angle) * iconRadius;
@@ -439,21 +474,18 @@ void DrawSelectionWheel()
         else {
             wchar name[72];
             if (wchar *label = WheelLabel(radio, entry, name))
-                PrintWheelText(iconX, iconY - 5.0f * scale, label, 0.38f, 44.0f * scale);
+                PrintWheelText(iconX, iconY, label, 0.38f, 44.0f * scale);
         }
     }
 
     wchar name[72];
     if (wchar *label = WheelLabel(radio, wheelSelection, name))
-        PrintWheelText(x, y - 12.0f * scale, label, 0.72f, 124.0f * scale);
-    if (!radio && wheelSelection > WEAPONTYPE_BASEBALLBAT && wheelSelection != WEAPONTYPE_DETONATOR) {
-        const CWeapon &weapon = FindPlayerPed()->GetWeapon(wheelSelection);
-        char ammo[32];
-        wchar wideAmmo[32];
-        snprintf(ammo, sizeof(ammo), "%u OF %u", unsigned(weapon.m_nAmmoInClip),
-                 unsigned(weapon.m_nAmmoTotal));
-        AsciiToUnicode(ammo, wideAmmo);
-        PrintWheelText(x, y + 10.0f * scale, wideAmmo, 0.52f, 124.0f * scale);
+        PrintWheelText(x, y, label, 0.72f, 148.0f * scale);
+    if (!radio) {
+        const CWeapon &weapon = player->GetWeapon(wheelSelection);
+        wchar ammo[32];
+        if (CHud::FormatWeaponAmmo(weapon, ammo))
+            PrintWheelText(x, y + 19.0f * scale, ammo, 0.52f, 148.0f * scale);
     }
 }
 

@@ -34,11 +34,14 @@ enum eSprites
 	NUM_HUD_SPRITES,
 };
 
+class CWeapon;
+
 class CHud
 {
 public:
 	static int16 m_ItemToFlash;
 	static CSprite2d Sprites[NUM_HUD_SPRITES];
+	static bool FormatWeaponAmmo(const CWeapon &weapon, wchar *text);
 	static wchar *m_pZoneName;
 	static wchar *m_pLastZoneName;
 	static wchar *m_ZoneToPrint;
