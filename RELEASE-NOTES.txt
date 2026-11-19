@@ -1,4 +1,4 @@
-RE3 ENHANCED v1.5 - OPENGL x64 DENEME PAKETI
+RE3 ENHANCED v1.6 - OPENGL x64 DENEME PAKETI
 
 KURULUM
 Oyunu kapat ve mevcut re3.exe/re3.pdb ciftini yedekle. Paketin game
@@ -10,6 +10,8 @@ CAP-01 - FULLSCREEN
 DXGI deneyi yeni ayarlarda varsayilan olarak kapalidir. Denemek icin
 Enhanced Options > Fullscreen Capture (Experimental) secenegini ac,
 Graphics > Screen Format > Fullscreen sec ve Enter ile uygula.
+Bu surum acilis ve Alt-Tab sirasindaki beyaz pencereyi hedefler.
+Soguk acilisi ve Alt-Tab cikis/donusunu ayri dene.
 Once oyun goruntusunu, sonra Discord ve Ambilight yakalamasini ayri
 kontrol et. re3-display.log icindeki transfer=texture-copy yeni DXGI
 aktarimini belirtir. API hatasinda oyun native OpenGL Fullscreen'e doner.

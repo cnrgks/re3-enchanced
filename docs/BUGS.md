@@ -42,10 +42,10 @@ geri bildirimini kaydeder; burada listelenen maddeler henüz düzeltilmiş sayı
 | MAP-04 | Sarı MAP şeridinin tamamı kaldırılmalı | Açık — önceki istek eksik uygulanmış |
 | MAP-05 | Back kesiliyor / hizası bozuk | Açık — SS3 |
 | INPUT-01 | OpenGL–D3D9 fare hassasiyeti farklı | Açık — kullanıcı bildirdi |
-| CAP-01 | OpenGL fullscreen/borderless yakalama | v1.3 +1 borderless kullanıcıda şimdilik olumlu; exclusive fullscreen açık |
+| CAP-01 | OpenGL fullscreen/borderless yakalama | v1.5 DXGI Fullscreen'de iki Discord paylaşım türü başarılı. Açılış ve Alt-Tab görüntüsü ile Ambilight açık |
 | INPUT-02 | Borderless kayıtlıyken yeniden açılışta imleç sola kilitleniyor | v1.4 kaynak düzeltmesi derlendi, oyun içi doğrulama bekliyor |
-| INPUT-03 | Borderless modunda imleç gecikmesi sürüyor | Açık — v1.4 kullanıcı gözlemi |
-| INPUT-04 | Araca binmek bazen ikinci basışı gerektiriyor | Açık — Borderless'ta gözlendi, bağlantı belirsiz |
+| INPUT-03 | Borderless modunda imleç gecikmesi sürüyor | v1.5 kullanıcı gecikmeyi daha düşük hissetti. Kontrollü ölçüm açık |
+| INPUT-04 | Araca binmek bazen ikinci basışı gerektiriyor | v1.5 kullanıcı denemesinde tekrarlanmadı. Eski Borderless koşulunda tekrar kontrol açık |
 | WIN-01 | Alt-Tab sırasında eski Windows çerçevesi/toolbar parlaması | Açık — kullanıcı bildirdi |
 | WIN-02 | Odak kaybında otomatik pause | İstenen davranış / eksik |
 | UI-01 | Borderless, Graphics ekran biçiminin üçüncü seçeneği olmalı | OpenGL derlendi / oyun testi bekleniyor |
@@ -447,4 +447,31 @@ Bu değişikliklerin derleme ve oyun içi doğrulaması bekliyor.
 Kaynak 56b63808, GitHub Actions run 44447245429. OpenGL x64
 derlemesi ve uc mevcut birim programi basarili. Windows oyun ici goruntu,
 Discord, Ambilight, imlec gecikmesi ve arac girisi dogrulamasi bekliyor.
+
+### v1.5 kullanıcı geri bildirimi ve geçiş düzeltmesi
+
+- **CAP-01:** Kullanıcı DXGI Fullscreen'de hem Discord oyun penceresi
+  paylaşımının hem de tüm ekran paylaşımının çalıştığını bildirdi. Açılışta
+  ve Alt-Tab sırasında başlık çubuğu, sol üstte beyaz alan ve geri kalan
+  alanda siyah görüntü beliriyor. Geçiş dışında sorun bildirilmedi.
+  Ambilight sonucu bekliyor. [Ekran görüntüsü](feedback/2026-11-19/v1.5-fullscreen-startup-alt-tab.png)
+- **INPUT-03:** Kullanıcı gecikmeyi daha düşük hissetti. Aynı framebuffer,
+  FPS ve VSync ile ölçüm sonucu henüz yok.
+- **INPUT-04:** Kullanıcı v1.5 denemesinde araç giriş hatasının düzeldiğini
+  bildirdi. v1.5 giriş kurallarını değiştirmediğinden kök neden ve önceki
+  Borderless koşulundaki tekrar durumu açık.
+
+DXGI, pencereyi oluşturduktan sonra ilk sunum çağrısında exclusive moda
+geçiyordu. Alt-Tab çıkış işlemi de sunum çağrısına bağlıydı. Ekran
+görüntüsündeki ara pencereyi hedefleyen kaynak adayı, DXGI modunda WGL
+penceresini gizli ve çerçevesiz oluşturuyor. Pencereyi göstermeden önce
+bir siyah kare hazırlıyor. Odağın kaybı veya simge durumuna geçiş,
+olay kuyruğu işlendikten sonra DXGI fullscreen'den çıkışı tetikliyor.
+Açılışta veya geri odaklanırken framebuffer boyutu değişirse eski
+boyutta çizilen kare DXGI'ye aktarılmıyor. Görsel düzeltme henüz derlenmedi
+ve oyun içinde doğrulanmadı.
+
+Geçiş doğrulanınca Windows OpenGL'de DXGI sunumunu ana Fullscreen
+seçeneğine bağlama kararı değerlendirilecek. Bu denemede ayrı deney
+seçeneği, native OpenGL fallback'i ve `-safe-display` kurtarması duruyor.
 

@@ -48,7 +48,7 @@ void Log(const char *format,...)
 {
     FILE *file=fopen("re3-display.log","a");
     if (!file) return;
-    fputs("v1.5 dxgi: ",file);
+    fputs("v1.6 dxgi: ",file);
     va_list args;
     va_start(args,format);
     vfprintf(file,format,args);
@@ -306,6 +306,45 @@ bool CopyFrame()
 }
 
 bool DXGIFullscreenRequested() { return FullscreenDXGI && ScreenFormat==0; }
+
+void PrimeFullscreenWindow(void *handle)
+{
+    if (!GLAD_GL_VERSION_3_0) return;
+    {
+        GLBindings restore;
+        GLfloat colour[4];
+        GLboolean mask[4];
+        glGetFloatv(GL_COLOR_CLEAR_VALUE,colour);
+        glGetBooleanv(GL_COLOR_WRITEMASK,mask);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER,0);
+        glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
+        glClearColor(0.0f,0.0f,0.0f,1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glClearColor(colour[0],colour[1],colour[2],colour[3]);
+        glColorMask(mask[0],mask[1],mask[2],mask[3]);
+    }
+    glfwSwapBuffers((GLFWwindow*)handle);
+}
+
+void UpdateFullscreenFocus(void *handle)
+{
+    GLFWwindow *window=(GLFWwindow*)handle;
+    if (!window || state.window!=window || !state.chain || state.suspended || state.busy)
+        return;
+    const bool iconified=glfwGetWindowAttrib(window,GLFW_ICONIFIED)!=0;
+    if (glfwGetWindowAttrib(window,GLFW_FOCUSED) && !iconified)
+        return;
+
+    ResizeGuard guard;
+    ReleaseBuffers();
+    const HRESULT hr=state.chain->SetFullscreenState(FALSE,nil);
+    if (FAILED(hr)) return; // Retry after the next event pump.
+    state.suspended=true;
+    if (!iconified)
+        PrimeFullscreenWindow(window);
+    Log("suspended fullscreen iconified=%d",int(iconified));
+}
+
 void ShutdownFullscreenDXGI()
 {
     if (state.device || state.interopDevice) {
@@ -323,16 +362,13 @@ bool PresentFullscreenDXGI(void *handle, bool vsync)
     GLFWwindow *window=(GLFWwindow*)handle;
     if (state.window!=window) { ShutdownFullscreenDXGI(); state.window=window; }
     if (state.failed) return false;
-    PresentGuard presenting;
     if (!glfwGetWindowAttrib(window,GLFW_FOCUSED) || glfwGetWindowAttrib(window,GLFW_ICONIFIED)) {
-        if (state.chain && !state.suspended) {
-            ResizeGuard guard;
-            ReleaseBuffers();
-            state.chain->SetFullscreenState(FALSE,nil);
-            state.suspended=true;
-        }
-        return state.chain!=nil;
+        UpdateFullscreenFocus(window);
+        return true;
     }
+    PresentGuard presenting;
+    int renderedWidth,renderedHeight;
+    glfwGetFramebufferSize(window,&renderedWidth,&renderedHeight);
     if (!state.device && !Initialise(window)) return Fail("initialise/interop/fullscreen");
     BOOL fullscreen=FALSE;
     HRESULT hr=state.chain->GetFullscreenState(&fullscreen,nil);
@@ -340,7 +376,9 @@ bool PresentFullscreenDXGI(void *handle, bool vsync)
     if ((state.suspended || !fullscreen) && !EnterFullscreen()) return Fail("resume fullscreen");
     int width,height;
     glfwGetFramebufferSize(window,&width,&height);
-    if (width<=0 || height<=0) return true;
+    // Skip a frame drawn against the pre-transition framebuffer size.
+    if (width<=0 || height<=0 || width!=renderedWidth || height!=renderedHeight)
+        return true;
     if (width!=state.width || height!=state.height) {
         ResizeGuard guard;
         if (!CreateBuffers(width,height)) return Fail("resize buffers");

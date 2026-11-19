@@ -946,6 +946,12 @@ psSelectDevice()
 	{
 		return FALSE;
 	}
+#ifdef _WIN32
+    // DXGI temporarily uses windowed WGL during startup and focus changes.
+    const bool dxgi=Enhanced::DXGIFullscreenRequested();
+    glfwWindowHint(GLFW_VISIBLE,dxgi ? GLFW_FALSE : GLFW_TRUE);
+    glfwWindowHint(GLFW_DECORATED,dxgi ? GLFW_FALSE : GLFW_TRUE);
+#endif
 	/*
 	TODO
 	if (vm.flags & rwVIDEOMODEEXCLUSIVE)
@@ -1192,7 +1198,7 @@ void Enhanced::ApplyWindowMode(bool newWindow)
     glfwGetWindowPos(window,&wx,&wy);
     FILE *displayLog=fopen("re3-display.log","a");
     if (displayLog) {
-        fprintf(displayLog,"v1.5 format=%d probe=%d monitorAttached=%d window=%dx%d framebuffer=%dx%d pos=%d,%d\n",
+        fprintf(displayLog,"v1.6 format=%d probe=%d monitorAttached=%d window=%dx%d framebuffer=%dx%d pos=%d,%d\n",
             int(ScreenFormat),int(BorderlessCaptureProbe),glfwGetWindowMonitor(window)!=nil,ww,wh,fw,fh,wx,wy);
         fclose(displayLog);
     }
@@ -1224,6 +1230,14 @@ void psPostRWinit(void)
 		glfwSetWindowSize(PSGLOBAL(window), RsGlobal.maximumWidth, RsGlobal.maximumHeight);
 
     Enhanced::ApplyWindowMode(true);
+#ifdef _WIN32
+    if (Enhanced::DXGIFullscreenRequested()) {
+        const bool previous=Enhanced::SetPresentationResizeGuard(true);
+        Enhanced::PrimeFullscreenWindow(PSGLOBAL(window));
+        glfwShowWindow(PSGLOBAL(window));
+        Enhanced::SetPresentationResizeGuard(previous);
+    }
+#endif
 
     // The first resize may have arrived before RwInitialised became true.
     // Use the final drawable size on both cold startup and mode recreation.
@@ -1556,7 +1570,9 @@ void resizeCB(GLFWwindow* window, int width, int height) {
 	*/
 	/* redraw window */
 
-	if (!enhancedWindowResize && RwInitialised && gGameState == GS_PLAYING_GAME)
+	// DXGI focus and drawable changes are handled after the event pump.
+	if (!enhancedWindowResize && !Enhanced::DXGIFullscreenRequested() &&
+	    RwInitialised && gGameState == GS_PLAYING_GAME)
 	{
 		RsEventHandler(rsIDLE, (void *)TRUE);
 	}
@@ -2331,6 +2347,9 @@ main(int argc, char *argv[])
 #endif
 		{
 			glfwPollEvents();
+#ifdef _WIN32
+            Enhanced::UpdateFullscreenFocus(PSGLOBAL(window));
+#endif
 #ifdef GET_KEYBOARD_INPUT_FROM_X11
 			checkKeyPresses();
 #endif
