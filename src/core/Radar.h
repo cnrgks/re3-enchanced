@@ -155,7 +155,7 @@ public:
 	static void DrawYouAreHereSprite(float, float);
 	static void ToggleTargetMarker(float, float);
 #endif
-	static uint8 CalculateBlipAlpha(float dist, bool service = false);
+	static uint8 CalculateBlipAlpha(float dist);
 	static void ChangeBlipBrightness(int32 i, int32 bright);
 	static void ChangeBlipColour(int32 i, int32);
 	static void ChangeBlipDisplay(int32 i, eBlipDisplay display);

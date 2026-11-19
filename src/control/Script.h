@@ -492,6 +492,7 @@ public:
 	static void RenderTheScriptDebugLines();
 
 	static void SaveAllScripts(uint8*, uint32*);
+	static bool ValidatePcSaveScripts(const uint8 *buf, uint32 size, bool missionReplay);
 	static void LoadAllScripts(uint8*, uint32);
 
 	static bool IsDebugOn() { return DbgFlag; };

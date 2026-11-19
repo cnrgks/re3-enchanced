@@ -6,6 +6,7 @@
 #include "Phones.h"
 #include "Pickups.h"
 #include "PlayerInfo.h"
+#include "PlayerPed.h"
 #include "Radar.h"
 #include "Script.h"
 #include "ScriptCommands.h"
@@ -58,11 +59,6 @@ bool IsIslandUnlocked(eLevelName island)
 bool IsUnlocked(const CVector &position)
 {
     return IsIslandUnlocked(IslandAt(position));
-}
-
-bool IsHomeUnlocked(const CVector &position)
-{
-    return CStats::MissionsPassed > 0 && IsUnlocked(position);
 }
 
 bool IsPhoneSprite(int sprite)
@@ -143,10 +139,14 @@ bool ServiceBlipVisible(const sRadarTrace &trace, float radarDistance)
 #ifdef MENU_MAP
     const int sprite = trace.m_eRadarSprite;
     if (sprite == RADAR_SPRITE_SAVE) {
-        if (!IsHomeUnlocked(trace.m_vecPos)) return false;
+        const eLevelName island = IslandAt(trace.m_vecPos);
+        if (CStats::MissionsPassed <= 0 || !IsIslandUnlocked(island)) return false;
         if (!CMenuManager::bMenuMapActive) {
-            if (radarDistance > 1.0f) return false;
-            RememberService(sprite, trace.m_vecPos, false);
+            const eLevelName playerZone = IslandAt(FindPlayerCoors());
+            const eLevelName playerIsland = playerZone == LEVEL_GENERIC ? CGame::currLevel : playerZone;
+            if (island != playerIsland) return false;
+            if (radarDistance <= 1.0f)
+                RememberService(sprite, trace.m_vecPos, false);
         }
         return FindDiscovered(sprite, trace.m_vecPos) != nil;
     }
@@ -265,40 +265,62 @@ void DrawServices()
         }
         if (hasRadarBlip) continue;
         CRadar::TransformRadarPointToScreenSpace(screen,radar);
-        CRadar::DrawRadarSprite(service.sprite,screen.x,screen.y,CRadar::CalculateBlipAlpha(radarDistance, true));
+        CRadar::DrawRadarSprite(service.sprite,screen.x,screen.y,255);
     }
 #endif
 }
+namespace {
+struct SaveHouse {
+    eLevelName island;
+    CVector legacyCentre;
+    CVector exit;
+    bool useGround;
+};
+
+// The exits come from SET_PLAYER_COORDINATES in the three native save scripts.
+const SaveHouse saveHouses[] = {
+    { LEVEL_INDUSTRIAL, CVector(895.21875f, -306.46875f, 10.1875f), CVector(888.5625f, -308.375f, 10.1875f), true },
+    { LEVEL_COMMERCIAL, CVector(103.21875f, -484.6875f, 16.5f), CVector(103.0f, -478.5f, 14.875f), false },
+    { LEVEL_SUBURBAN, CVector(-665.25f, 8.28125f, 20.0f), CVector(-666.75f, -1.75f, 20.0f), true },
+};
+
+CVector SaveHouseExit(const SaveHouse &house, float fallbackZ)
+{
+    CVector exit = house.exit;
+    const float pedHeight = FindPlayerPed()->GetDistanceFromCentreOfMassToBaseOfModel();
+    if (!house.useGround) {
+        exit.z += pedHeight;
+        return exit;
+    }
+    bool foundGround;
+    const float groundZ = CWorld::FindGroundZFor3DCoord(exit.x, exit.y, house.exit.z + 3.0f, &foundGround);
+    exit.z = foundGround ? groundZ + pedHeight : fallbackZ;
+    return exit;
+}
+}
+
 bool FindHomePosition(const CVector &current, CVector &home)
 {
     eLevelName island = CTheZones::FindZoneForPoint(current);
     if (island == LEVEL_GENERIC) island = CGame::currLevel;
-    // These are the on-foot save trigger bounds from the original main.scm.
-    // Radar icons are positioned independently of the save triggers.
-    CVector lower, upper;
-    switch (island) {
-    case LEVEL_INDUSTRIAL:
-        lower = CVector(891.1875f, -309.6875f, 7.6875f);
-        upper = CVector(899.25f, -303.25f, 12.6875f);
-        break;
-    case LEVEL_COMMERCIAL:
-        lower = CVector(100.75f, -486.0f, 15.0f);
-        upper = CVector(105.6875f, -483.375f, 18.0f);
-        break;
-    case LEVEL_SUBURBAN:
-        lower = CVector(-670.5f, 3.875f, 18.0f);
-        upper = CVector(-660.0f, 12.6875f, 22.0f);
-        break;
-    default:
-        return false;
+    for (const SaveHouse &house : saveHouses) {
+        if (house.island == island) {
+            home = SaveHouseExit(house, house.legacyCentre.z);
+            return true;
+        }
     }
+    return false;
+}
 
-    home = (lower + upper) * 0.5f;
-    bool foundGround;
-    const float standingZ = CWorld::FindGroundZFor3DCoord(home.x, home.y, home.z, &foundGround) + 1.0f;
-    if (foundGround && standingZ >= lower.z && standingZ <= upper.z)
-        home.z = standingZ;
-    return true;
+bool GetLegacyAutosaveExit(const CVector &position, CVector &exit)
+{
+    for (const SaveHouse &house : saveHouses) {
+        if (position.x == house.legacyCentre.x && position.y == house.legacyCentre.y) {
+            exit = SaveHouseExit(house, position.z);
+            return true;
+        }
+    }
+    return false;
 }
 
 void DrawPhoneBlips()

@@ -1,0 +1,15 @@
+GTA3sf8.b, v1.15 kullanıcı raporu
+SHA-256 F2302B8AAA210B81DBCD207E1ACF67F7369746B0FC720594C1D579890711B611
+201820 bytes; 20 game blocks + 2 padding blocks.
+Recorded and computed checksum: 3923043.
+Mission label: LUIGI'S GIRLS. Level: Portland (1).
+One player, model 0, reference 257.
+Player and camera: (895.21875, -306.46875, 8.68392).
+57 script records; all instruction pointers below 131072 and all stack depths zero.
+i_save was at 60548. The installed main.scm checks the save trigger at 60651:
+(891.1875, -309.6875, 7.6875) to (899.25, -303.25, 12.6875).
+The saved position is inside all three bounds. The script can disable player
+control at 60683 and activate the original save menu at 60818.
+The scripted exit at 60958 is (888.5625, -308.375), outside the trigger.
+The installed executable hash matches the packaged v1.15 executable.
+Static inspection only. The original save file was read without modification.

@@ -6,6 +6,9 @@ son bildirimi açıklayabilecek adaylardır. Oyun içinde yeniden üretim bekliy
 
 ## Uygulama durumu
 
+Görev ve waypoint rota çizgileri yalnızca araçtayken gösterilir. Yaya halde
+işaretler görünür kalır ve araca binince araç ağı üzerinden rota hesaplanır.
+
 Rota araması geçerli başlangıç ve hedef segmentlerini birlikte değerlendiriyor.
 Elle waypoint'in seçilen yükseklik katmanı işaret kaldırılana kadar korunuyor.
 Açık son bağlantısı olan bir hedefe ulaşılabiliyorsa arama onu tercih ediyor.
@@ -70,7 +73,7 @@ bağlantı kaynak ağda eksikse, aday sıralamasını değiştirmek geçit oluş
 | Duvarlı avlu veya yakın arka sokak | Rota gerçek girişten dolaşır. Paralel sokaktan geçiş waypoint'i silmez. |
 | Tek yön, çıkmaz sokak, SCM ile kapanan geçit | Yasak bağlantı kullanılmaz. Uygun alternatif giriş bulunur veya işaret erişilemeyen hedef olarak kalır. |
 | Yol ağı dışındaki bina ve henüz yüklenmemiş uzak hedef | Çizgi ulaşılabilir yolda biter. Bölge yüklenince son bağlantı yeniden değerlendirilir. |
-| Aynı segment, kavşak ve araç/yaya geçişi | İleri yönlü doğrudan rota, zorunlu dolaşma ve ağ değişimi tutarlı çalışır. |
+| Aynı segment, kavşak ve araç/yaya geçişi | İleri yönlü doğrudan rota ve zorunlu dolaşma çalışır. Araçtan inince çizgi kaybolur, işaret kalır. Araca binince rota yeniden hesaplanır. |
 
 Mevcut `tests/enhanced_route.cpp` yön, kapanış, erişilemeyen hedef ve alternatif
 giriş için sentetik arama kapsamı sağlıyor. Katman seçimi, kısmi segmentler ve

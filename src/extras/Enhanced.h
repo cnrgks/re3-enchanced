@@ -7,6 +7,8 @@ struct sRadarTrace;
 namespace Enhanced {
 extern int8 QuickSave, AutoSave, RadarZoom, GPS, MenuMap;
 extern int8 VehicleDistance, PedDistance, ScreenFormat;
+extern int8 VehicleTrafficMultiplier, PedTrafficMultiplier;
+int TrafficMultiplier(bool vehicles);
 extern int8 BorderlessCaptureProbe, FullscreenDXGIFlipY;
 extern bool TraceVehicleEntry;
 extern bool TraceTraffic;
@@ -46,6 +48,7 @@ void LoadServiceDiscovery(const uint8 *buffer, uint32 size);
 void DrawServices();
 void DrawPhoneBlips();
 bool IsSavingAtHome();
+bool GetLegacyAutosaveExit(const CVector &position, CVector &exit);
 CVector SavePosition(const CVector &original);
 float VehicleRangeMultiplier();
 float PedRangeMultiplier();

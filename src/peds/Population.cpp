@@ -611,7 +611,8 @@ CPopulation::AddToPopulation(bool hiddenFeed, bool warmingUp)
 
 	const float fullRange = Enhanced::PedRangeMultiplier();
 	const int32 total = int32(ms_nTotalPeds);
-	const int32 target = Enhanced::TrafficTarget(false, basePedLimit * int32(fullRange), warmingUp);
+	const int32 limit = basePedLimit * int32(fullRange) * Enhanced::TrafficMultiplier(false);
+	const int32 target = Enhanced::TrafficTarget(false, limit, warmingUp);
 	const int32 openBudget = addCop ? 1 : target - total;
 	const bool distant = !addCop && !warmingUp && !hiddenFeed && fullRange > 1.0f;
 

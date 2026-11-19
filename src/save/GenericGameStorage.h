@@ -7,6 +7,7 @@
 
 bool GenericSave(int file);
 bool GenericLoad();
+void TracePcSaveLoad(const char *stage);
 bool ReadInSizeofSaveFileBuffer(int32 &file, uint32 &size);
 bool ReadDataFromFile(int32 file, uint8 *buf, uint32 size);
 bool CloseFile(int32 file);

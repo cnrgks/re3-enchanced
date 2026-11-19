@@ -408,6 +408,10 @@ void ControllerTypeAfterChange(int8 before, int8 after)
 #endif
 
 static const char *enhancedDistances[] = { "EN_100", "EN_200", "EN_300" };
+static const char *trafficMultipliers[] = {
+    "EN_100", "EN_200", "EN_300", "EN_400", "EN_500",
+    "EN_600", "EN_700", "EN_800", "EN_900", "EN_10X",
+};
 CMenuScreenCustom aScreens[MENUPAGES] = {
 	// MENUPAGE_NONE = 0
 	{ "", MENUPAGE_DISABLED, MENUPAGE_DISABLED, nil, nil, },
@@ -960,6 +964,8 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
 #endif
        MENUACTION_CFO_SELECT, "EN_VDST", { new CCFOSelect(&Enhanced::VehicleDistance, "Enhanced", "VehicleDistance", enhancedDistances, 3, false) },
        MENUACTION_CFO_SELECT, "EN_PDST", { new CCFOSelect(&Enhanced::PedDistance, "Enhanced", "PedDistance", enhancedDistances, 3, false) },
+       MENUACTION_CFO_SELECT, "EN_VMUL", { new CCFOSelect(&Enhanced::VehicleTrafficMultiplier, "Enhanced", "VehicleTrafficMultiplier", trafficMultipliers, ARRAY_SIZE(trafficMultipliers), false) },
+       MENUACTION_CFO_SELECT, "EN_PMUL", { new CCFOSelect(&Enhanced::PedTrafficMultiplier, "Enhanced", "PedTrafficMultiplier", trafficMultipliers, ARRAY_SIZE(trafficMultipliers), false) },
        MENUACTION_CHANGEMENU, "FEDS_TB", { nil, SAVESLOT_NONE, MENUPAGE_NONE },
    },
 

@@ -1347,11 +1347,6 @@ CMenuManager::Draw()
 			break;
 	}
 
-	if (m_nCurrScreen == MENUPAGE_RESTORE_DEFAULTS) {
-		CFont::SetFontStyle(FONT_PAGER);
-		CFont::SetSlant(0.0f);
-	}
-
 	float usableLineHeight = lineHeight * 0.9f; // also height of biggest bar in slider
 	float smallestSliderBar = lineHeight * 0.1f;
 	bool foundTheHoveringItem = false;

@@ -41,7 +41,7 @@ sonraki düzeltmeleri ve doğrulama durumlarını kaydeder.
 | GPS-03 | Haritada su üstünde görünen yer altı yolu | Kapalı — kullanıcı geçişin yer altı yolu olduğunu doğruladı |
 | GPS-04 | Yükseklik farkında ve ara sokaklarda hatalı GPS rotası | Kaynakta değiştirildi — derleme ve oyun testi bekliyor |
 | MAP-01 | Çift ev ikonu | Kaynakta tamamlandı / v1.10'da derlendi / oyun testi bekliyor |
-| MAP-02 | Hizmet ikonlarının keşfi, mesafesi ve hıza göre opaklığı | Kaynakta tamamlandı / son opaklık düzeltmesi derlenmedi |
+| MAP-02 | Hizmet ikonlarının keşfi, tam opaklık ve evin radar kenarında görünmesi | Kaynak değişikliği hazır — derleme ve oyun testi bekliyor |
 | MAP-03 | Telefon ve diğer görev ikonları keşif filtresine takılıyor | Kaynakta tamamlandı / v1.12'de derlendi / son görünürlük kuralı MAP-07'de |
 | MAP-04 | Sarı MAP şeridinin tamamı kaldırılmalı | Kaynakta tamamlandı / v1.10'da derlendi / oyun testi bekliyor |
 | MAP-05 | Back dikey hiza ve Quit Game'e taşan tıklama | Kaynakta tamamlandı / v1.11'de derlendi / oyun testi bekliyor |
@@ -117,7 +117,12 @@ Otomatik kayıt manuel kaydın altı saat ilerletme işlemini çağırmıyor.
 ### SAV-05 — kayıt yüklerken menüde takılma
 
 Kullanıcı autosave yüklerken arayüzün kilitlendiğini, aynı sorunun bir defa
-quicksave'de de olduğunu bildirdi. Sorunlu kayıt örneği henüz incelenmedi.
+quicksave'de de olduğunu bildirdi. v1.15 denemesinde autosave yüklenirken menüde takılma tekrarlandı.
+Paylaşılan GTA3sf8.b yapısal kontrolleri geçti. Oyuncu ve kamera Portland
+kayıt tetikleyicisinin ortasındaydı. Yeni autosave ve eski slot 8 uyumluluk
+yolu artık ilgili evin orijinal çıkış noktasını kullanıyor. Eski dosya
+yükleme sırasında diske yeniden yazılmıyor.
+[Dosya incelemesi](feedback/2026-11-19/autosave-slot-8.txt).
 
 PC yükleme yolu blok boyutlarını, iç blok sınırlarını, oyuncu kaydını, sahne
 bilgisini ve checksum'u oyun dünyası kapatılmadan önce kontrol ediyor.
@@ -125,6 +130,12 @@ Geçersiz slotta yükleme hata ekranından kayıt listesine dönülebiliyor.
 Geçerli slot yüklemeye geçmeden önce menü kapanıyor. Kabul için ana menüden
 ve Pause menüsünden yeni autosave, F5 kaydı ve eski geçerli kayıt yüklenmeli.
 Eksik veya bozuk slot sonrası başka bir kayıt seçilebilmeli.
+
+Görev biti işaretinin dışında ayrı görev betiğinin de sonlanması bekleniyor.
+Kayıt doğrulaması normal PC slotlarında yükleme sırasında geri getirilmeyen
+görev betiği adreslerini reddediyor. Dünya temizliğinde silinmiş liste
+düğümüne erişim kaldırıldı. `re3-save-load.log` en son başlatılan yükleme
+adımını kaydediyor. Bu kaynak değişiklikleri v1.15 sonrası oyun testi bekliyor.
 
 ### VEH-01 — cam açıkken sürücüye isabet
 
@@ -188,6 +199,16 @@ bulunamadığında veya açıkta kaldığında elenen adayları yazıyor.
 Aynı Density ile soğuk açılış, şehir rotası ve köprü geçişi
 1×/2×/3× karşılaştırılmalı. Oyun ölçümü bekliyor.
 
+**Son kullanıcı sonucu:** Araç trafiği hâlâ seyrek. Kaynak incelemesinde
+rastgele polis ve acil servis araçlarının toplam araç tavanına ayrıca
+sayıldığı görüldü. Bu ikinci sayım kaldırıldı. Ağ kapasitesi katsayısı da
+bazı bölgelerde hesaplanan nüfusu dörtte bire kadar düşürebiliyor.
+Enhanced Options içinde araç ve yaya için ayrı 1×–10× Traffic Multiplier
+ayarları eklendi. Çarpan ilgili türün adet tavanına ve normal oynanıştaki
+üretim denemesi sayısına uygulanıyor. Karanlık ekran açılış dolumu mevcut
+kare başına deneme sınırını kullanıyor. Nokta, görüş, çarpışma ve fiziksel
+havuz kontrolleri uygulanıyor. Trafik günlüğü iki çarpanı da kaydediyor.
+
 ### GPS-01 — elle işaretlemede üst yol
 
 **Derleme:** v1.10 Windows OpenGL x64 derlemesi ve mevcut geometri, rota,
@@ -247,6 +268,9 @@ birim testleri geçti. Oyun ve kayıt yükleme testi bekliyor.
 [Derleme 44456718827](https://github.com/cnrgks/hezkore-re3-pdb-build/actions/runs/44456718827)
 
 ### GPS-04 — yükseklik farkında ve ara sokaklarda hatalı rota
+
+**Güncel GPS kuralı:** Görev ve elle konan waypoint rotaları yalnızca araçtayken
+hesaplanır ve çizilir. Yaya halde harita ve minimap işaretleri görünür kalır.
 
 **19 Kasım bildirimi:** GPS bazen yükseklik farkında veya ara mahallelerde
 hatalı yol tarifi veriyor. Paket sürümü, konum ve hedef türü belirtilmedi.
@@ -315,16 +339,18 @@ uygulanır. Hizmet minimap alanına girdiğinde keşfedilir. Önceki kayıtlarda
 yalnızca bu hizmetlerin keşif girişleri yüklenir. Görev için hizmet
 simgesiyle işaretlenmiş hedefler yerleşik davranışı kullanır.
 
-**Sonraki düzeltme:** Hizmet simgelerinin opaklığı araç hızıyla artar.
-Düşük hızda alfa 160, normal radarın üst hız sınırında alfa 255. Büyük
-haritadaki hizmet simgeleri tam opak çizilir.
+**Güncel opaklık kuralı:** Hizmet ikonları minimap menzili içinde
+göründükleri sürece tam opak çizilir. Büyük haritada da tam opaktır.
 
 **19 Kasım ev keşfi:** İlk görevden önce Portland ev ikonu görülebiliyordu.
 Sabit/SCM konumlarından ev ikonu üretimi kaldırıldı. İlk görev tamamlandıktan
 ve ilgili ada açıldıktan sonra oyun tarafından etkinleştirilen ev blip'i,
 minimap alanına girince keşfediliyor. Keşif mevcut kayıt alanında saklanıyor
-ve etkin blip büyük haritada açık kalıyor. Yeni oyun, görev sonrası ilk ziyaret,
-kapalı ada ve eski kayıt yükleme kontrolleri oyun içinde bekliyor.
+ve etkin blip büyük haritada açık kalıyor. Minimap'te yalnızca oyuncunun
+bulunduğu adadaki keşfedilmiş etkin ev blip'i çiziliyor. Menzil dışındaysa
+görev ikonları gibi radar kenarında görünüyor.
+Yeni oyun, görev sonrası ilk ziyaret, kapalı ada, eski kayıt yükleme ve
+uzak mesafe kontrolleri oyun içinde bekliyor.
 
 ### MAP-03 — görülen payphone kayboluyor
 
@@ -402,6 +428,12 @@ Minimap oyunun görev sırasında kontakları gizleme kuralını korur.
 
 ### INPUT-05 — Alt+Tab sonrası imleç kaybı
 
+v1.15'te oyun arkadayken pencerenin kapladığı masaüstü alanında imleç
+tekrar görünmez oldu ve tıklama oyunu öne getirdi. Windows ön plan penceresi
+ayrıca kontrol ediliyor. Odak kaybında tam ekran ve kenarlıksız pencere
+DXGI odak işlemi sonrası küçültülüyor. Normal pencerede sistem imleci
+arka plandayken görünür kalıyor. Açık oyun menüsü fareyi kilitlemiyor.
+
 GLFW, oyun odak dışındayken veya küçültülmüşken sistem imlecini serbest
 bırakır ve görünür moda döner. Odak dönünce oyun veya menünün istediği imleç
 modu geri uygulanır. Tam ekran, kenarlıksız ve pencereli modda oyun içinden
@@ -440,14 +472,13 @@ Win32 başlangıç yolları bu durumu oyun döngüsüne iletiyor.
 
 Ses, görüntü, grafik ve kontrol ayarlarından Restore Defaults seçildiğinde
 İngilizce onay sayfası açılıyor. İlk seçim No. Yes yalnızca ilgili sayfayı
-sıfırlıyor. No ve geri tuşu ayarlara dönüyor. No ve Yes seçenekleri dik
-fontla çiziliyor. Görsel doğrulama bekliyor.
+sıfırlıyor. No ve geri tuşu ayarlara dönüyor. NO ve YES seçenekleri normal ayar
+satırlarıyla aynı fontun büyük harfleriyle çiziliyor. Görsel doğrulama bekliyor.
 [Ekran görüntüsü](feedback/2026-11-19/restore-defaults-options.png).
 
 v1.14 denemesinde hizmet simgelerinin minimap menzili dışında da göründüğü
-bildirildi. Önceki görünürlük sınırı ve doğrudan hız etkisi geri getirildi.
-Menzil içindeki bir hizmet simgesi oyuncuya yaklaştıkça daha opak çiziliyor.
-Tam ekran haritada simgeler opak. Oyun doğrulaması bekliyor.
+bildirildi. Hizmetlerin görünürlük sınırı ve tam opaklık kuralı MAP-02'de
+takip ediliyor. Oyun doğrulaması bekliyor.
 
 ### UI-01 — ekran biçiminde üçüncü seçenek
 

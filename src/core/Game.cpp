@@ -896,9 +896,14 @@ void CGame::InitialiseWhenRestarting(void)
 		CStreaming::LoadScene(TheCamera.GetPosition());
 	}
 #else
+	if (FrontEndMenuManager.m_bWantToLoad)
+		TracePcSaveLoad("Restoring saved scene");
 	const bool loadSceneReady = !FrontEndMenuManager.m_bWantToLoad || RestoreForStartLoad();
-	if (FrontEndMenuManager.m_bWantToLoad && loadSceneReady)
+	if (FrontEndMenuManager.m_bWantToLoad && loadSceneReady) {
+		TracePcSaveLoad("Streaming saved scene");
 		CStreaming::LoadScene(TheCamera.GetPosition());
+		TracePcSaveLoad("Reinitialising game state");
+	}
 #endif
 	
 	ReInitGameObjectVariables();
@@ -979,6 +984,7 @@ void CGame::InitialiseWhenRestarting(void)
 #else
 	if ( FrontEndMenuManager.m_bWantToLoad == true )
 	{
+		TracePcSaveLoad(loadSceneReady ? "Reading saved game blocks" : "Saved scene restore failed");
 		if (loadSceneReady && GenericLoad())
 		{
 			DMAudio.ResetTimers(CTimer::GetTimeInMilliseconds());

@@ -2002,6 +2002,52 @@ INITSAVEBUF
 VALIDATESAVEBUF(*size)
 }
 
+bool CTheScripts::ValidatePcSaveScripts(const uint8 *buf, uint32 size, bool missionReplay)
+{
+	const uint32 fixedSize = SAVE_HEADER_SIZE + 3 * sizeof(uint32) + (SCRIPT_DATA_SIZE);
+	if (size < fixedSize || memcmp(buf, "SCR", 4) != 0)
+		return false;
+
+	uint32 headerSize, variablesSize, scriptDataSize, scriptCount;
+	memcpy(&headerSize, buf + 4, sizeof(headerSize));
+	memcpy(&variablesSize, buf + SAVE_HEADER_SIZE, sizeof(variablesSize));
+	if (headerSize != size - SAVE_HEADER_SIZE || variablesSize > size - fixedSize || variablesSize > SIZE_MAIN_SCRIPT)
+		return false;
+	memcpy(&scriptDataSize, buf + SAVE_HEADER_SIZE + sizeof(uint32) + variablesSize, sizeof(scriptDataSize));
+	if (scriptDataSize != (SCRIPT_DATA_SIZE))
+		return false;
+
+	const uint8 *scripts = buf + fixedSize + variablesSize;
+	memcpy(&scriptCount, scripts - sizeof(uint32), sizeof(scriptCount));
+	if (scriptCount > MAX_NUM_SCRIPTS ||
+		size - fixedSize - variablesSize != scriptCount * CRunningScript::nSaveStructSize)
+		return false;
+
+#ifdef COMPATIBLE_SAVES
+	// PC saves restore only the main script bytecode. Mission replay has its own loading rules.
+	if (!missionReplay) {
+		for (uint32 i = 0; i < scriptCount; ++i, scripts += CRunningScript::nSaveStructSize) {
+			const uint8 *execution = scripts + 8 + sizeof(CRunningScript::m_abScriptName);
+			uint32 ip;
+			uint16 stackDepth;
+			memcpy(&ip, execution, sizeof(ip));
+			memcpy(&stackDepth, execution + sizeof(ip) + MAX_STACK_DEPTH * sizeof(uint32), sizeof(stackDepth));
+			if (ip >= SIZE_MAIN_SCRIPT || stackDepth > MAX_STACK_DEPTH)
+				return false;
+			for (uint16 j = 0; j < stackDepth; ++j) {
+				uint32 returnIp;
+				memcpy(&returnIp, execution + sizeof(ip) + j * sizeof(returnIp), sizeof(returnIp));
+				if (returnIp >= SIZE_MAIN_SCRIPT)
+					return false;
+			}
+		}
+	}
+#else
+	(void)missionReplay;
+#endif
+	return true;
+}
+
 void CTheScripts::LoadAllScripts(uint8* buf, uint32 size)
 {
 	Init();

@@ -73,6 +73,14 @@ uint32 TimeToStayFadedBeforeFadeOut = 1750;
 #define ReadDataFromBufferPointer(buf, to) memcpy(&to, buf, sizeof(to)); buf += align4bytes(sizeof(to));
 #define WriteDataToBufferPointer(buf, from) memcpy(buf, &from, sizeof(from)); buf += align4bytes(sizeof(from));
 
+void TracePcSaveLoad(const char *stage)
+{
+	if (FILE *log = fopen("re3-save-load.log", "a")) {
+		fprintf(log, "%s%s", stage, strchr(stage, '\n') ? "" : "\n");
+		fclose(log);
+	}
+}
+
 static bool InvalidLoad(int32 file)
 {
 	PcSaveHelper.nErrorCode = CloseFile(file) ? SAVESTATUS_ERR_DATA_INVALID : SAVESTATUS_ERR_LOAD_CLOSE;
@@ -103,6 +111,21 @@ static bool HasSavePayload(const uint8 *block, uint32 size, uint32 offset)
 	return payloadSize <= available && uint32(align4bytes(payloadSize)) == available;
 }
 
+static bool HasPcScriptPayload(const uint8 *block, uint32 size)
+{
+	if (!HasSavePayload(block, size, SIZE_OF_SIMPLEVARS))
+		return false;
+	uint32 scriptSize;
+	memcpy(&scriptSize, block + SIZE_OF_SIMPLEVARS, sizeof(scriptSize));
+	bool missionReplay = false;
+#ifdef MISSION_REPLAY
+	uint32 saveType;
+	memcpy(&saveType, block + 0x40, sizeof(saveType));
+	missionReplay = (saveType >> 24) == SAVE_TYPE_QUICKSAVE_FOR_MISSION_REPLAY;
+#endif
+	return CTheScripts::ValidatePcSaveScripts(block + SIZE_OF_SIMPLEVARS + sizeof(scriptSize), scriptSize, missionReplay);
+}
+
 #define LoadSaveDataBlock()\
 do {\
 	if (!ReadDataFromFile(file, (uint8 *) &size, 4))\
@@ -120,6 +143,7 @@ do {\
 #define ReadDataFromBlock(msg,load_func)\
 do {\
 	debug(msg);\
+	TracePcSaveLoad(msg);\
 	ReadDataFromBufferPointer(buf, size);\
 	load_func(buf, size);\
 	size = align4bytes(size);\
@@ -317,7 +341,7 @@ GenericLoad()
 	size = align4bytes(size);
 	if (!ReadDataFromFile(file, work_buff, size))
 		return false;
-	if (!HasSavePayload(work_buff, size, SIZE_OF_SIMPLEVARS))
+	if (!HasPcScriptPayload(work_buff, size))
 		return InvalidLoad(file);
 	buf = work_buff + 0x40;
 	ReadDataFromBufferPointer(buf, saveSize);
@@ -433,7 +457,23 @@ GenericLoad()
 		return false;
 	}
 
+	// Older mission autosaves wrote identical player and camera positions inside a save trigger.
+	CPlayerPed *player = FindPlayerPed();
+	const CVector &cameraPosition = TheCamera.GetPosition();
+	if (FrontEndMenuManager.m_nCurrSaveSlot == SLOT_COUNT - 1 && player) {
+		const CVector &position = player->GetPosition();
+		CVector exit;
+		if (position.x == cameraPosition.x && position.y == cameraPosition.y && position.z == cameraPosition.z &&
+			Enhanced::GetLegacyAutosaveExit(position, exit)) {
+			TracePcSaveLoad("Moving legacy autosave outside the save trigger");
+			player->Teleport(exit);
+			TheCamera.GetMatrix().GetPosition() = exit;
+		}
+	}
+
+	TracePcSaveLoad("Resuming saved scripts");
 	DoGameSpecificStuffAfterSucessLoad();
+	TracePcSaveLoad("Save data loaded");
 	debug("Game successfully loaded \n");
 	return true;
 }
@@ -484,11 +524,16 @@ bool
 CheckSlotDataValid(int32 slot)
 {
 	PcSaveHelper.nErrorCode = SAVESTATUS_SUCCESSFUL;
+	char stage[48];
+	snprintf(stage, sizeof(stage), "Load requested for slot %d", slot + 1);
+	TracePcSaveLoad(stage);
 	if (CheckDataNotCorrupt(slot, LoadFileName)) {
+		TracePcSaveLoad("Save validation passed");
 		CStreaming::DeleteAllRwObjects();
 		return true;
 	}
 
+	TracePcSaveLoad("Save validation failed");
 	PcSaveHelper.nErrorCode = SAVESTATUS_ERR_DATA_INVALID;
 	return false;
 }
@@ -581,7 +626,7 @@ static bool ValidateSaveBlocks(int32 file, eLevelName &level)
 
 		if (block == 0) {
 			CVector position;
-			if (!ReadSavedScene(work_buff, level, position))
+			if (!HasPcScriptPayload(work_buff, alignedSize) || !ReadSavedScene(work_buff, level, position))
 				return false;
 		} else if (block == 1 && !HasPlayerSaveData(work_buff, alignedSize)) {
 			return false;

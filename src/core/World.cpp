@@ -1713,21 +1713,23 @@ CWorld::ClearForRestart(void)
 	CObject::DeleteAllTempObjects();
 	CObject::DeleteAllMissionObjects();
 	CPopulation::ConvertAllObjectsToDummyObjects();
+	CPtrNode *nextPlane;
+	for(CPtrNode *node = GetBigBuildingList(LEVEL_GENERIC).first; node; node = nextPlane) {
+		nextPlane = node->next;
+		CEntity *entity = (CEntity *)node->item;
+		if(entity && entity->IsVehicle() && ((CVehicle *)entity)->IsPlane()) {
+			Remove(entity);
+			delete entity;
+		}
+	}
 	for(int i = 0; i < NUMSECTORS_X * NUMSECTORS_Y; i++) {
 		CSector *pSector = GetSector(i % NUMSECTORS_X, i / NUMSECTORS_Y);
-		for(CPtrNode *pNode = pSector->m_lists[ENTITYLIST_PEDS].first; pNode; pNode = pNode->next) {
+		while(CPtrNode *pNode = pSector->m_lists[ENTITYLIST_PEDS].first) {
 			CEntity *pEntity = (CEntity *)pNode->item;
 			Remove(pEntity);
 			delete pEntity;
 		}
-		for(CPtrNode *pNode = GetBigBuildingList(LEVEL_GENERIC).first; pNode; pNode = pNode->next) {
-			CVehicle *pVehicle = (CVehicle *)pNode->item;
-			if(pVehicle && pVehicle->IsVehicle() && pVehicle->IsPlane()) {
-				Remove(pVehicle);
-				delete pVehicle;
-			}
-		}
-		for(CPtrNode *pNode = pSector->m_lists[ENTITYLIST_VEHICLES].first; pNode; pNode = pNode->next) {
+		while(CPtrNode *pNode = pSector->m_lists[ENTITYLIST_VEHICLES].first) {
 			CEntity *pEntity = (CEntity *)pNode->item;
 			Remove(pEntity);
 			delete pEntity;

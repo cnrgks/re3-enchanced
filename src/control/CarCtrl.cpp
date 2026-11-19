@@ -94,7 +94,7 @@ CCarCtrl::RandomCarLimit(float trafficMultiplier)
 {
 	const float baseDensity = trafficMultiplier * CarDensityMultiplier * CIniFile::CarNumberMultiplier;
 	const int32 baseLimit = int32(ceilf(Clamp(baseDensity, 0.0f, 30.0f)));
-	return baseLimit * int32(Enhanced::VehicleRangeMultiplier());
+	return baseLimit * int32(Enhanced::VehicleRangeMultiplier()) * Enhanced::TrafficMultiplier(true);
 }
 
 bool
@@ -104,8 +104,9 @@ CCarCtrl::HasRoomForTraffic()
 	// Leave slots for scripted vehicles and emergency services.
 	constexpr int reservedVehicleSlots = 16;
 	return pool->GetNoOfUsedSpaces() < pool->GetSize() - reservedVehicleSlots &&
-		NumFiretrucksOnDuty + NumAmbulancesOnDuty + NumParkedCars + NumMissionCars +
-		NumLawEnforcerCars + NumRandomCars < MaxNumberOfCarsInUse * Enhanced::VehicleRangeMultiplier();
+		// Random police and emergency vehicles already contribute to NumRandomCars.
+		NumParkedCars + NumMissionCars + NumRandomCars <
+			MaxNumberOfCarsInUse * Enhanced::VehicleRangeMultiplier() * Enhanced::TrafficMultiplier(true);
 }
 
 void
@@ -2733,8 +2734,8 @@ void CCarCtrl::GenerateEmergencyServicesCar(void)
 	const auto pool = CPools::GetVehiclePool();
 	if (pool->GetNoOfUsedSpaces() >= pool->GetSize() - 2 || CPopulation::AmbientPedSlotsAvailable() < 4)
 		return;
-	if (NumFiretrucksOnDuty + NumAmbulancesOnDuty + NumParkedCars + NumMissionCars +
-		NumLawEnforcerCars + NumRandomCars > MaxNumberOfCarsInUse * Enhanced::VehicleRangeMultiplier())
+	if (NumParkedCars + NumMissionCars + NumRandomCars >
+		MaxNumberOfCarsInUse * Enhanced::VehicleRangeMultiplier() * Enhanced::TrafficMultiplier(true))
 		return;
 	if (NumAmbulancesOnDuty == 0){
 		if (gAccidentManager.CountActiveAccidents() < 2){

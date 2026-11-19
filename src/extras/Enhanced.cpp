@@ -49,6 +49,7 @@ int8 Borderless = 1;
 int8 Borderless = 0;
 #endif
 int8 VehicleDistance = 0, PedDistance = 0, ScreenFormat = 0;
+int8 VehicleTrafficMultiplier = 0, PedTrafficMultiplier = 0;
 #ifdef _WIN32
 int8 BorderlessCaptureProbe = 1, FullscreenDXGIFlipY = 1;
 #else
@@ -79,7 +80,6 @@ static int routeCount;
 static CRGBA routeColour(230,35,35,230);
 static bool waypointLayerKnown;
 static float waypointLayerZ;
-static int routeType = -1;
 static uint32 routeLastUpdate;
 static CVector routeTarget;
 static CVector routeStart;
@@ -111,8 +111,8 @@ wchar *GetText(const char *key)
         { "ENHANCE", "ENHANCED OPTIONS" },
         { "EN_DEFT", "RESTORE DEFAULTS" },
         { "EN_DEFP", "Are you sure you want to restore the default settings?" },
-        { "EN_NO", "No" },
-        { "EN_YES", "Yes" },
+        { "EN_NO", "NO" },
+        { "EN_YES", "YES" },
         { "EN_QSAV", "F5 SAVE MENU" },
         { "EN_AUTO", "MISSION AUTOSAVE (SLOT 8)" },
         { "EN_ASOK", "Autosaved." },
@@ -128,8 +128,12 @@ wchar *GetText(const char *key)
         { "EN_BRDL", "BORDERLESS" },
         { "EN_VDST", "VEHICLE DISTANCE" },
         { "EN_PDST", "PEDESTRIAN DISTANCE" },
+        { "EN_VMUL", "VEHICLE TRAFFIC MULTIPLIER" },
+        { "EN_PMUL", "PEDESTRIAN TRAFFIC MULTIPLIER" },
         { "EN_100", "1X" },
-        { "EN_200", "2X" }, { "EN_300", "3X" },
+        { "EN_200", "2X" }, { "EN_300", "3X" }, { "EN_400", "4X" },
+        { "EN_500", "5X" }, { "EN_600", "6X" }, { "EN_700", "7X" },
+        { "EN_800", "8X" }, { "EN_900", "9X" }, { "EN_10X", "10X" },
         { "EN_SAFE", "To save, stand still on foot with no active mission and no wanted level." },
     };
     for (unsigned i = 0; i < ARRAY_SIZE(strings); ++i) {
@@ -154,7 +158,7 @@ static bool GameReady()
 
 static bool CanSaveAfterMission()
 {
-    if (CTheScripts::IsPlayerOnAMission()) return false;
+    if (CTheScripts::IsPlayerOnAMission() || CTheScripts::bAlreadyRunningAMissionScript) return false;
     CPlayerInfo *info = FindPlayerPed()->GetPlayerInfoForThisPlayerPed();
     return info && info->m_WBState == WBSTATE_PLAYING && !info->m_bInRemoteMode &&
         TheCamera.GetScreenFadeStatus() == FADE_0;
@@ -254,11 +258,10 @@ struct RouteGraph {
         float cost = 0.0f;
         bool connectorClear = false;
     };
-    int first, last, type;
     std::vector<RoadPoint> starts, goals;
     std::multimap<int, int> goalsByEndpoint;
 
-    int StartNode() const { return ThePaths.m_numPathNodes; }
+    int StartNode() const { return ThePaths.m_numCarPathNodes; }
     int FirstEntry() const { return StartNode() + 1; }
     int FirstGoal() const { return FirstEntry() + int(starts.size()); }
     int NodeCount() const { return FirstGoal() + int(goals.size()); }
@@ -281,9 +284,9 @@ struct RouteGraph {
             const int edge = node.firstLink + i;
             if (edge < 0 || edge >= ThePaths.m_numConnections) continue;
             const int next = ThePaths.ConnectedNode(edge);
-            if (next < first || next >= last || next == current) continue;
+            if (next < 0 || next >= StartNode() || next == current) continue;
             if (traversable && ThePaths.m_pathNodes[next].bDisabled) continue;
-            if (traversable && type == PATH_CAR) {
+            if (traversable) {
                 const int linkId = ThePaths.m_carPathConnections[edge];
                 if (linkId < 0 || linkId >= ThePaths.m_numCarPathLinks) continue;
                 const CCarPathLink &link = ThePaths.m_carPathLinks[linkId];
@@ -367,7 +370,8 @@ static void UpdateRoute()
 #ifdef MENU_MAP
     const bool manual = CRadar::TargetMarkerId != -1;
     if (!manual) waypointLayerKnown = false;
-    if ((!manual && !GPS) || !FindPlayerPed()) {
+    const CVehicle *vehicle = FindPlayerVehicle();
+    if ((!manual && !GPS) || !vehicle) {
         routeCount = 0;
         routeLastUpdate = 0;
         return;
@@ -396,7 +400,7 @@ static void UpdateRoute()
                     if (blip.m_eBlipType == BLIP_CAR) entity = CPools::GetVehiclePool()->GetAt(blip.m_nEntityHandle);
                     else if (blip.m_eBlipType == BLIP_CHAR) entity = CPools::GetPedPool()->GetAt(blip.m_nEntityHandle);
                     else if (blip.m_eBlipType == BLIP_OBJECT) entity = CPools::GetObjectPool()->GetAt(blip.m_nEntityHandle);
-                    if (!entity || entity == FindPlayerPed() || entity == FindPlayerVehicle()) continue;
+                    if (!entity || entity == FindPlayerPed() || entity == vehicle) continue;
                     position = entity->GetPosition();
                 }
                 float distance = (position-start).MagnitudeSqr();
@@ -413,20 +417,15 @@ static void UpdateRoute()
     }
     if (!found) { routeCount=0; routeLastUpdate=0; return; }
     const uint32 now = CTimer::GetTimeInMilliseconds();
-    const int type = FindPlayerVehicle() ? PATH_CAR : PATH_PED;
-    if (type == routeType && routeLastUpdate && now-routeLastUpdate < 750 &&
+    if (routeLastUpdate && now-routeLastUpdate < 750 &&
         (target-routeTarget).MagnitudeSqr() < 1.0f &&
         (start-routeStart).MagnitudeSqr() < 64.0f) return;
     routeLastUpdate = now;
     routeTarget = target;
     routeStart = start;
     routeCount = 0;
-    routeType = type;
     route.clear();
     RouteGraph graph;
-    graph.type = type;
-    graph.first = type == PATH_CAR ? 0 : ThePaths.m_numCarPathNodes;
-    graph.last = type == PATH_CAR ? ThePaths.m_numCarPathNodes : ThePaths.m_numPathNodes;
 
     constexpr float layerTolerance = 3.0f;
     constexpr float startRadius = 40.0f;
@@ -441,7 +440,7 @@ static void UpdateRoute()
     std::vector<RouteGraph::RoadPoint> entries, destinations;
     float nearestStart = startRadius, nearestTarget = targetRadius;
     float startLayerZ = start.z, targetLayerZ = target.z;
-    for (int from = graph.first; from < graph.last; ++from) {
+    for (int from = 0; from < graph.StartNode(); ++from) {
         // Physical segments determine the clicked layer even while SCM closes it.
         graph.VisitRoadEdges(from, [&](int to, float) {
             if (from > to) return;
@@ -591,6 +590,12 @@ static float MeasureTrafficNetwork(bool vehicles, const CVector &centre)
     return length;
 }
 
+int TrafficMultiplier(bool vehicles)
+{
+    const int index = vehicles ? VehicleTrafficMultiplier : PedTrafficMultiplier;
+    return 1 + Clamp(index, 0, 9);
+}
+
 int TrafficAttempts(bool vehicles, const CVector &centre, float nearbyRadius, bool warmingUp)
 {
     TrafficArea &area = vehicles ? carTraffic : pedTraffic;
@@ -629,7 +634,8 @@ int TrafficAttempts(bool vehicles, const CVector &centre, float nearbyRadius, bo
     const float range = vehicles ? VehicleRangeMultiplier() : PedRangeMultiplier();
     const float localTarget = area.target / range;
     const bool thin = area.nearby.size() < localTarget * 0.75f && area.arrivals < localTarget * 0.15f;
-    return thin && (CTimer::GetFrameCounter() & 1) == 0 ? 2 : 1;
+    const int attempts = thin && (CTimer::GetFrameCounter() & 1) == 0 ? 2 : 1;
+    return attempts * TrafficMultiplier(vehicles);
 }
 
 int TrafficTarget(bool vehicles, int limit, bool warmingUp)
@@ -664,18 +670,18 @@ static void ReportTraffic()
         int32 totalPeds;
         const int32 nearbyPeds = CPopulation::CountNearbyTraffic(centre, &totalPeds);
         fprintf(log, "time=%u interval_ms=%u x=%.1f y=%.1f "
-            "cars distance=%.0f density=%.2f near=%d total=%d "
+            "cars distance=%.0f density=%.2f multiplier=%d near=%d total=%d "
             "near_attempts=%u near_spawned=%u far_attempts=%u far_spawned=%u "
-            "peds distance=%.0f density=%.2f near=%d total=%d "
+            "peds distance=%.0f density=%.2f multiplier=%d near=%d total=%d "
             "near_attempts=%u near_spawned=%u far_attempts=%u far_spawned=%u "
             "car_target=%d car_lane_m=%.0f car_arrivals=%.2f car_no_candidate=%u car_exposed=%u "
             "ped_target=%d ped_walk_m=%.0f ped_arrivals=%.2f ped_no_candidate=%u ped_exposed=%u\n",
             now, elapsed, centre.x, centre.y,
-            VehicleRangeMultiplier(), CIniFile::CarNumberMultiplier,
+            VehicleRangeMultiplier(), CIniFile::CarNumberMultiplier, TrafficMultiplier(true),
             CCarCtrl::CountNearbyTraffic(centre), CCarCtrl::NumRandomCars,
             VehicleSpawnStats.attempts[0], VehicleSpawnStats.spawned[0],
             VehicleSpawnStats.attempts[1], VehicleSpawnStats.spawned[1],
-            PedRangeMultiplier(), CIniFile::PedNumberMultiplier,
+            PedRangeMultiplier(), CIniFile::PedNumberMultiplier, TrafficMultiplier(false),
             nearbyPeds, totalPeds,
             PedSpawnStats.attempts[0], PedSpawnStats.spawned[0],
             PedSpawnStats.attempts[1], PedSpawnStats.spawned[1],
@@ -737,7 +743,7 @@ static bool ClipRadarSegment(CVector2D &a, CVector2D &b)
 void DrawRoute()
 {
 #ifdef MENU_MAP
-    if (routeCount < 2 || (!GPS && CRadar::TargetMarkerId == -1)) return;
+    if (routeCount < 2 || (!GPS && CRadar::TargetMarkerId == -1) || !FindPlayerVehicle()) return;
     for (int i = 1; i < routeCount; ++i) {
         CVector2D a, b, sa, sb;
         const CVector aWorld = i == 1 ? FindPlayerCoors() : route[i-1];

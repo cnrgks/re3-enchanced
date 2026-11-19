@@ -48,6 +48,9 @@ long _dwOperatingSystemVersion;
 #include "ControllerConfig.h"
 #include "Frontend.h"
 #include "Game.h"
+#ifndef PS2_MENU
+#include "GenericGameStorage.h"
+#endif
 #include "PCSave.h"
 #include "MemoryCard.h"
 #include "Sprite2d.h"
@@ -82,6 +85,7 @@ static RwBool		  WindowIconified = FALSE;
 static RwBool		  WindowFocused = TRUE;
 #ifdef _WIN32
 static bool TraceDisplayTiming;
+static bool WindowLostFocus;
 #endif
 
 static RwBool		  RwInitialised = FALSE;
@@ -1080,11 +1084,21 @@ void _InputInitialiseJoys()
 
 static int RequestedCursorMode = GLFW_CURSOR_HIDDEN;
 
-static void ApplyCursorMode(GLFWwindow *window)
+static bool WindowAcceptsInput(GLFWwindow *window)
 {
-    const bool active = glfwGetWindowAttrib(window, GLFW_FOCUSED) &&
+#ifdef _WIN32
+    if (GetForegroundWindow() != glfwGetWin32Window(window))
+        return false;
+#endif
+    return glfwGetWindowAttrib(window, GLFW_FOCUSED) &&
         !glfwGetWindowAttrib(window, GLFW_ICONIFIED);
-    const int mode = active ? RequestedCursorMode : GLFW_CURSOR_NORMAL;
+}
+
+static void ApplyCursorMode(GLFWwindow *window, bool active)
+{
+    int mode = GLFW_CURSOR_NORMAL;
+    if (active && !CTimer::GetIsWindowPaused())
+        mode = FrontEndMenuManager.m_bMenuActive ? GLFW_CURSOR_HIDDEN : RequestedCursorMode;
     if (glfwGetInputMode(window, GLFW_CURSOR) != mode)
         glfwSetInputMode(window, GLFW_CURSOR, mode);
 }
@@ -1092,7 +1106,7 @@ static void ApplyCursorMode(GLFWwindow *window)
 void psSetGlfwCursorMode(int mode)
 {
     RequestedCursorMode = mode;
-    ApplyCursorMode(PSGLOBAL(window));
+    ApplyCursorMode(PSGLOBAL(window), WindowAcceptsInput(PSGLOBAL(window)));
 }
 
 long _InputInitialiseMouse()
@@ -2081,14 +2095,18 @@ cursorEnterCB(GLFWwindow* window, int entered) {
 void
 windowFocusCB(GLFWwindow* window, int focused) {
 	WindowFocused = !!focused;
-    ApplyCursorMode(window);
+#ifdef _WIN32
+    if (!focused && !enhancedWindowResize)
+        WindowLostFocus = true;
+#endif
+    ApplyCursorMode(window, focused && WindowAcceptsInput(window));
     if (focused) SynchroniseWindowInput(window,false);
 }
 
 void
 windowIconifyCB(GLFWwindow* window, int iconified) {
 	WindowIconified = !!iconified;
-    ApplyCursorMode(window);
+    ApplyCursorMode(window, !iconified && WindowAcceptsInput(window));
 }
 
 /*
@@ -2373,18 +2391,25 @@ main(int argc, char *argv[])
 #endif
 		{
 			glfwPollEvents();
-			const bool windowPaused = gGameState == GS_PLAYING_GAME &&
-				(!glfwGetWindowAttrib(PSGLOBAL(window), GLFW_FOCUSED) ||
-				 glfwGetWindowAttrib(PSGLOBAL(window), GLFW_ICONIFIED));
+			GLFWwindow *window = PSGLOBAL(window);
+#ifdef _WIN32
+			Enhanced::UpdateFullscreenFocus(window);
+			if (WindowLostFocus) {
+				WindowLostFocus = false;
+				if (!WindowAcceptsInput(window) && !glfwGetWindowAttrib(window, GLFW_ICONIFIED) &&
+					(glfwGetWindowMonitor(window) || Enhanced::Borderless || Enhanced::DXGIFullscreenRequested()))
+					glfwIconifyWindow(window);
+			}
+#endif
+			const bool acceptsInput = WindowAcceptsInput(window);
+			const bool windowPaused = gGameState == GS_PLAYING_GAME && !acceptsInput;
 			if (windowPaused != CTimer::GetIsWindowPaused()) {
 				CTimer::SetWindowPause(windowPaused);
 				CPad::ResetOnWindowFocusChange(!windowPaused);
 				if (!windowPaused && gGameState == GS_PLAYING_GAME)
 					FrontEndMenuManager.PauseAfterWindowFocusReturns();
 			}
-#ifdef _WIN32
-            Enhanced::UpdateFullscreenFocus(PSGLOBAL(window));
-#endif
+			ApplyCursorMode(window, acceptsInput);
 #ifdef GET_KEYBOARD_INPUT_FROM_X11
 			checkKeyPresses();
 #endif
@@ -2663,6 +2688,7 @@ main(int argc, char *argv[])
 #else
 		if ( FrontEndMenuManager.m_bWantToLoad )
 		{
+			TracePcSaveLoad("Clearing previous game world");
 			CGame::ShutDownForRestart();
 			CGame::InitialiseWhenRestarting();
 			DMAudio.ChangeMusicMode(MUSICMODE_GAME);

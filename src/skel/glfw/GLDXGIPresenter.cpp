@@ -348,7 +348,7 @@ void UpdateFullscreenFocus(void *handle)
     if (!window || state.window!=window || !state.chain || state.suspended || state.busy)
         return;
     const bool iconified=glfwGetWindowAttrib(window,GLFW_ICONIFIED)!=0;
-    if (glfwGetWindowAttrib(window,GLFW_FOCUSED) && !iconified)
+    if (GetForegroundWindow() == glfwGetWin32Window(window) && glfwGetWindowAttrib(window,GLFW_FOCUSED) && !iconified)
         return;
 
     ResizeGuard guard;
@@ -378,7 +378,8 @@ bool PresentFullscreenDXGI(void *handle, bool vsync)
     GLFWwindow *window=(GLFWwindow*)handle;
     if (state.window!=window) { ShutdownFullscreenDXGI(); state.window=window; }
     if (state.failed) return false;
-    if (!glfwGetWindowAttrib(window,GLFW_FOCUSED) || glfwGetWindowAttrib(window,GLFW_ICONIFIED)) {
+    if (GetForegroundWindow() != glfwGetWin32Window(window) || !glfwGetWindowAttrib(window,GLFW_FOCUSED) ||
+        glfwGetWindowAttrib(window,GLFW_ICONIFIED)) {
         UpdateFullscreenFocus(window);
         return true;
     }
