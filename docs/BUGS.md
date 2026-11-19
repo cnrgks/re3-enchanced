@@ -500,3 +500,9 @@ doğrulanmadı. [Microsoft DXGI geçiş belgeleri](https://learn.microsoft.com/e
 olmalı. Ardından iki Discord paylaşım türü tekrar kontrol edilmeli.
 `-safe-display` ile Borderless kurtarması kullanılabilir. Ana Fullscreen
 seçeneğine geçiş, görüntü ve yakalama doğrulamasını bekliyor.
+
+### v1.7 derleme sonucu
+
+Kaynak 0ad073c2, GitHub Actions run 44449950521. OpenGL x64
+derlemesi ve mevcut birim kontrolleri geçti. Monitör kararması ve yakalama
+sonuçları oyun içinde doğrulanmayı bekliyor.
