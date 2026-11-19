@@ -35,12 +35,12 @@ geri bildirimini kaydeder; burada listelenen maddeler henüz düzeltilmiş sayı
 | DIST-01 | Vehicle Distance 1× üzerindeyken araç spawn akışı bozuluyor | Açık — çarpanlar ve araç adet sınırı incelenecek |
 | DIST-02 | Pedestrian Distance 1× üzerindeyken yaya spawn akışı bozuluyor | Açık — çarpanlar ve yaya adet sınırı incelenecek |
 | GPS-01 | Elle waypoint'te üst/alt yol katmanı karışıyor | v1.10 OpenGL derlendi / oyun testi bekliyor |
-| GPS-02 | Rota görünürlüğü, boşluklar ve anlamsız geri dönüşler | v1.10 GPS=0 ile waypoint rotası görünmedi / v1.11 kaynak değişikliği |
+| GPS-02 | Rota görünürlüğü, boşluklar ve anlamsız geri dönüşler | v1.11 OpenGL derlendi / oyun testi bekliyor |
 | MAP-01 | Çift ev ikonu | v1.10 OpenGL derlendi / oyun testi bekliyor |
-| MAP-02 | İkon keşfi, ada kilidi ve minimap mesafesi | v1.11 kaynak değişikliği / kayıt yükleme testi bekliyor |
-| MAP-03 | Mavi telefon menü haritasında var, minimapte yok | v1.10 kullanıcı bildirdi / v1.11 kaynak değişikliği |
+| MAP-02 | İkon keşfi, ada kilidi ve minimap mesafesi | v1.11 OpenGL derlendi / kayıt yükleme testi bekliyor |
+| MAP-03 | Mavi telefon menü haritasında var, minimapte yok | v1.11 OpenGL derlendi / oyun testi bekliyor |
 | MAP-04 | Sarı MAP şeridinin tamamı kaldırılmalı | v1.10 OpenGL derlendi / oyun testi bekliyor |
-| MAP-05 | Back dikey hiza ve Quit Game'e taşan tıklama | v1.10 kullanıcı bildirdi / v1.11 kaynak değişikliği |
+| MAP-05 | Back dikey hiza ve Quit Game'e taşan tıklama | v1.11 OpenGL derlendi / oyun testi bekliyor |
 | INPUT-01 | OpenGL–D3D9 fare hassasiyeti farklı | Açık — kullanıcı bildirdi |
 | CAP-01 | OpenGL fullscreen/borderless yakalama | v1.9 Fullscreen ve Borderless için Discord/Ambilight kullanıcı onayı. Ana Fullscreen bağlantısı kaynakta hazır |
 | INPUT-02 | Borderless kayıtlıyken yeniden açılışta imleç sola kilitleniyor | v1.4 kaynak düzeltmesi derlendi, oyun içi doğrulama bekliyor |
@@ -166,6 +166,10 @@ bağlantıda çiziliyor. SS3 ve SS4 konumlarında oyun içi kontrol bekliyor.
 elle waypoint konması rotayı doğrudan etkinleştiriyor. Ayar otomatik görev
 rotasına ait. Hedefin en yakın bağlantısı erişilemiyorsa arama yakındaki
 başka bağlantıları da deniyor.
+
+**v1.11 derleme:** Windows OpenGL x64 ve mevcut geometri, rota, SCM
+birim testleri geçti. Oyun ve kayıt yükleme testi bekliyor.
+[Derleme 44456718827](https://github.com/cnrgks/hezkore-re3-pdb-build/actions/runs/44456718827)
 
 ### MAP-01 — çift ev ikonu
 
@@ -639,4 +643,4 @@ karşılaştırılabilir. Aynı framebuffer, FPS ve VSync ile exclusive
 (`active fullscreen=1`) ve çerçevesiz DXGI (`composed=1`) günlükleri ve
 imleç tepkisi karşılaştırılmalı. Exclusive yolun daha önce bildirilen
 Alt-Tab beklemesi ve Discord/Ambilight sonucu yeniden gözlenmeli.
-Bu kaynak değişikliği henüz derlenmedi.
+Bu değişiklik v1.11 OpenGL derlemesine dahil. Oyun testi bekliyor.
