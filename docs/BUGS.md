@@ -1106,3 +1106,8 @@ odağı, Pause açılışı ve dönüşteki ilk oyun/sunum çağrısı kaydedili
 Yinelenen waiting_for_focus satırları olay döngüsünün yaşadığını gösterir.
 Çıkış satırı eksik çağrı, takılmanın yerini daraltır. Exclusive sunum
 varsayılanı ve önceki ayarlar v1.23 ile aynı. Kaynak adayı derlenmedi.
+
+### v1.25 OpenGL derleme sonucu
+
+Kaynak 425e6d96, GitHub Actions run 44636586861. OpenGL x64 derlemesi
+ve üç CI birim kontrolü geçti. WIN-03 oyun içinde doğrulanmayı bekliyor.
