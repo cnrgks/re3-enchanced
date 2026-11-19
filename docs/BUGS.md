@@ -1032,3 +1032,9 @@ Yükleme tamamlanıyor. Oyun arka plandaysa dönüşü bekliyor ve bu geçiş i�
 Pause menüsü açılmıyor. Fullscreen sunumu ana döngüye dönene kadar
 erteleniyor. Normal oynanışta başlayan Alt+Tab mevcut Pause yolunu
 izliyor. Yeni aday derleme ve oyun içi doğrulama bekliyor.
+
+### v1.23 OpenGL derleme sonucu
+
+Kaynak 103eedd6, GitHub Actions run 44632006307. OpenGL x64 derlemesi
+ve mevcut üç CI birim kontrolü geçti. WIN-03 Fullscreen yükleme ve
+normal oynanış Alt+Tab davranışı oyun içinde doğrulanmayı bekliyor.
