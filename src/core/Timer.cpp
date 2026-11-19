@@ -16,6 +16,7 @@ float CTimer::ms_fTimeStep;
 float CTimer::ms_fTimeStepNonClipped;
 bool  CTimer::m_UserPause;
 bool  CTimer::m_CodePause;
+bool  CTimer::m_WindowPause;
 uint32 CTimer::m_LogicalFramesPassed;
 float CTimer::ms_fLogicalFrameFraction;
 float CTimer::ms_fRenderFrameLength;

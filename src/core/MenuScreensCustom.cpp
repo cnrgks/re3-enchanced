@@ -407,7 +407,7 @@ void ControllerTypeAfterChange(int8 before, int8 after)
 }
 #endif
 
-static const char *enhancedDistances[] = { "EN_100", "EN_150", "EN_200", "EN_300" };
+static const char *enhancedDistances[] = { "EN_100", "EN_200", "EN_300" };
 CMenuScreenCustom aScreens[MENUPAGES] = {
 	// MENUPAGE_NONE = 0
 	{ "", MENUPAGE_DISABLED, MENUPAGE_DISABLED, nil, nil, },
@@ -958,8 +958,8 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
 #if !defined(RW_GL3) || defined(LIBRW_SDL2)
        MENUACTION_CFO_SELECT, "EN_BORD", { new CCFOSelect(&Enhanced::Borderless, "Enhanced", "Borderless", off_on, 2, true, Enhanced::WindowModeChanged, true) },
 #endif
-       MENUACTION_CFO_SELECT, "EN_VDST", { new CCFOSelect(&Enhanced::VehicleDistance, "Enhanced", "VehicleDistance", enhancedDistances, 4, false) },
-       MENUACTION_CFO_SELECT, "EN_PDST", { new CCFOSelect(&Enhanced::PedDistance, "Enhanced", "PedDistance", enhancedDistances, 4, false) },
+       MENUACTION_CFO_SELECT, "EN_VDST", { new CCFOSelect(&Enhanced::VehicleDistance, "Enhanced", "VehicleDistance", enhancedDistances, 3, false) },
+       MENUACTION_CFO_SELECT, "EN_PDST", { new CCFOSelect(&Enhanced::PedDistance, "Enhanced", "PedDistance", enhancedDistances, 3, false) },
        MENUACTION_CHANGEMENU, "FEDS_TB", { nil, SAVESLOT_NONE, MENUPAGE_NONE },
    },
 

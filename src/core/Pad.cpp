@@ -1103,6 +1103,16 @@ void CPad::AffectFromXinput(uint32 pad)
 }
 #endif
 
+static bool syncInputAfterFocus;
+
+void CPad::ResetOnWindowFocusChange(bool focused)
+{
+	GetPad(0)->Clear(false);
+	GetPad(1)->Clear(false);
+	GetPad(0)->ClearMouseHistory();
+	syncInputAfterFocus = focused;
+}
+
 void CPad::UpdatePads(void)
 {
 	bool bUpdate = true;
@@ -1154,6 +1164,14 @@ void CPad::UpdatePads(void)
 	OldKeyState = NewKeyState;
 	NewKeyState = TempKeyState;
 #endif
+
+	if (syncInputAfterFocus) {
+		GetPad(0)->OldState = GetPad(0)->NewState;
+		GetPad(1)->OldState = GetPad(1)->NewState;
+		OldKeyState = NewKeyState;
+		OldMouseControllerState = NewMouseControllerState;
+		syncInputAfterFocus = false;
+	}
 }
 
 void CPad::ProcessPCSpecificStuff(void)

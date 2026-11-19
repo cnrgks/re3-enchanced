@@ -1762,7 +1762,8 @@ Idle(void *arg)
 #endif
 
 	CTimer::Update();
-	CPad::GetPad(0)->UpdateMouse();
+	if (!CTimer::GetIsWindowPaused())
+		CPad::GetPad(0)->UpdateMouse();
 
 	tbInit();
 
@@ -1776,8 +1777,10 @@ Idle(void *arg)
 		CSprite2d::SetRecipNearClip();
 	
 	if (FrontEndMenuManager.m_bGameNotLoaded) {
-		CPad::UpdatePads();
-		FrontEndMenuManager.Process();
+		if (!CTimer::GetIsWindowPaused()) {
+			CPad::UpdatePads();
+			FrontEndMenuManager.Process();
+		}
 	} else {
 		PUSH_MEMID(MEMID_GAME_PROCESS);
 		CPointLights::InitPerFrame();
@@ -1820,7 +1823,7 @@ Idle(void *arg)
 
 	// with the menu up the game is paused, so the pads and the menu run once per rendered
 	// frame here instead of in logical frames
-	if(FrontEndMenuManager.m_bMenuActive){
+	if(FrontEndMenuManager.m_bMenuActive && !CTimer::GetIsWindowPaused()){
 		CPad::UpdatePads();
 		FrontEndMenuManager.Process();
 	}

@@ -68,13 +68,11 @@ static CVector routeStart;
 bool FindHomePosition(const CVector &current, CVector &home);
 float VehicleRangeMultiplier()
 {
-    const float values[] = {1.0f,1.5f,2.0f,3.0f};
-    return values[Clamp(int(VehicleDistance),0,3)];
+    return 1.0f + Clamp(int(VehicleDistance), 0, 2);
 }
 float PedRangeMultiplier()
 {
-    const float values[] = {1.0f,1.5f,2.0f,3.0f};
-    return values[Clamp(int(PedDistance),0,3)];
+    return 1.0f + Clamp(int(PedDistance), 0, 2);
 }
 bool BeginHomeSave()
 {
@@ -82,11 +80,11 @@ bool BeginHomeSave()
 #ifdef MISSION_REPLAY
     if (IsQuickSave) return false;
 #endif
-    if (!homeSaveRequested || !FindPlayerPed()) return false;
-    homeSaveActive=FindHomePosition(FindPlayerCoors(),homeSavePosition);
+    homeSaveActive = homeSaveRequested;
     return homeSaveActive;
 }
-void EndHomeSave() { homeSaveActive=false; }
+void EndHomeSave() { homeSaveActive = false; }
+void ClearHomeSaveRequest() { homeSaveRequested = false; }
 CVector SavePosition(const CVector &original)
 {
     return homeSaveActive ? homeSavePosition : original;
@@ -111,9 +109,9 @@ wchar *GetText(const char *key)
         { "EN_BRDL", "BORDERLESS" },
         { "EN_VDST", "VEHICLE DISTANCE" },
         { "EN_PDST", "PEDESTRIAN DISTANCE" },
-        { "EN_100", "1X" }, { "EN_150", "1.5X" },
+        { "EN_100", "1X" },
         { "EN_200", "2X" }, { "EN_300", "3X" },
-        { "EN_SAFE", "Save unavailable: stand still, outside missions, without a wanted level." },
+        { "EN_SAFE", "To save, stand still on foot with no active mission and no wanted level." },
     };
     for (unsigned i = 0; i < ARRAY_SIZE(strings); ++i) {
         if (strncmp(strings[i].key, key, 8) == 0) {
@@ -218,8 +216,10 @@ wchar *MapOptionDraw(bool *disabled, bool)
 
 void OpenMap(int8 action)
 {
+#ifdef MENU_MAP
     if (action == FEOPTION_ACTION_SELECT && MenuMap)
-        ChangeScreen(MENUPAGE_MAP);
+        FrontEndMenuManager.OpenMap(false);
+#endif
 }
 
 // Lane orientation follows CCarCtrl's native one-way-road checks.
@@ -470,18 +470,20 @@ void Process()
     AutoSave = AutoSave != 0;
     RadarZoom = RadarZoom != 0;
     if (!GameReady()) return;
+    if (!AutoSave) missionSavePending = false;
     if (QuickSave && CPad::GetPad(0)->GetFJustDown(4)) {
-        if (SafeToSave()) { homeSaveRequested=true; FrontEndMenuManager.m_bSaveMenuActive = true; }
-        else CHud::SetHelpMessage(GetText("EN_SAFE"), false);
-    }
-    if (!AutoSave) {
-        missionSavePending = false;
-    } else {
-        if (missionSavePending && SafeToSave()) {
-            homeSaveRequested = true;
+        if (SafeToSave()) {
+            ClearHomeSaveRequest();
             FrontEndMenuManager.m_bSaveMenuActive = true;
-            missionSavePending = false;
+            return;
         }
+        CHud::SetHelpMessage(GetText("EN_SAFE"), false);
+    }
+    if (missionSavePending && SafeToSave() &&
+        FindHomePosition(FindPlayerCoors(), homeSavePosition)) {
+        homeSaveRequested = true;
+        FrontEndMenuManager.m_bSaveMenuActive = true;
+        missionSavePending = false;
     }
     UpdateRoute();
 }

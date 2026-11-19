@@ -28,6 +28,7 @@ class CTimer
 	static float ms_fRenderFrameLength;
 	static float ms_fRenderTimeStep;
 	static float ms_fRenderTimeStepNonClipped;
+	static bool m_WindowPause;
 public:
 	static bool  m_UserPause;
 	static bool  m_CodePause;
@@ -54,7 +55,9 @@ public:
 	static void SetTimeScale(float ts) { ms_fTimeScale = ts; }
 	static uint32 GetCyclesPerFrame();
 
-	static bool GetIsPaused() { return m_UserPause || m_CodePause; }
+	static bool GetIsPaused() { return m_UserPause || m_CodePause || m_WindowPause; }
+	static bool GetIsWindowPaused() { return m_WindowPause; }
+	static void SetWindowPause(bool pause) { m_WindowPause = pause; }
 	static bool GetIsUserPaused() { return m_UserPause; }
 	static bool GetIsCodePaused() { return m_CodePause; }
 	static void SetCodePause(bool pause) { m_CodePause = pause; }

@@ -55,6 +55,8 @@ public:
 	static bool MapCouldMoveInThisArea(float x, float y);
 	static void ScanForPedDanger(CVehicle *veh);
 	static void RemoveFromInterestingVehicleList(CVehicle*);
+	static int32 RandomCarLimit(float trafficMultiplier);
+	static bool HasRoomForTraffic();
 	static void GenerateRandomCars(void);
 	static void GenerateOneRandomCar(void);
 	static void GenerateEmergencyServicesCar(void);

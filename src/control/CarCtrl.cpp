@@ -22,6 +22,7 @@
 #include "PlayerPed.h"
 #include "Wanted.h"
 #include "Pools.h"
+#include "Population.h"
 #include "Renderer.h"
 #include "RoadBlocks.h"
 #include "Timer.h"
@@ -88,12 +89,31 @@ int32 CCarCtrl::CarArrays[TOTAL_CUSTOM_CLASSES][MAX_CAR_MODELS_IN_ARRAY];
 CVehicle* apCarsToKeep[MAX_CARS_TO_KEEP];
 uint32 aCarsToKeepTime[MAX_CARS_TO_KEEP];
 
+int32
+CCarCtrl::RandomCarLimit(float trafficMultiplier)
+{
+	const float baseDensity = trafficMultiplier * CarDensityMultiplier * CIniFile::CarNumberMultiplier;
+	const int32 baseLimit = int32(ceilf(Clamp(baseDensity, 0.0f, 30.0f)));
+	return baseLimit * int32(Enhanced::VehicleRangeMultiplier());
+}
+
+bool
+CCarCtrl::HasRoomForTraffic()
+{
+	const auto pool = CPools::GetVehiclePool();
+	// Leave slots for scripted vehicles and emergency services.
+	constexpr int reservedVehicleSlots = 16;
+	return pool->GetNoOfUsedSpaces() < pool->GetSize() - reservedVehicleSlots &&
+		NumFiretrucksOnDuty + NumAmbulancesOnDuty + NumParkedCars + NumMissionCars +
+		NumLawEnforcerCars + NumRandomCars < MaxNumberOfCarsInUse * Enhanced::VehicleRangeMultiplier();
+}
+
 void
 CCarCtrl::GenerateRandomCars()
 {
 	if (CCutsceneMgr::IsRunning())
 		return;
-	if (NumRandomCars < 30){
+	if (NumRandomCars < 30.0f * Enhanced::VehicleRangeMultiplier()){
 		if (CountDownToCarsAtStart == 0){
 			GenerateOneRandomCar();
 		}
@@ -118,9 +138,8 @@ CCarCtrl::GenerateOneRandomCar()
 	CZoneInfo zone;
 	CTheZones::GetZoneInfoForTimeOfDay(&vecTargetPos, &zone);
 	pPlayer->m_nTrafficMultiplier = pPlayer->m_fRoadDensity * zone.carDensity;
-	if (NumRandomCars >= pPlayer->m_nTrafficMultiplier * CarDensityMultiplier * CIniFile::CarNumberMultiplier * Sqrt(Enhanced::VehicleRangeMultiplier()))
-		return;
-	if (NumFiretrucksOnDuty + NumAmbulancesOnDuty + NumParkedCars + NumMissionCars + NumLawEnforcerCars + NumRandomCars >= MaxNumberOfCarsInUse)
+	if (NumRandomCars >= RandomCarLimit(pPlayer->m_nTrafficMultiplier) ||
+		!HasRoomForTraffic() || CPopulation::AmbientPedSlotsAvailable() < 4)
 		return;
 	CWanted* pWanted = pPlayer->m_pPed->m_pWanted;
 	int carClass;
@@ -275,7 +294,7 @@ CCarCtrl::GenerateOneRandomCar()
 	if (colliding)
 		/* If something is already present in spawn position, do not create vehicle*/
 		return;
-	if (!ThePaths.TestCoorsCloseness(vecTargetPos, false, spawnPosition))
+	if (!ThePaths.TestCoorsCloseness(vecTargetPos, PATH_CAR, spawnPosition, Enhanced::VehicleRangeMultiplier()))
 		/* Testing if spawn position can reach target position via valid path. */
 		return;
 	int16 idInNode = 0;
@@ -544,7 +563,12 @@ CCarCtrl::GenerateOneRandomCar()
 	}
 	CVisibilityPlugins::SetClumpAlpha(pVehicle->GetClump(), 0);
 	if (!pVehicle->GetIsOnScreen()){
-		if ((vecTargetPos - pVehicle->GetPosition()).Magnitude2D() > 50.0f * Enhanced::VehicleRangeMultiplier()) {
+		float offscreenLimit = 50.0f * Enhanced::VehicleRangeMultiplier();
+#ifdef EXTENDED_OFFSCREEN_DESPAWN_RANGE
+		if (Enhanced::VehicleRangeMultiplier() > 1.0f)
+			offscreenLimit = 130.0f * TheCamera.GenerationDistMultiplier * Enhanced::VehicleRangeMultiplier();
+#endif
+		if ((vecTargetPos - pVehicle->GetPosition()).Magnitude2D() > offscreenLimit) {
 			/* Too far away cars that are not visible aren't needed. */
 			delete pVehicle;
 			return;
@@ -2662,8 +2686,11 @@ void CCarCtrl::GenerateEmergencyServicesCar(void)
 {
 	if (FindPlayerPed()->m_pWanted->GetWantedLevel() > 3)
 		return;
+	const auto pool = CPools::GetVehiclePool();
+	if (pool->GetNoOfUsedSpaces() >= pool->GetSize() - 2 || CPopulation::AmbientPedSlotsAvailable() < 4)
+		return;
 	if (NumFiretrucksOnDuty + NumAmbulancesOnDuty + NumParkedCars + NumMissionCars +
-		NumLawEnforcerCars + NumRandomCars > MaxNumberOfCarsInUse)
+		NumLawEnforcerCars + NumRandomCars > MaxNumberOfCarsInUse * Enhanced::VehicleRangeMultiplier())
 		return;
 	if (NumAmbulancesOnDuty == 0){
 		if (gAccidentManager.CountActiveAccidents() < 2){

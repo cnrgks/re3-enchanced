@@ -78,6 +78,7 @@ public:
 	static void GeneratePedsAtStartOfGame();
 	static float PedCreationDistMultiplier();
 	static CPed *AddPed(ePedType pedType, uint32 mi, CVector const &coors);
+	static int32 AmbientPedSlotsAvailable();
 	static void AddToPopulation(float, float, float, float);
 	static void ManagePopulation(void);
 	static void MoveCarsAndPedsOutOfAbandonedZones(void);

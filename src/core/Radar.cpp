@@ -160,10 +160,10 @@ uint8 CRadar::CalculateBlipAlpha(float dist, bool service)
 	if (CMenuManager::bMenuMapActive)
 		return 255;
 #endif
-	if (service && FindPlayerVehicle()) {
-		const float speed = FindPlayerSpeed().Magnitude();
+	if (service) {
+		const float speed = FindPlayerVehicle() ? FindPlayerSpeed().Magnitude() : 0.0f;
 		const float fade = Clamp((speed - RADAR_MIN_SPEED) / (RADAR_MAX_SPEED - RADAR_MIN_SPEED), 0.0f, 1.0f);
-		return uint8(255.0f - 95.0f * fade);
+		return uint8(160.0f + 95.0f * fade);
 	}
 	if (dist <= 1.0f)
 		return 255;
@@ -516,6 +516,12 @@ void CRadar::DrawBlips()
         Enhanced::DiscoverServices();
         Enhanced::DrawRoute();
         Enhanced::DrawServices(); // below every blip, including the player arrow
+        Enhanced::DrawHomeAndPhoneBlips();
+		bool hideContactPoints = CTheScripts::IsPlayerOnAMission();
+#ifdef MENU_MAP
+		if (CMenuManager::bMenuMapActive)
+			hideContactPoints = false;
+#endif
 		CVector2D out;
 		CVector2D in = CVector2D(0.0f, 0.0f);
 		TransformRadarPointToScreenSpace(out, in);
@@ -613,7 +619,8 @@ void CRadar::DrawBlips()
 				case BLIP_CONTACT_POINT:
 					if ((ms_RadarTrace[blipId].m_eRadarSprite == RADAR_SPRITE_BOMB || ms_RadarTrace[blipId].m_eRadarSprite == RADAR_SPRITE_SAVE
 						|| ms_RadarTrace[blipId].m_eRadarSprite == RADAR_SPRITE_SPRAY || ms_RadarTrace[blipId].m_eRadarSprite == RADAR_SPRITE_WEAPON)
-						&& (ms_RadarTrace[blipId].m_eBlipType != BLIP_CONTACT_POINT || !CTheScripts::IsPlayerOnAMission())) {
+						&& (ms_RadarTrace[blipId].m_eBlipType != BLIP_CONTACT_POINT || !hideContactPoints ||
+							ms_RadarTrace[blipId].m_eRadarSprite == RADAR_SPRITE_SAVE)) {
 
 						uint32 color = GetRadarTraceColour(ms_RadarTrace[blipId].m_nColor, ms_RadarTrace[blipId].m_bDim);
 						if (ms_RadarTrace[blipId].m_eBlipDisplay == BLIP_DISPLAY_BOTH || ms_RadarTrace[blipId].m_eBlipDisplay == BLIP_DISPLAY_MARKER_ONLY) {
@@ -730,7 +737,7 @@ void CRadar::DrawBlips()
 				case BLIP_CONTACT_POINT:
 					if (ms_RadarTrace[blipId].m_eRadarSprite != RADAR_SPRITE_BOMB && ms_RadarTrace[blipId].m_eRadarSprite != RADAR_SPRITE_SAVE
 						&& ms_RadarTrace[blipId].m_eRadarSprite != RADAR_SPRITE_SPRAY && ms_RadarTrace[blipId].m_eRadarSprite != RADAR_SPRITE_WEAPON
-						&& (ms_RadarTrace[blipId].m_eBlipType != BLIP_CONTACT_POINT || !CTheScripts::IsPlayerOnAMission())) {
+						&& (ms_RadarTrace[blipId].m_eBlipType != BLIP_CONTACT_POINT || !hideContactPoints)) {
 
 						uint32 color = GetRadarTraceColour(ms_RadarTrace[blipId].m_nColor, ms_RadarTrace[blipId].m_bDim);
 						if (ms_RadarTrace[blipId].m_eBlipDisplay == BLIP_DISPLAY_BOTH || ms_RadarTrace[blipId].m_eBlipDisplay == BLIP_DISPLAY_MARKER_ONLY) {

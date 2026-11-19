@@ -1,15 +1,15 @@
 # v1.1 kullanıcı geri bildirimi — hata ve davranış kayıtları
 
 Tarih: 19 Kasım 2026. Kaynak: [özgün notlar](feedback/2026-11-19/original-notes.txt)
-ve aşağıdaki beş ekran görüntüsü. Bu dosya mevcut yayımlanmış v1.1'in
-geri bildirimini kaydeder; burada listelenen maddeler henüz düzeltilmiş sayılmaz.
+ve aşağıdaki beş ekran görüntüsü. Dosya v1.1 ile başlayan geri bildirimi,
+sonraki düzeltmeleri ve doğrulama durumlarını kaydeder.
 
 ## Çalışma ve doğrulama kuralı
 
 - Önce kayıtlar tutulur, ardından maddeler tek tek ele alınır.
 - Kullanıcı açıkça **“build al”** demeden derleme, test paketi, workflow dispatch
   veya otomatik build başlatan push yapılmaz. Her değişiklikte yeniden build alınmaz.
-- Durumlar: **açık**, **inceleme gerekiyor**, **kaynakta değiştirildi / derlenmedi**,
+- Durumlar: **açık**, **inceleme gerekiyor**, **kaynakta tamamlandı / derlenmedi**,
   **derlendi / oyun testi bekliyor**, **kullanıcı doğruladı**. Bunlar birbirinin yerine kullanılmaz.
 - Bir maddenin kapanması için aşağıdaki beklenen davranış sağlanmalıdır.
 - v1.1 paketi ve eski sürümler değiştirilmez. Sonraki tam paket kullanıcı istediğinde sürümlenir.
@@ -28,28 +28,28 @@ geri bildirimini kaydeder; burada listelenen maddeler henüz düzeltilmiş sayı
 
 | Kimlik | Konu | Durum |
 | --- | --- | --- |
-| SAV-01 | F5 kaydı kendi konumunu korumalı | Açık — davranış düzeltmesi |
-| SAV-02 | Görev sonrası evde çatıda doğma | Açık — kullanıcı bildirdi |
-| SAV-03 | Quicksave engelleme koşulları | İstenen davranış / kontrol edilecek |
+| SAV-01 | F5 kaydı kendi konumunu korumalı | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
+| SAV-02 | Görev sonrası evde çatıda doğma | Kaynak değişikliği hazır — üç ada oyun doğrulaması bekliyor |
+| SAV-03 | Quicksave engelleme koşulları | Kaynakta koşullar mevcut, uyarı güncellendi — oyun doğrulaması bekliyor |
 | VEH-01 | Kırık ön camdan sürücü hasar almıyor | Açık — kullanıcı bildirdi |
-| DIST-01 | Vehicle Distance 1× üzerindeyken araç spawn akışı bozuluyor | Açık — çarpanlar ve araç adet sınırı incelenecek |
-| DIST-02 | Pedestrian Distance 1× üzerindeyken yaya spawn akışı bozuluyor | Açık — çarpanlar ve yaya adet sınırı incelenecek |
-| GPS-01 | Elle waypoint'te üst/alt yol katmanı karışıyor | v1.10 OpenGL derlendi / oyun testi bekliyor |
-| GPS-02 | Rota görünürlüğü, boşluklar ve anlamsız geri dönüşler | v1.11 OpenGL derlendi / oyun testi bekliyor |
-| MAP-01 | Çift ev ikonu | v1.10 OpenGL derlendi / oyun testi bekliyor |
-| MAP-02 | Hizmet ikonlarının keşfi, mesafesi ve hıza göre saydamlığı | v1.12 OpenGL derlendi / oyun testi bekliyor |
-| MAP-03 | Telefon ve diğer görev ikonları keşif filtresine takılıyor | v1.12 OpenGL derlendi / oyun testi bekliyor |
-| MAP-04 | Sarı MAP şeridinin tamamı kaldırılmalı | v1.10 OpenGL derlendi / oyun testi bekliyor |
-| MAP-05 | Back dikey hiza ve Quit Game'e taşan tıklama | v1.11 OpenGL derlendi / oyun testi bekliyor |
-| MAP-06 | M ile haritayı açma ve doğrudan oyuna dönme | v1.12 OpenGL derlendi / oyun testi bekliyor |
-| INPUT-01 | OpenGL–D3D9 fare hassasiyeti farklı | Açık — kullanıcı bildirdi |
-| CAP-01 | OpenGL fullscreen/borderless yakalama | v1.9 Fullscreen ve Borderless için Discord/Ambilight kullanıcı onayı. Ana Fullscreen bağlantısı kaynakta hazır |
-| INPUT-02 | Borderless kayıtlıyken yeniden açılışta imleç sola kilitleniyor | v1.4 kaynak düzeltmesi derlendi, oyun içi doğrulama bekliyor |
-| INPUT-03 | Borderless modunda imleç gecikmesi sürüyor | v1.5 kullanıcı gecikmeyi daha düşük hissetti. Kontrollü ölçüm açık |
-| INPUT-04 | Araca binmek bazen ikinci basışı gerektiriyor | v1.5 kullanıcı denemesinde tekrarlanmadı. Eski Borderless koşulunda tekrar kontrol açık |
-| WIN-01 | Alt-Tab sırasında eski Windows çerçevesi/toolbar parlaması | Açık — kullanıcı bildirdi |
-| WIN-02 | Odak kaybında otomatik pause | İstenen davranış / eksik |
-| UI-01 | Borderless, Graphics ekran biçiminin üçüncü seçeneği olmalı | OpenGL derlendi / oyun testi bekleniyor |
+| DIST-01 | Vehicle Distance 1× üzerindeyken araç spawn akışı bozuluyor | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
+| DIST-02 | Pedestrian Distance 1× üzerindeyken yaya spawn akışı bozuluyor | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
+| GPS-01 | Elle waypoint'te üst/alt yol katmanı karışıyor | Kapalı — kullanıcı doğruladı |
+| GPS-02 | Rota görünürlüğü, boşluklar ve anlamsız geri dönüşler | Kapalı — kullanıcı doğruladı |
+| MAP-01 | Çift ev ikonu | Kaynakta tamamlandı / v1.10'da derlendi / oyun testi bekliyor |
+| MAP-02 | Hizmet ikonlarının keşfi, mesafesi ve hıza göre opaklığı | Kaynakta tamamlandı / son opaklık düzeltmesi derlenmedi |
+| MAP-03 | Telefon ve diğer görev ikonları keşif filtresine takılıyor | Kaynakta tamamlandı / v1.12'de derlendi / son görünürlük kuralı MAP-07'de |
+| MAP-04 | Sarı MAP şeridinin tamamı kaldırılmalı | Kaynakta tamamlandı / v1.10'da derlendi / oyun testi bekliyor |
+| MAP-05 | Back dikey hiza ve Quit Game'e taşan tıklama | Kaynakta tamamlandı / v1.11'de derlendi / oyun testi bekliyor |
+| MAP-06 | M kısayolu, ilk yakınlaştırma ve her açılışta oyuncuya odaklanma | Kaynakta tamamlandı / son açılış düzeltmesi derlenmedi |
+| MAP-07 | Ev, telefon ve görev simgelerinde büyük harita ve minimap ayrımı | Kaynakta tamamlandı / derlenmedi |
+| CAP-01 | OpenGL fullscreen/borderless yakalama | Kapalı — kullanıcı doğruladı |
+| INPUT-02 | Borderless kayıtlıyken yeniden açılışta imleç sola kilitleniyor | Kapalı — kullanıcı doğruladı |
+| INPUT-03 | Borderless modunda imleç gecikmesi sürüyor | Kapalı — kullanıcı doğruladı |
+| INPUT-04 | Araca binmek bazen ikinci basışı gerektiriyor | Kapalı — kullanıcı doğruladı |
+| WIN-01 | Alt-Tab sırasında eski Windows çerçevesi/toolbar parlaması | Kapalı — kullanıcı artık görmediğini bildirdi |
+| WIN-02 | Odak kaybında otomatik pause | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
+| UI-01 | Borderless, Graphics ekran biçiminin üçüncü seçeneği olmalı | Kapalı — kullanıcı doğruladı |
 
 ### SAV-01 — F5/quicksave konumu
 
@@ -60,8 +60,9 @@ Manuel kayıtta can doldurma **kullanıcı tarafından çalışıyor olarak doğ
 **Beklenen:** F5 kaydında mevcut konum korunur. Kaydetme oyuncuyu canlı dünyada taşımaz.
 Görev sonrası kayıtla aynı konum politikası kullanılmaz. Menü iptali dosya yazmaz.
 
-**Kaynak bulgusu:** `Enhanced.cpp` içinde hem F5 hem görev sonrası akış aynı
-`homeSaveRequested` bayrağını açıyor. Ayrı kayıt nedeni/konum politikası gerekecek.
+**Kaynak değişikliği:** F5 mevcut oyuncu konumunu native kayıt yolundan yazar.
+Yalnızca görev sonrası slot menüsü ev konumunu kayda geçirir. Menü kapanınca
+ev isteği temizlenir. Can doldurma mevcut manuel kayıt yolunda kalır.
 
 ### SAV-02 — görev sonrası kayıt noktasında çatıya çıkma
 
@@ -72,9 +73,11 @@ dosya yazılmaz. Kullanıcı kaydederse yükleme, o adanın **özgün ev kayıt 
 orada normal kayıt alınmış gibi başlatır. Görev konumu yazılmaz. Üç ada ayrı ele alınır.
 Sadece yanlış Z'yi düşürmek yerine doğru X/Y/Z ve ilgili yerleşme davranışı belirlenmeli.
 
-**Kaynak bulgusu:** `EnhancedServices.cpp::FindHomePosition`, yukarıdan
-`FindGroundZForCoord(...) + 1` kullanıyor. Çatıyı zemin seçmesi olası neden;
-bu, henüz oyun içinde doğrulanmış kök neden değil. Canlı teleport/scene reload çözümü kullanılmamalı.
+**Kaynak değişikliği:** Üç adanın özgün SCM yaya kayıt kutuları kullanılıyor.
+Konum kutunun ortasından hesaplanıyor. Orta yükseklikten aşağı bulunan zemin
+ayakta durma yüksekliğini kutu içinde tutuyorsa Z buna ayarlanıyor. Sonuç
+alınamazsa kutunun merkezi kullanılıyor. Oyuncu ve yükleme kamerası konumları
+kayıt verisine yazılıyor. Üç adadaki kesin iniş noktası oyun içinde denenmeli.
 
 ### SAV-03 — quicksave kısıtlamaları
 
@@ -85,6 +88,10 @@ replay, açık menü ve güvenli oyun döngüsü kontrolleri korunur.
 
 **Kabul:** Dört engelin her biri ayrı denendiğinde dosya yazılmaz/menü açılmaz;
 güvenli yaya durumda F5 çalışır. Görev-sonu kayıt isteği güvenli ana kadar bekler.
+
+**Kaynak durumu:** Görev, araç, hareket ve aranma kontrolleri mevcut güvenlik
+kapısında korunuyor. F5 uyarısı dört koşulu da söylüyor. F5 ve görev sonrası
+istek aynı karede uygunsa F5 önce açılıyor, görev sonrası istek bekliyor.
 
 ### VEH-01 — cam açıkken sürücüye isabet
 
@@ -109,7 +116,7 @@ bildirdi. Öncelik spawn akışındaki bozulma. Kesin tetikleyici ve neden araş
 **Beklenen:** Her seçenek doğma, görünürlük/LOD ve silinme eşiklerini tutarlı etkiler;
 hızlı yolculukta önde ani belirme azalır. Native havuz sınırları ve görev varlıkları korunur.
 Araç ve yaya ayarları ayrı takip edilir. Bir ayarı büyütmek diğer eşikte anlık silinme yaratmamalı.
-1,5× seçeneği kaldırılabilir. Kalan 1×, 2× ve 3× seçeneklerinin gerçek
+1,5× seçeneği kaldırıldı. Kalan 1×, 2× ve 3× seçeneklerinin gerçek
 etkisi ve eski ayar dosyalarındaki değerlerin geçişi kontrol edilmeli.
 İstenen ek davranış, ortamda doğal olarak üretilen araç ve yaya adet sınırlarının
 ilgili ayarın çarpanıyla ayrı ayrı ölçeklenmesi. Fiziksel havuz kapasitesi ve görev
@@ -119,6 +126,16 @@ varlıkları hesaba katılmalı.
 distance ile etkileşim, görünen/görünmeyen varlık eşikleri ve havuz doygunluğu.
 Spawn mesafesi ve adet sınırı ayrı incelenmeli. Aynı rota ve koşullarda 1×,
 2× ve 3× ile spawn sıklığı, eşikler ve aktif varlık sayısı karşılaştırılmalı.
+
+**Kaynak değişikliği:** Araç doğma yol uzunluğu eşiği araç çarpanını kullanıyor.
+Uzatılmış ekran dışı silme aralığı etkinse yüksek ayarlardaki uzak araç adayları
+bu aralıkta kabul edilebiliyor. Yaya araması her aday için görünürlük aralığını
+yeniden seçiyor ve zemini doğrulanamayan adaydan sonra aramaya devam ediyor.
+Her türün 1× tam sayı adet sınırı hesaplanıyor ve kendi ayarına göre 2 veya 3
+ile çarpılıyor. Fiziksel havuz sınırı ayrıca uygulanıyor.
+Havuzda ambient üretimden ayrılan 16 araç ve 24 ped slotu var. Yaya grupları
+kalan bütçeye sığıyor. Eski INI dosyasındaki 2× ve 3× seçimleri korunuyor.
+Eski 1,5× seçimi 1× olarak açılıyor.
 
 ### GPS-01 — elle işaretlemede üst yol
 
@@ -221,6 +238,10 @@ uygulanır. Hizmet minimap alanına girdiğinde keşfedilir. Önceki kayıtlarda
 yalnızca bu hizmetlerin keşif girişleri yüklenir. Görev için hizmet
 simgesiyle işaretlenmiş hedefler yerleşik davranışı kullanır.
 
+**Sonraki düzeltme:** Hizmet simgelerinin opaklığı araç hızıyla artar.
+Düşük hızda alfa 160, normal radarın üst hız sınırında alfa 255. Büyük
+haritadaki hizmet simgeleri tam opak çizilir.
+
 ### MAP-03 — görülen payphone kayboluyor
 
 **Gözlem:** Kullanıcı daha önce gördüğü mavi telefon simgesini harita
@@ -282,16 +303,22 @@ açılan harita Back ve Esc ile duraklatma menüsüne döner.
 Oyun içinde tuş, görev ikonları ve hizmet saydamlığı denemesi bekliyor.
 [Derleme 44458523561](https://github.com/cnrgks/hezkore-re3-pdb-build/actions/runs/44458523561)
 
-### INPUT-01 — iki backend arasında fare hızı
+**Sonraki düzeltme:** M ve duraklatma menüsü aynı açılış işlevini
+kullanıyor. Her açılışta yeniden oyuncuya odaklanılıyor ve başlangıç ölçeği
+ekran yüksekliğinin 2 katından 1,65 katına indiriliyor.
 
-**Gözlem:** OpenGL ve D3D9 aynı hissi/hızı vermiyor.
+### MAP-07 — büyük harita ve minimap simgeleri
 
-**Beklenen:** Aynı hassasiyet değeri benzer fiziksel fare hareketinde aynı kamera
-açısını üretir. Backend, FPS, çözünürlük ve DPI etkileri ayrıştırılır. Menü imleci
-ile oyun kamerası aynı şey sayılmaz; hangisinin etkilendiği incelemede netleştirilir.
-Doğrudan sayısal değer girişi ek isteği [RM-04](../ROADMAP.md) altında tutuluyor.
+Minimapte yalnızca oyuncunun bulunduğu adanın açılmış evi görünür.
+Büyük haritada açılmış evler birlikte görünür ve etkin görev kontakları
+görev sırasında da gösterilir. Yerleşik telefon simgelerinde radarın
+bulunulan adaya göre bir çizim filtresi yok. Telefon, görevi hâlâ
+sunuyorsa ve etkin radar kaydı yoksa özgün SCM simgesi kullanılabilir.
+Minimap oyunun görev sırasında kontakları gizleme kuralını korur.
 
 ### WIN-01 — Alt-Tab çerçeve/toolbar parlaması
+
+**Son durum:** Kullanıcı hatanın artık görülmediğini bildirdi. Kayıt kapatıldı.
 
 **Gözlem:** Alt-Tab sırasında anlık Windows 7 benzeri toolbar/çerçeve görünüyor.
 Bu, gerçek işletim sistemi sürümünün Windows 7 olduğu anlamına gelmez.
@@ -307,7 +334,12 @@ akışı incelenir; sadece görüntüye bakılarak sebep kesinleştirilmez.
 **Kabul:** Alt-Tab veya başka pencereye tıklamada oyun simülasyonu durur;
 arkada araç sürmeye/hasar almaya devam edilmez. Odak geri gelince önceden açık
 manuel menü/pause durumu bozulmaz, yapay tuş basışı oluşmaz. İki backend'in focus
-callback/Windows mesajı aynı kullanıcı davranışını sağlamalı. Ses politikası ayrıca değerlendirilir.
+callback/Windows odak durumu aynı kullanıcı davranışını sağlamalı.
+
+**Kaynak değişikliği:** Odak kaybı veya küçültme simülasyonu ve oyun girdisini
+duraklatıyor. Ses mevcut pause politikasını kullanıyor. Odak dönünce girdi
+geçmişi eşitleniyor ve varsa manuel pause açık kalıyor. GLFW ve mevcut
+Win32 başlangıç yolları bu durumu oyun döngüsüne iletiyor.
 
 ### UI-01 — ekran biçiminde üçüncü seçenek
 
@@ -343,15 +375,20 @@ değiştirme sınırları arayüzde doğru gösterilir. RM-05 backend kararıyla
 - Önceden listelenen ama bu notta sonucu belirtilmeyen radar ölçekleme, GPS renkleri,
   görev-sonu menünün tek tetiklenmesi, sağlık kaydı ve ASI/CLEO kontrolleri doğrulanmış sayılmaz.
 
-## Önerilen düzeltme sırası
+## Kalan iş sırası
 
-1. SAV-01 → SAV-02 → SAV-03: kayıt nedenini ayır, evin gerçek noktasını düzelt, engelleri koru.
-2. VEH-01: camdan sonra gerçek ped isabetinin nerede kaybolduğunu izle.
-3. MAP-01 → MAP-02 → MAP-03: tek ikon kaynağı, keşif/ilerleme ve telefon yaşam döngüsü.
-4. MAP-04 → MAP-05: şeridi kaldır, Back'i doğru ölçekle hizala.
-5. GPS-01 → GPS-02: önce hedef katmanı, ardından bağlantı/rota sürekliliği.
-6. DIST-01 → DIST-02: somut belirtiyi netleştirip eşikleri birlikte incele.
-7. RM-05 kararı → INPUT-01 → WIN-01 → WIN-02 → UI-01: backend, input ve pencere akışı.
+1. SAV-01 → SAV-02 → SAV-03: F5 konumu, görev sonrası evde doğru doğma ve kayıt kısıtlamaları.
+2. VEH-01: kırık camdan geçen atışın sürücüye hasar vermemesi.
+3. DIST-01 → DIST-02: 1× üzerindeki araç ve yaya spawn bozulması.
+4. WIN-02: odak kaybında pause ve odak geri dönüşü.
+
+**Kullanıcı doğrulaması (19 Kasım 2026):** Kullanıcı son özetteki altı
+başlığın çözüldüğünü bildirdi. GPS-01/02, INPUT-02, INPUT-03, INPUT-04,
+UI-01 ve CAP-01 kapatıldı. CAP-01 onayı güncel Fullscreen yolundaki
+Alt-Tab, Discord ve Ambilight kontrollerini kapsıyor.
+
+**Doğrulama bekleyenler:** MAP-01–07 için son harita değişikliklerinin
+derleme ve oyun içi doğrulama durumları yukarıdaki tabloda tutuluyor.
 
 Her maddeye geçildiğinde neden, değişen dosyalar ve kalan belirsizlik buraya eklenir.
 Build/test yalnızca kullanıcının ayrıca talep ettiği toplu doğrulama aşamasında yapılır.
@@ -409,7 +446,8 @@ Shoreside: (-670.5,3.875,18) ile (-660,12.6875,22). Bunlar gerçek native kayıt
 bölgeleridir, tek bir kesin spawn koordinatı değildir. Özellikle Shoreside
 harita ikonu (-665,-6.5) kayıt bölgesinin Y aralığında değil. Bu, ikon konumunu
 spawn noktası yerine kullanmanın da yanlış olabildiğini gösteriyor; yalnızca
-çatı Z hesabı değiştirilerek tam çözüm sağlandığı varsayılmamalı. Kod henüz değişmedi.
+çatı Z hesabı değiştirilerek tam çözüm sağlandığı varsayılmamalı. Bu ölçüler
+SAV-02 kaynak değişikliğinde kayıt bölgesini seçmek için kullanıldı.
 
 ## v1.4 — imleç düzeltmesi ve bağımsız fullscreen denemesi
 

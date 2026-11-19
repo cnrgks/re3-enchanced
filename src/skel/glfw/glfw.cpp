@@ -2354,6 +2354,13 @@ main(int argc, char *argv[])
 #endif
 		{
 			glfwPollEvents();
+			const bool windowPaused = gGameState == GS_PLAYING_GAME &&
+				(!glfwGetWindowAttrib(PSGLOBAL(window), GLFW_FOCUSED) ||
+				 glfwGetWindowAttrib(PSGLOBAL(window), GLFW_ICONIFIED));
+			if (windowPaused != CTimer::GetIsWindowPaused()) {
+				CTimer::SetWindowPause(windowPaused);
+				CPad::ResetOnWindowFocusChange(!windowPaused);
+			}
 #ifdef _WIN32
             Enhanced::UpdateFullscreenFocus(PSGLOBAL(window));
 #endif

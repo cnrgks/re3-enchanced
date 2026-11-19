@@ -1340,9 +1340,10 @@ CPathFind::GeneratePedCreationCoors(float x, float y, float minDist, float maxDi
 	if(m_numPedPathNodes == 0)
 		return false;
 
+	const float searchDistance = Max(maxDist, maxDistOffScreen);
 	for(i = 0; i < 400; i++){
 		node1 = m_numCarPathNodes + CGeneral::GetRandomNumber() % m_numPedPathNodes;
-		if(DistanceSqr2D(m_pathNodes[node1].GetPosition(), x, y) < sq(maxDist+30.0f)){
+		if(DistanceSqr2D(m_pathNodes[node1].GetPosition(), x, y) < sq(searchDistance + 30.0f)){
 			if(m_pathNodes[node1].numLinks == 0)
 				continue;
 			int link = m_pathNodes[node1].firstLink + CGeneral::GetRandomNumber() % m_pathNodes[node1].numLinks;
@@ -1356,7 +1357,7 @@ CPathFind::GeneratePedCreationCoors(float x, float y, float minDist, float maxDi
 			float f1 = 1.0f - f2;
 			*pPositionBetweenNodes = f2;
 			CVector pos = m_pathNodes[node1].GetPosition()*f1 + m_pathNodes[node2].GetPosition()*f2;
-			if(Distance2D(pos, x, y) < maxDist+20.0f){
+			if(Distance2D(pos, x, y) < searchDistance + 20.0f){
 				pos.x += ((CGeneral::GetRandomNumber()&0xFF)-128)*0.01f;
 				pos.y += ((CGeneral::GetRandomNumber()&0xFF)-128)*0.01f;
 				float dist = Distance2D(pos, x, y);
@@ -1366,22 +1367,16 @@ CPathFind::GeneratePedCreationCoors(float x, float y, float minDist, float maxDi
 					visible = TheCamera.IsSphereVisible(pos, 2.0f, camMatrix);
 				else
 					visible = TheCamera.IsSphereVisible(pos, 2.0f);
-				if(!visible){
-					minDist = minDistOffScreen;
-					maxDist = maxDistOffScreen;
-				}
-				if(minDist < dist && dist < maxDist){
-					*pNode1 = node1;
-					*pNode2 = node2;
-					*pPosition = pos;
-
+				const float candidateMin = visible ? minDist : minDistOffScreen;
+				const float candidateMax = visible ? maxDist : maxDistOffScreen;
+				if(candidateMin < dist && dist < candidateMax){
 					bool found;
 					float groundZ = CWorld::FindGroundZFor3DCoord(pos.x, pos.y, pos.z+2.0f, &found);
-					if(!found)
-						return false;
-					if(Abs(groundZ - pos.z) > 3.0f)
-						return false;
-					pPosition->z = groundZ;
+					if(!found || Abs(groundZ - pos.z) > 3.0f)
+						continue;
+					*pNode1 = node1;
+					*pNode2 = node2;
+					*pPosition = CVector(pos.x, pos.y, groundZ);
 					return true;
 				}
 			}
@@ -1641,7 +1636,7 @@ static int16 DummyResult;
 static int16 DummyResult2;
 
 bool
-CPathFind::TestCoorsCloseness(CVector target, uint8 type, CVector start)
+CPathFind::TestCoorsCloseness(CVector target, uint8 type, CVector start, float rangeMultiplier)
 {
 	float dist;
 
@@ -1652,12 +1647,12 @@ CPathFind::TestCoorsCloseness(CVector target, uint8 type, CVector start)
 #ifdef FIX_BUGS
 	// dist has GenerationDistMultiplier as a factor, so our reference dist should have it too
 	if(type == PATH_CAR)
-		return dist < 160.0f*TheCamera.GenerationDistMultiplier;
+		return dist < 160.0f * TheCamera.GenerationDistMultiplier * rangeMultiplier;
 	else
 		return dist < 100.0f*TheCamera.GenerationDistMultiplier;
 #else
 	if(type == PATH_CAR)
-		return dist < 160.0f;
+		return dist < 160.0f * rangeMultiplier;
 	else
 		return dist < 100.0f;
 #endif

@@ -1013,6 +1013,9 @@ void CGame::InitialiseWhenRestarting(void)
 
 void CGame::Process(void) 
 {
+	if (CTimer::GetIsWindowPaused())
+		return;
+
 	// with the menu up the game is paused and the pads and the menu run once per rendered
 	// frame instead, see Idle(), so the menu is as smooth as the game
 	if (!FrontEndMenuManager.m_bMenuActive)

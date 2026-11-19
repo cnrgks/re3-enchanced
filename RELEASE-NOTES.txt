@@ -1,10 +1,17 @@
-RE3 ENHANCED v1.12 - OPENGL x64
+RE3 ENHANCED v1.13 - OPENGL x64
 
 KURULUM
 Oyunu kapat ve mevcut re3.exe/re3.pdb ciftini yedekle. Paketin game
 klasorunun icerigini GTA III kurulumuna kopyala. Oyun verileri dahil
 degildir. Mevcut ini ve kayitlari koru. x64 ASI Loader, CLEO Redux ve
 runtime kutuphaneleri dahildir.
+
+KAYIT, TRAFIK VE ODAK
+F5 mevcut konumu kaydeder. Gorev sonrasi kayit ilgili adanin ev kayit
+bolgesini kullanir. Distance secenekleri 1x, 2x ve 3x. Arac ve yaya
+adet tavanlari, kendi Density ayarindan hesaplanan 1x tavaninin kati
+olarak belirlenir. Fiziksel havuz korumalari gecerlidir. Pencere odagi
+kayboldugunda oyun duraklatilir. Oyun ici dogrulama bekliyor.
 
 GPS VE HARITA
 Elle konan waypoint GPS rotasini acar. Enhanced Options altindaki

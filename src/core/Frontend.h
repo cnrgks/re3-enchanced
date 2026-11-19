@@ -735,6 +735,7 @@ public:
 	static float fMapCenterY;
 	static float fMapCenterX;
 	static CSprite2d m_aMapSprites[NUM_MAP_SPRITES];
+	void OpenMap(bool fromGame);
 	void PrintMap();
 #endif
 

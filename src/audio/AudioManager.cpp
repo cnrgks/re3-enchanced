@@ -120,7 +120,7 @@ cAudioManager::Service()
 	}
 	if (m_bIsInitialised) {
 		m_bWasPaused = m_bIsPaused;
-		m_bIsPaused = CTimer::GetIsUserPaused();
+		m_bIsPaused = CTimer::GetIsUserPaused() || CTimer::GetIsWindowPaused();
 #ifdef AUDIO_REFLECTIONS
 		UpdateReflections();
 #endif

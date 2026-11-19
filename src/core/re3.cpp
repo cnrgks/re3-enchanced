@@ -470,6 +470,18 @@ void SaveINIControllerSettings()
 	ini.write(cfg);
 }
 
+#ifdef CUSTOM_FRONTEND_OPTIONS
+static bool IsEnhancedDistanceOption(const void *value)
+{
+	return value == &Enhanced::VehicleDistance || value == &Enhanced::PedDistance;
+}
+
+static int8 DistanceIndexToIni(int8 index)
+{
+	return index > 0 ? index + 1 : 0;
+}
+#endif
+
 bool LoadINISettings()
 {
 	if (!ini.read(cfg))
@@ -564,14 +576,23 @@ bool LoadINISettings()
 				
 			// CFO check
 			if (option.m_Action < MENUACTION_NOTHING && option.m_CFO->save) {
+				const bool isDistance = IsEnhancedDistanceOption(option.m_CFO->value);
+				int8 *intValue = (int8*)option.m_CFO->value;
+				// Keep the on-disk indices 0, 2 and 3. Index 1 was 1.5x.
+				int8 distanceOnDisk = isDistance ? DistanceIndexToIni(*intValue) : 0;
+				int8 *iniIntValue = isDistance ? &distanceOnDisk : intValue;
+
 				// Migrate from old .ini to new .ini
 				// Old values can only be int8, new ones can contain float if it is slider
-				if (migrate && ReadIniIfExists("FrontendOptions", option.m_CFO->save, (int8*)option.m_CFO->value))
+				if (migrate && ReadIniIfExists("FrontendOptions", option.m_CFO->save, iniIntValue))
 					cfg["FrontendOptions"].remove(option.m_CFO->save);
 				else if (option.m_Action == MENUACTION_CFO_SLIDER)
 					ReadIniIfExists(option.m_CFO->saveCat, option.m_CFO->save, (float*)option.m_CFO->value);
 				else
-					ReadIniIfExists(option.m_CFO->saveCat, option.m_CFO->save, (int8*)option.m_CFO->value);
+					ReadIniIfExists(option.m_CFO->saveCat, option.m_CFO->save, iniIntValue);
+
+				if (isDistance)
+					*intValue = Clamp(int(distanceOnDisk) - 1, 0, 2);
 
 				if (option.m_Action == MENUACTION_CFO_SELECT) {
                     if ((option.m_CFO->saveCat && strcmp(option.m_CFO->saveCat,"Enhanced") == 0) || option.m_CFO->value == &Enhanced::ScreenFormat)
@@ -676,7 +697,10 @@ void SaveINISettings()
 			if (option.m_Action < MENUACTION_NOTHING && option.m_CFO->save) {
 				if (option.m_Action == MENUACTION_CFO_SLIDER)
 					StoreIni(option.m_CFO->saveCat, option.m_CFO->save, *(float*)option.m_CFO->value);
-				else
+				else if (IsEnhancedDistanceOption(option.m_CFO->value)) {
+					const int8 index = *(int8*)option.m_CFO->value;
+					StoreIni(option.m_CFO->saveCat, option.m_CFO->save, DistanceIndexToIni(index));
+				} else
 					StoreIni(option.m_CFO->saveCat, option.m_CFO->save, *(int8*)option.m_CFO->value);
 			}
 		}

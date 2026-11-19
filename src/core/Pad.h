@@ -204,6 +204,7 @@ public:
 #endif
 	void AddToPCCheatString(char c);
 
+	static void ResetOnWindowFocusChange(bool focused);
 	static void UpdatePads(void);
 	void ProcessPCSpecificStuff(void);
 	void Update(int16 pad);

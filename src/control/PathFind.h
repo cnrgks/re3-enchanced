@@ -212,7 +212,7 @@ public:
 	CTreadable *FindRoadObjectClosestToCoors(CVector coors, uint8 type);
 	void FindNextNodeWandering(uint8, CVector, CPathNode**, CPathNode**, uint8, uint8*);
 	void DoPathSearch(uint8 type, CVector start, int32 startNodeId, CVector target, CPathNode **nodes, int16 *numNodes, int16 maxNumNodes, CVehicle *vehicle, float *dist, float distLimit, int32 forcedTargetNode);
-	bool TestCoorsCloseness(CVector target, uint8 type, CVector start);
+	bool TestCoorsCloseness(CVector target, uint8 type, CVector start, float rangeMultiplier);
 	void Save(uint8 *buf, uint32 *size);
 	void Load(uint8 *buf, uint32 size);
 	uint16 ConnectedNode(int id) { return m_connections[id]; }

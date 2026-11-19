@@ -3,7 +3,9 @@
 #include "EnhancedScript.h"
 #include "Frontend.h"
 #include "Garages.h"
+#include "Phones.h"
 #include "Pickups.h"
+#include "PlayerInfo.h"
 #include "Radar.h"
 #include "Script.h"
 #include "ScriptCommands.h"
@@ -11,6 +13,7 @@
 #include "Timer.h"
 #include "World.h"
 #include "Zones.h"
+#include <algorithm>
 #include <cmath>
 #include <vector>
 
@@ -21,6 +24,7 @@ Service services[256];
 int serviceCount;
 uint32 lastDiscovery;
 std::vector<CVector> scriptHomes;
+std::vector<Service> scriptPhones;
 bool scanned;
 bool IsServiceSprite(int sprite)
 {
@@ -37,16 +41,45 @@ bool SameService(const Service &service, int sprite, const CVector &position)
     return (service.position-position).Magnitude2D() < tolerance;
 }
 
-bool IsUnlocked(const CVector &position)
+eLevelName IslandAt(const CVector &position)
 {
-    switch (CTheZones::FindZoneForPoint(position)) {
+    // SCM uses a floor-height sentinel for several coordinate blips.
+    return CTheZones::FindZoneForPoint(CVector(position.x, position.y, 0.0f));
+}
+
+eLevelName PlayerIsland()
+{
+    const eLevelName island = IslandAt(FindPlayerCoors());
+    return island == LEVEL_GENERIC ? CGame::currLevel : island;
+}
+
+bool IsIslandUnlocked(eLevelName island)
+{
+    switch (island) {
     case LEVEL_COMMERCIAL: return CStats::IndustrialPassed;
     case LEVEL_SUBURBAN: return CStats::CommercialPassed;
     default: return true;
     }
 }
 
-void ScanScriptHomes()
+bool IsUnlocked(const CVector &position)
+{
+    return IsIslandUnlocked(IslandAt(position));
+}
+
+bool IsPhoneSprite(int sprite)
+{
+    return sprite == RADAR_SPRITE_EL || sprite == RADAR_SPRITE_ICE || sprite == RADAR_SPRITE_LIZ;
+}
+
+bool IsVisibleCoordBlip(const sRadarTrace &trace, int sprite)
+{
+    return trace.m_bInUse && trace.m_eRadarSprite == sprite &&
+        (trace.m_eBlipType == BLIP_COORD || trace.m_eBlipType == BLIP_CONTACT_POINT) &&
+        (trace.m_eBlipDisplay == BLIP_DISPLAY_BOTH || trace.m_eBlipDisplay == BLIP_DISPLAY_BLIP_ONLY);
+}
+
+void ScanScriptLocations()
 {
     if (scanned) return;
     const uint8 *data = CTheScripts::ScriptSpace;
@@ -67,8 +100,15 @@ void ScanScriptHomes()
             !EnhancedScript::Number(data,SIZE_MAIN_SCRIPT,globalsEnd,at,sprite,false)) continue;
         if (at+3 > SIZE_MAIN_SCRIPT || (data[at] != 2 && data[at] != 3) ||
             Abs(x)>2000.0f || Abs(y)>2000.0f || z < -101.0f || z>1000.0f ||
-            sprite != RADAR_SPRITE_SAVE) continue;
-        scriptHomes.emplace_back(x,y,z);
+            sprite < 0 || sprite >= RADAR_SPRITE_COUNT || sprite != float(int(sprite))) continue;
+        const CVector position(x, y, z);
+        if (sprite == RADAR_SPRITE_SAVE)
+            scriptHomes.push_back(position);
+        if (command == COMMAND_ADD_SPRITE_BLIP_FOR_CONTACT_POINT && IsPhoneSprite(int(sprite)) &&
+            std::none_of(scriptPhones.begin(), scriptPhones.end(), [&](const Service &phone) {
+                return phone.sprite == int(sprite) && (phone.position-position).Magnitude2D() < 1.0f;
+            }))
+            scriptPhones.push_back({int(sprite), position});
     }
 }
 }
@@ -77,6 +117,7 @@ void ResetServices()
     serviceCount = 0;
     lastDiscovery = 0;
     scriptHomes.clear();
+    scriptPhones.clear();
     scanned = false;
 }
 
@@ -106,6 +147,11 @@ bool ServiceBlipVisible(const sRadarTrace &trace, float radarDistance)
 {
 #ifdef MENU_MAP
     const int sprite = trace.m_eRadarSprite;
+    if (sprite == RADAR_SPRITE_SAVE) {
+        const eLevelName island = IslandAt(trace.m_vecPos);
+        return IsIslandUnlocked(island) &&
+            (CMenuManager::bMenuMapActive || island == PlayerIsland());
+    }
     if (!IsServiceBlip(trace)) return true;
     if (!IsUnlocked(trace.m_vecPos)) return false;
     const bool inMap = CMenuManager::bMenuMapActive;
@@ -196,7 +242,7 @@ void DrawServices()
 {
 #ifdef MENU_MAP
     const bool inMap = CMenuManager::bMenuMapActive;
-    const bool onMission = CTheScripts::IsPlayerOnAMission();
+    const bool hideContactPoints = !inMap && CTheScripts::IsPlayerOnAMission();
     for (int i=0;i<serviceCount;++i) {
         const Service &service = services[i];
         if (!service.fallback || !IsUnlocked(service.position)) continue;
@@ -210,7 +256,7 @@ void DrawServices()
                 (trace.m_eBlipType != BLIP_COORD && trace.m_eBlipType != BLIP_CONTACT_POINT))
                 continue;
             if ((trace.m_eBlipDisplay != BLIP_DISPLAY_BOTH && trace.m_eBlipDisplay != BLIP_DISPLAY_BLIP_ONLY) ||
-                (trace.m_eBlipType == BLIP_CONTACT_POINT && onMission) ||
+                (trace.m_eBlipType == BLIP_CONTACT_POINT && hideContactPoints) ||
                 !SameService(service, trace.m_eRadarSprite, trace.m_vecPos)) continue;
             if (!inMap && !CRadar::IsMissionSpriteBlip(trace)) {
                 CVector2D nativeRadar;
@@ -226,11 +272,9 @@ void DrawServices()
     }
 #endif
 }
-bool FindHomePosition(const CVector &current, CVector &home)
+static bool FindHomeCoordinates(eLevelName island, CVector &home)
 {
-    ScanScriptHomes();
-    eLevelName island = CTheZones::FindZoneForPoint(current);
-    if (island < LEVEL_INDUSTRIAL || island > LEVEL_SUBURBAN) island=CGame::currLevel;
+    ScanScriptLocations();
     // Original safehouse entrances are world coordinates, not executable
     // addresses. Prefer SCM metadata, so scripts can relocate the houses.
     switch (island) {
@@ -242,7 +286,7 @@ bool FindHomePosition(const CVector &current, CVector &home)
     const CVector entrance=home;
     float nearest=1.0e20f;
     const auto consider = [&](const CVector &position) {
-        if (CTheZones::FindZoneForPoint(position) != island) return;
+        if (IslandAt(position) != island) return;
         const float distance=(position-entrance).Magnitude2D();
         if (distance < nearest) { nearest=distance; home.x=position.x; home.y=position.y; }
     };
@@ -251,9 +295,82 @@ bool FindHomePosition(const CVector &current, CVector &home)
         if (trace.m_bInUse && trace.m_eRadarSprite == RADAR_SPRITE_SAVE &&
             (trace.m_eBlipType == BLIP_COORD || trace.m_eBlipType == BLIP_CONTACT_POINT))
             consider(trace.m_vecPos);
-    // Collision for the current island is loaded. Position the saved ped above
-    // the ground, with no live teleport, scene reload or traffic destruction.
-    home.z=CWorld::FindGroundZForCoord(home.x,home.y)+1.0f;
     return true;
+}
+
+bool FindHomePosition(const CVector &current, CVector &home)
+{
+    eLevelName island = CTheZones::FindZoneForPoint(current);
+    if (island == LEVEL_GENERIC) island = CGame::currLevel;
+    // These are the on-foot save trigger bounds from the original main.scm.
+    // Radar icons are positioned independently of the save triggers.
+    CVector lower, upper;
+    switch (island) {
+    case LEVEL_INDUSTRIAL:
+        lower = CVector(891.1875f, -309.6875f, 7.6875f);
+        upper = CVector(899.25f, -303.25f, 12.6875f);
+        break;
+    case LEVEL_COMMERCIAL:
+        lower = CVector(100.75f, -486.0f, 15.0f);
+        upper = CVector(105.6875f, -483.375f, 18.0f);
+        break;
+    case LEVEL_SUBURBAN:
+        lower = CVector(-670.5f, 3.875f, 18.0f);
+        upper = CVector(-660.0f, 12.6875f, 22.0f);
+        break;
+    default:
+        return false;
+    }
+
+    home = (lower + upper) * 0.5f;
+    bool foundGround;
+    const float standingZ = CWorld::FindGroundZFor3DCoord(home.x, home.y, home.z, &foundGround) + 1.0f;
+    if (foundGround && standingZ >= lower.z && standingZ <= upper.z)
+        home.z = standingZ;
+    return true;
+}
+
+void DrawHomeAndPhoneBlips()
+{
+#ifdef MENU_MAP
+    const bool inMap = CMenuManager::bMenuMapActive;
+    const auto draw = [](int sprite, const CVector &position) {
+        CVector2D radar, screen;
+        CRadar::TransformRealWorldPointToRadarSpace(radar, CVector2D(position));
+        const float distance = CRadar::LimitRadarPoint(radar);
+        CRadar::TransformRadarPointToScreenSpace(screen, radar);
+        CRadar::DrawRadarSprite(sprite, screen.x, screen.y, CRadar::CalculateBlipAlpha(distance));
+    };
+    const eLevelName current = PlayerIsland();
+    for (int level = LEVEL_INDUSTRIAL; level <= LEVEL_SUBURBAN; ++level) {
+        const auto island = eLevelName(level);
+        if (!IsIslandUnlocked(island) || (!inMap && island != current)) continue;
+        if (std::any_of(CRadar::ms_RadarTrace, CRadar::ms_RadarTrace + NUMRADARBLIPS, [&](const sRadarTrace &trace) {
+            return IsVisibleCoordBlip(trace, RADAR_SPRITE_SAVE) && IslandAt(trace.m_vecPos) == island;
+        })) continue;
+        CVector home;
+        if (FindHomeCoordinates(island, home)) draw(RADAR_SPRITE_SAVE, home);
+    }
+
+    if (!inMap && CTheScripts::IsPlayerOnAMission()) return;
+    ScanScriptLocations();
+    for (const Service &marker : scriptPhones) {
+        if (!IsUnlocked(marker.position)) continue;
+        if (std::any_of(CRadar::ms_RadarTrace, CRadar::ms_RadarTrace + NUMRADARBLIPS, [&](const sRadarTrace &trace) {
+            return IsVisibleCoordBlip(trace, marker.sprite) &&
+                (trace.m_vecPos-marker.position).Magnitude2D() < 3.0f;
+        })) continue;
+        // An enabled phone can outlive its native blip. Restore the game's
+        // actual script icon while the phone still offers its mission.
+        for (int i = 0; i < Min(gPhoneInfo.m_nScriptPhonesMax, int(ARRAY_SIZE(gPhoneInfo.m_aPhones))); ++i) {
+            const CPhone &phone = gPhoneInfo.m_aPhones[i];
+            if (!phone.m_pEntity || (phone.m_vecPos-marker.position).Magnitude2D() >= 3.0f) continue;
+            if (phone.m_nState == PHONE_STATE_9 || phone.m_nState == PHONE_STATE_ONETIME_MESSAGE_SET ||
+                phone.m_nState == PHONE_STATE_REPEATED_MESSAGE_SET || phone.m_nState == PHONE_STATE_REPEATED_MESSAGE_SHOWN_ONCE)
+                draw(marker.sprite, marker.position);
+            break;
+        }
+    }
+#endif
 }
 }

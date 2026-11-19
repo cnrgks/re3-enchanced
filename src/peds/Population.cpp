@@ -438,7 +438,7 @@ CPopulation::Update()
 				float pcdm = PedCreationDistMultiplier();
 				AddToPopulation(pcdm * (MIN_CREATION_DIST * TheCamera.GenerationDistMultiplier),
 					pcdm * ((MIN_CREATION_DIST + CREATION_RANGE) * TheCamera.GenerationDistMultiplier),
-					pcdm * (MIN_CREATION_DIST + CREATION_RANGE) * OFFSCREEN_CREATION_MULT - CREATION_RANGE,
+					pcdm * ((MIN_CREATION_DIST + CREATION_RANGE) * OFFSCREEN_CREATION_MULT - CREATION_RANGE),
 					pcdm * (MIN_CREATION_DIST + CREATION_RANGE) * OFFSCREEN_CREATION_MULT);
 			}
 		}
@@ -569,12 +569,24 @@ CPopulation::AddPed(ePedType pedType, uint32 miOrCopType, CVector const &coors)
 	}
 }
 
+int32
+CPopulation::AmbientPedSlotsAvailable()
+{
+	const auto pool = CPools::GetPedPool();
+	constexpr int reservedPedSlots = 24;
+	const int32 available = pool->GetSize() - pool->GetNoOfUsedSpaces() - reservedPedSlots;
+	return Max(0, available);
+}
+
 void
 CPopulation::AddToPopulation(float minDist, float maxDist, float minDistOffScreen, float maxDistOffScreen)
 {
 	uint32 pedTypeToAdd;
 	int32 modelToAdd;
 	int pedAmount;
+	const int32 freeSlots = AmbientPedSlotsAvailable();
+	if (freeSlots == 0)
+		return;
 
 	CZoneInfo zoneInfo;
 	CPed *gangLeader = nil;
@@ -586,19 +598,20 @@ CPopulation::AddToPopulation(float minDist, float maxDist, float minDistOffScree
 	if (wantedInfo->GetWantedLevel() > 2) {
 		if (ms_nNumCop < wantedInfo->m_MaxCops && !playerInfo->m_pPed->bInVehicle
 			&& (CCarCtrl::NumLawEnforcerCars >= wantedInfo->m_MaximumLawEnforcerVehicles
-				|| CCarCtrl::NumRandomCars >= playerInfo->m_nTrafficMultiplier * CCarCtrl::CarDensityMultiplier
-				|| CCarCtrl::NumFiretrucksOnDuty + CCarCtrl::NumAmbulancesOnDuty + CCarCtrl::NumParkedCars
-				+ CCarCtrl::NumMissionCars + CCarCtrl::NumLawEnforcerCars + CCarCtrl::NumRandomCars >= CCarCtrl::MaxNumberOfCarsInUse)) {
+				|| CCarCtrl::NumRandomCars >= CCarCtrl::RandomCarLimit(playerInfo->m_nTrafficMultiplier)
+				|| !CCarCtrl::HasRoomForTraffic())) {
 			addCop = true;
 			minDist = PedCreationDistMultiplier() * MIN_CREATION_DIST;
 			maxDist = PedCreationDistMultiplier() * (MIN_CREATION_DIST + CREATION_RANGE);
 		}
 	}
-	// Yeah, float
-	float maxPossiblePedsForArea = (zoneInfo.pedDensity + zoneInfo.carDensity) * playerInfo->m_fRoadDensity * PedDensityMultiplier * CIniFile::PedNumberMultiplier * Sqrt(Enhanced::PedRangeMultiplier());
-	maxPossiblePedsForArea = Min(maxPossiblePedsForArea, MaxNumberOfPedsInUse);
+	const float areaPedBudget = (zoneInfo.pedDensity + zoneInfo.carDensity) * playerInfo->m_fRoadDensity *
+		PedDensityMultiplier * CIniFile::PedNumberMultiplier;
+	const int32 basePedLimit = int32(ceilf(Clamp(areaPedBudget, 0.0f, float(Max(0, MaxNumberOfPedsInUse)))));
+	const int32 pedLimit = basePedLimit * int32(Enhanced::PedRangeMultiplier());
+	const int32 openBudget = addCop ? 1 : pedLimit - int32(ms_nTotalPeds);
 
-	if (ms_nTotalPeds < maxPossiblePedsForArea || addCop) {
+	if (openBudget > 0) {
 		int decisionThreshold = CGeneral::GetRandomNumberInRange(0, 1000);
 		if (decisionThreshold < zoneInfo.copDensity || addCop) {
 			pedTypeToAdd = PEDTYPE_COP;
@@ -641,6 +654,8 @@ CPopulation::AddToPopulation(float minDist, float maxDist, float minDistOffScree
 			}
 		} else
 			pedAmount = 1;
+
+		pedAmount = Min(pedAmount, Min(freeSlots, openBudget));
 
 		CVector generatedCoors;
 		int node1, node2;

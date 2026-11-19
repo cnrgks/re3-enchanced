@@ -2494,6 +2494,11 @@ WinMain(HINSTANCE instance,
 					
 					case GS_PLAYING_GAME:
 					{
+						const bool windowPaused = GetForegroundWindow() != PSGLOBAL(window) || IsIconic(PSGLOBAL(window));
+						if (windowPaused != CTimer::GetIsWindowPaused()) {
+							CTimer::SetWindowPause(windowPaused);
+							CPad::ResetOnWindowFocusChange(!windowPaused);
+						}
 						float ms = (float)CTimer::GetCurrentTimeInCycles() / (float)CTimer::GetCyclesPerMillisecond();
 						if ( RwInitialised )
 						{

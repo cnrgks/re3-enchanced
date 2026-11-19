@@ -25,8 +25,8 @@ Ayrıntılı belirtiler, ekran görüntüleri, beklenen davranış ve kabul öl�
 | 3 | MAP-01, MAP-02, MAP-03 | Tek ev ikonu, keşif/ilerleme, görülen payphone'un korunması |
 | 4 | MAP-04, MAP-05 | Sarı MAP şeridinin tamamını kaldırma; Back hizası/kesilmesi |
 | 5 | GPS-01, GPS-02 | Elle waypoint'te en üst yol; rota bağlantıları/boşlukları |
-| 6 | DIST-01, DIST-02 | Araç ve yaya mesafelerinin kararlılığı; belirti ayrıntısı gerekli |
-| 7 | RM-05, INPUT-01, WIN-01, WIN-02, UI-01 | Backend kararı, fare hızı, Alt-Tab, odak kaybı pause, üçlü ekran biçimi |
+| 6 | DIST-01, DIST-02 | Araç ve yaya spawn mesafeleri ile bağımsız ortam nüfusu sınırları |
+| 7 | RM-05, WIN-02, UI-01 | OpenGL ana geliştirme yolu, odak kaybında pause, üçlü ekran biçimi |
 
 CAP-01 için kaynakta aday değişiklik var; build/oyun doğrulaması yok.
 Önceki hata kuyruğu açık kalır; ayrıntılı durumlar BUGS.md içinde tutulur.
@@ -67,8 +67,7 @@ seçim/iptal ve yavaşlatma davranışı tasarım aşamasında kararlaştırıla
 
 Durum: geliştirme isteği / uygulanmadı.
 
-INPUT-01'deki backend hız farkını gidermekten ayrı olarak, hassasiyeti doğrudan
-sayısal değer yazarak ayarlayabilmek. Geçerli aralık, hassasiyet/basamak, ini
+Fare hassasiyetini doğrudan sayısal değer yazarak ayarlayabilmek. Geçerli aralık, hassasiyet/basamak, ini
 saklama biçimi ve kullanıcıya gösterilen birim belirlenecek. Menü imleci ile
 oyun içi kamera ayarı karıştırılmayacak. Mevcut değerlerin geçişi korunacak.
 

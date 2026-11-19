@@ -338,6 +338,14 @@ const char* MenuFilenames[][2] = {
 
 #ifdef MENU_MAP
 static bool mapOpenedFromGame = false;
+static bool mapNeedsCentering = false;
+
+void CMenuManager::OpenMap(bool fromGame)
+{
+	mapOpenedFromGame = fromGame;
+	mapNeedsCentering = true;
+	ChangeScreen(MENUPAGE_MAP, 0, true, true);
+}
 
 static CRect MapBackBounds()
 {
@@ -4215,12 +4223,8 @@ CMenuManager::Process(void)
 		// Load frontend textures.
 		LoadAllTextures();
 #ifdef MENU_MAP
-		if (openMapFromGame && !m_bRenderGameInMenu) {
-			mapOpenedFromGame = true;
-			fMapCenterX = fMapCenterY = 0.0f;
-			fMapSize = SCREEN_HEIGHT * 2.0f;
-			ChangeScreen(MENUPAGE_MAP, 0, true, true);
-		}
+		if (openMapFromGame && !m_bRenderGameInMenu)
+			OpenMap(true);
 #endif
 
 		// Set save/delete game pages.
@@ -5844,6 +5848,8 @@ CMenuManager::SwitchMenuOnAndOff()
 	}
 */
 	if (m_bMenuActive != menuWasActive) {
+		if (!m_bMenuActive)
+			Enhanced::ClearHomeSaveRequest();
 		m_bMenuStateChanged = true;
 		
 		// In case we're windowed, keep mouse centered while in game. Done in main.cpp in other conditions.
@@ -6468,8 +6474,10 @@ CMenuManager::PrintMap(void)
 	bMenuMapActive = true;
 	CRadar::InitFrontEndMap();
 
-	if (m_nMenuFadeAlpha < 255 && fMapCenterX == 0.f && fMapCenterY == 0.f) {
-		// Just entered. We need to do these transformations in here, because Radar knows whether map is active or not
+	if (mapNeedsCentering) {
+		mapNeedsCentering = false;
+		fMapSize = SCREEN_HEIGHT * 1.65f;
+		fMapCenterX = fMapCenterY = 0.0f;
 		CVector2D radarSpacePlayer;
 		CVector2D screenSpacePlayer;
 		CRadar::TransformRealWorldPointToRadarSpace(radarSpacePlayer, CVector2D(FindPlayerCoors()));
