@@ -91,6 +91,10 @@ static bool WindowLostFocus;
 
 static RwBool		  RwInitialised = FALSE;
 static bool enhancedWindowResize = false;
+#ifdef _WIN32
+static bool pumpingLoadingEvents = false;
+#endif
+static bool WindowAcceptsInput(GLFWwindow *window);
 
 static RwSubSystemInfo GsubSysInfo[MAX_SUBSYSTEMS];
 static RwInt32		GnumSubSystems = 0;
@@ -214,6 +218,11 @@ psCameraBeginUpdate(RwCamera *camera)
 void
 psCameraShowRaster(RwCamera *camera)
 {
+#ifdef _WIN32
+    // Focus can change between drawing a loading frame and presenting it.
+    if (!WindowAcceptsInput(PSGLOBAL(window)))
+        return;
+#endif
     const bool vsync=CMenuManager::m_PrefsVsync!=0;
 #ifdef _WIN32
     const double start=TraceDisplayTiming ? glfwGetTime() : 0.0;
@@ -1152,6 +1161,8 @@ static int RequestedCursorMode = GLFW_CURSOR_HIDDEN;
 
 static bool WindowAcceptsInput(GLFWwindow *window)
 {
+    if (!window)
+        return false;
 #ifdef _WIN32
     if (GetForegroundWindow() != glfwGetWin32Window(window))
         return false;
@@ -1168,6 +1179,40 @@ static void ApplyCursorMode(GLFWwindow *window, bool active)
     if (glfwGetInputMode(window, GLFW_CURSOR) != mode)
         glfwSetInputMode(window, GLFW_CURSOR, mode);
 }
+
+#ifdef _WIN32
+static void UpdateWindowFocusAfterEvents(GLFWwindow *window)
+{
+    Enhanced::UpdateFullscreenFocus(window);
+    if (!WindowLostFocus)
+        return;
+    WindowLostFocus = false;
+    if (!WindowAcceptsInput(window) && !glfwGetWindowAttrib(window, GLFW_ICONIFIED) &&
+        (glfwGetWindowMonitor(window) || Enhanced::Borderless || Enhanced::DXGIFullscreenRequested()))
+        glfwIconifyWindow(window);
+}
+
+bool PumpWindowsLoadingEvents()
+{
+    GLFWwindow *window = PSGLOBAL(window);
+    if (!window || pumpingLoadingEvents)
+        return false;
+
+    const bool wasFocused = WindowFocused && !WindowIconified;
+    // A framebuffer resize may update the camera, but must not start a
+    // second gameplay frame while a synchronous load is still on the stack.
+    pumpingLoadingEvents = true;
+    glfwPollEvents();
+    UpdateWindowFocusAfterEvents(window);
+    pumpingLoadingEvents = false;
+
+    const bool focused = WindowAcceptsInput(window);
+    if (focused != wasFocused)
+        CPad::ResetOnWindowFocusChange(focused);
+    ApplyCursorMode(window, focused);
+    return focused && !RsGlobal.quit && !glfwWindowShouldClose(window);
+}
+#endif
 
 void psSetGlfwCursorMode(int mode)
 {
@@ -1667,12 +1712,15 @@ void resizeCB(GLFWwindow* window, int width, int height) {
 	*/
 	/* redraw window */
 
-	// DXGI focus and drawable changes are handled after the event pump.
+#ifndef _WIN32
 	if (!enhancedWindowResize && !Enhanced::DXGIFullscreenRequested() &&
 	    RwInitialised && gGameState == GS_PLAYING_GAME)
 	{
 		RsEventHandler(rsIDLE, (void *)TRUE);
 	}
+#endif
+	// On Windows the outer loop owns rendering. During a loading event pump,
+	// this callback updates dimensions without re-entering the game loop.
 
 	if (RwInitialised && height > 0 && width > 0) {
 		RwRect r;
@@ -2464,13 +2512,7 @@ main(int argc, char *argv[])
 			glfwPollEvents();
 			GLFWwindow *window = PSGLOBAL(window);
 #ifdef _WIN32
-			Enhanced::UpdateFullscreenFocus(window);
-			if (WindowLostFocus) {
-				WindowLostFocus = false;
-				if (!WindowAcceptsInput(window) && !glfwGetWindowAttrib(window, GLFW_ICONIFIED) &&
-					(glfwGetWindowMonitor(window) || Enhanced::Borderless || Enhanced::DXGIFullscreenRequested()))
-					glfwIconifyWindow(window);
-			}
+			UpdateWindowFocusAfterEvents(window);
 #endif
 			const bool acceptsInput = WindowAcceptsInput(window);
 			const bool windowPaused = gGameState == GS_PLAYING_GAME && !acceptsInput;

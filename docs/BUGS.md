@@ -1003,3 +1003,15 @@ Kaynak değişiklikleri derleme ve oyun içi doğrulama bekliyor.
 Kaynak cf22e796, GitHub Actions run 44625372088. OpenGL x64 derlemesi
 ve mevcut üç CI birim kontrolü geçti. WHEEL-05 ve TRAINER-04 oyun içinde
 doğrulanmayı bekliyor.
+
+### v1.21 kullanıcı sonucu ve yükleme odağı
+
+- **WHEEL-05 / TRAINER-04 — kapalı.** Kullanıcı v1.21'de önceki radyo ve
+  trainer isteklerinin çalıştığını doğruladı.
+- **WIN-03 — yüklemede Alt+Tab.** Kullanıcı yükleme sırasında Alt+Tab
+  yapınca oyunun kilitlendiğini bildirdi. Windows OpenGL yükleme ekranları
+  artık ilerleme noktalarında pencere olaylarını işliyor. Oyun odağı
+  yokken yükleme devam ediyor ve kare sunumu atlanıyor. Windows GLFW
+  boyutlandırma geri çağrısı iç içe oyun karesi başlatmıyor. Kaynak
+  değişikliği hazır. Yeni oyun, kayıt yükleme ve ada geçişlerinde
+  Fullscreen, Borderless ve Windowed modlarıyla doğrulama bekliyor.

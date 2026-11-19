@@ -61,8 +61,8 @@ uygulanması, video bulunamaması ve farklı ekran biçimlerinde açılış.
   autosave/yükleme ve HUD bildirimi.
 - **DIST-01/02** · Trafik ve yaya üretimi, yeni dünya ayarı, park edilmiş araçlar
   ve fiziksel havuz sınırları.
-- **INPUT-04/05, WIN-02** · Tek basışta araca giriş, Alt+Tab imleci ve odak
-  dönüşünde Pause menüsü.
+- **INPUT-04/05, WIN-02/03** · Tek basışta araca giriş, Alt+Tab imleci ve odak
+  dönüşünde Pause menüsü. Yükleme sırasında Alt+Tab ve güvenli dönüş.
 - **MAP-01–07, GPS-04, UI-03** · Harita, rota ve Restore Defaults kapsamındaki
   açık doğrulamalar.
 - **Options** · Yeni menü sırası ve Gameplay/Graphics/Display düzeni.

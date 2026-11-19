@@ -666,7 +666,13 @@ LoadingScreen(const char *str1, const char *str2, const char *splashscreen)
 #endif
 
 	splash = LoadSplash(splashscreen);
+	if (str1)
+		NumberOfChunksLoaded += 1;
 
+#if defined(_WIN32) && defined(RW_GL3) && !defined(LIBRW_SDL2)
+	if (!PumpWindowsLoadingEvents())
+		return;
+#endif
 #ifndef GTA_PS2
 	if(RsGlobal.quit)
 		return;
@@ -686,7 +692,6 @@ LoadingScreen(const char *str1, const char *str2, const char *splashscreen)
 		splash->Draw(CRect(0.0f, 0.0f, SCREEN_WIDTH, SCREEN_HEIGHT), CRGBA(255, 255, 255, 255));
 
 		if(str1){
-			NumberOfChunksLoaded += 1;
 
 			float hpos = SCREEN_SCALE_X(40);
 			float length = SCREEN_WIDTH - SCREEN_SCALE_X(100);
@@ -737,6 +742,10 @@ LoadingIslandScreen(const char *levelName)
 	wchar wstr[80];
 	CRGBA col;
 
+#if defined(_WIN32) && defined(RW_GL3) && !defined(LIBRW_SDL2)
+	if (!PumpWindowsLoadingEvents())
+		return;
+#endif
 	splash = LoadSplash(nil);
 	name = TheText.Get(levelName);
 	

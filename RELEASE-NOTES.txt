@@ -1,10 +1,17 @@
-RE3 ENHANCED v1.21 - OPENGL x64
+RE3 ENHANCED v1.22 - OPENGL x64
 
 KURULUM
 Oyunu kapat ve mevcut re3.exe/re3.pdb ciftini yedekle. Paketin game
 klasorunun icerigini GTA III kurulumuna kopyala. Oyun verileri dahil
 degildir. Mevcut ini ve kayitlari koru. x64 ASI Loader, CLEO Redux ve
 runtime kutuphaneleri dahildir.
+
+v1.22 DENEMELERI
+Yeni oyun, kayit yukleme ve ada gecisinde Alt+Tab ile cikip don.
+Fullscreen, Borderless ve Windowed modlarini ayri dene.
+Oyun odak disindayken yukleme ilerlemeli. Yukleme bittiginde oyun
+hala arka plandaysa donuste Pause menusu gorunmeli.
+
 
 v1.21 DENEMELERI
 R ile radyo carkindan secim yap. Klasik scroll gecisiyle beklemeyi ve
