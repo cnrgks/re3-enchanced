@@ -1071,3 +1071,9 @@ aynı monoton saatle kaydediyor. İlk karede exclusive giriş, OpenGL/DXGI
 kopyası ve DXGI Present ayrı işaretleniyor. Bu izler monitörün görüntüye
 dönüş süresini doğrudan ölçmez. Fullscreen yüklemesi, normal Alt+Tab,
 Discord ve Ambilight sonuçları oyun içinde doğrulanmayı bekliyor.
+
+### v1.24 OpenGL derleme sonucu
+
+Kaynak 37b4f9dd, GitHub Actions run 44635107687. OpenGL x64 derlemesi
+ve mevcut üç CI birim kontrolü geçti. Fullscreen yüklemesi, Alt+Tab
+gecikmesi, imleç tepkisi, Discord ve Ambilight oyun içinde doğrulanmayı bekliyor.
