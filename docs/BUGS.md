@@ -705,3 +705,11 @@ karşılaştırılabilir. Aynı framebuffer, FPS ve VSync ile exclusive
 imleç tepkisi karşılaştırılmalı. Exclusive yolun daha önce bildirilen
 Alt-Tab beklemesi ve Discord/Ambilight sonucu yeniden gözlenmeli.
 Bu değişiklik v1.11 OpenGL derlemesine dahil. Oyun testi bekliyor.
+
+### v1.13 OpenGL derleme sonucu
+
+Kaynak 81352858, GitHub Actions run 44462941598. OpenGL x64 derlemesi
+ve üç mevcut birim kontrolü geçti. SAV-01/02/03, DIST-01/02 ve WIN-02
+oyun içi doğrulama bekliyor. DIST denemesinde aynı rota ve Density
+değerleriyle 1×, 2× ve 3× karşılaştırılmalı. Bölge, mevcut varlıklar
+ve havuz kapasitesi gözlenen araç ve yaya sayısını etkiler.
