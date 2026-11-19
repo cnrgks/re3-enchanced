@@ -519,3 +519,9 @@ yeniden kullanıyor. Boyut değişirse tamponlar yeniden hazırlanıyor.
 Gerçek fullscreen geçişi sürüyor. Günlükte dönüşte `reusedBuffers=1`
 bekleniyor. `enterMs` ve `exitMs` uygulama içi DXGI geçiş süresidir.
 Monitörün görüntüye dönüş süresi ve ilk açılış kararması ayrı gözlenmeli.
+
+### v1.8 derleme sonucu
+
+Kaynak 8454bb1d, GitHub Actions run 44450629395. OpenGL x64
+derlemesi ve mevcut birim kontrolleri geçti. Alt-Tab gecikmesi, açılış
+kararması ve Discord yakalaması oyun içinde doğrulanmayı bekliyor.
