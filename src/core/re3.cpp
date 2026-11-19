@@ -1,6 +1,7 @@
 #include <csignal>
 #define WITHWINDOWS
 #include "common.h"
+#include "Enhanced.h"
 #if defined DETECT_JOYSTICK_MENU && defined XINPUT
 #include <xinput.h>
 #if !defined(PSAPI_VERSION) || (PSAPI_VERSION > 1)
@@ -537,6 +538,18 @@ bool LoadINISettings()
 	ReadIniIfExists("General", "NoMovies", &gbNoMovies);
 #endif
 
+#if defined(RW_GL3) && !defined(LIBRW_SDL2) && defined(IMPROVED_VIDEOMODE)
+    // New ScreenFormat is authoritative. Import legacy settings only when absent.
+    int8 legacyWindowed=FrontEndMenuManager.m_nPrefsWindowed ? 1 : 0;
+    int8 legacyBorderless=0;
+    if (!ReadIniIfExists("VideoMode","Windowed",&legacyWindowed))
+        ReadIniIfExists("FrontendOptions","Windowed",&legacyWindowed);
+    ReadIniIfExists("Enhanced","Borderless",&legacyBorderless);
+    Enhanced::ScreenFormat=legacyBorderless ? 2 : (legacyWindowed ? 1 : 0);
+    ReadIniIfExists("VideoMode","ScreenFormat",&Enhanced::ScreenFormat);
+    Enhanced::ApplyScreenFormatSettings();
+#endif
+
 #ifdef CUSTOM_FRONTEND_OPTIONS
 	bool migrate = cfg.get("FrontendOptions").size() != 0;
 	for (int i = 0; i < MENUPAGES; i++) {
@@ -557,7 +570,7 @@ bool LoadINISettings()
 					ReadIniIfExists(option.m_CFO->saveCat, option.m_CFO->save, (int8*)option.m_CFO->value);
 
 				if (option.m_Action == MENUACTION_CFO_SELECT) {
-                    if (option.m_CFO->saveCat && strcmp(option.m_CFO->saveCat,"Enhanced") == 0)
+                    if ((option.m_CFO->saveCat && strcmp(option.m_CFO->saveCat,"Enhanced") == 0) || option.m_CFO->value == &Enhanced::ScreenFormat)
                         *(int8*)option.m_CFO->value = Clamp(*(int8*)option.m_CFO->value, int8(0), int8(option.m_CFOSelect->numRightTexts-1));
 					option.m_CFOSelect->lastSavedValue = option.m_CFOSelect->displayedValue = *(int8*)option.m_CFO->value;
 				}
@@ -566,6 +579,9 @@ bool LoadINISettings()
 	}
 #endif
 
+#if defined(RW_GL3) && !defined(LIBRW_SDL2) && defined(IMPROVED_VIDEOMODE)
+    Enhanced::ApplyScreenFormatSettings();
+#endif
 	// Fetched in above block, but needs evaluation
 #ifdef PED_CAR_DENSITY_SLIDERS
 	CPopulation::MaxNumberOfPedsInUse = DEFAULT_MAX_NUMBER_OF_PEDS * CIniFile::PedNumberMultiplier;
@@ -577,6 +593,11 @@ bool LoadINISettings()
 
 void SaveINISettings()
 {
+#if defined(RW_GL3) && !defined(LIBRW_SDL2) && defined(IMPROVED_VIDEOMODE)
+    StoreIni("VideoMode","ScreenFormat",Enhanced::ScreenFormat);
+    StoreIni("VideoMode","Windowed",FrontEndMenuManager.m_nPrefsWindowed);
+    cfg["Enhanced"].remove("Borderless");
+#endif
 #ifdef IMPROVED_VIDEOMODE
 	StoreIni("VideoMode", "Width", FrontEndMenuManager.m_nPrefsWidth);
 	StoreIni("VideoMode", "Height", FrontEndMenuManager.m_nPrefsHeight);

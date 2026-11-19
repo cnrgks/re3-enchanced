@@ -1,0 +1,25 @@
+ctrl m yerine düzgün sağlıklı arayüze sahip bir trainer ekranı (debugdaki ayarları da içinde barındırıcak ve hız bugları olmicak fps den dolayı sanırsam aşırı hızlıydı bende ctrl m arayüzü) - roadmap
+
+camını kırdığım arabanın içindeki kişiye hala hasar veremiyorum bir sorun var.
+
+f5 ile savelediğim manuel save de can doldurma olayı çalıştı ancak save i yüklediğim zaman o adadaki evimde doğurdu ancak olması gereken nokta yerine çatısında doğdum o noktanın bunu düzeltmemiz lazım quicksavelerde pozisyonu da kaydetmesi lazım ayrıca bizim prensip aldığımız moddaki durumlarda blokaj koyması lazım ss de bıraktım demek istediğim quicksave de kaydettiğimiz yerde başlicak ancak görev başarılı sonrası autosavelerde normal o adadaki evimizin save noktası ne ise orda doğurucak birebir aynı şekilde doğucaz sanki orda kaydetmiş gibi olacak bu şekilde istiyorum en sağlıklı bugsız bu şekilde çalışır
+
+vehicle distance ve pedestrian distance kararlı çalışmıyor sanırım, bunu
+
+gps üst üste gelen yollarda hangisini işaretlediğimizi karıştırabiliyor, görev gps i için bu sorun değil çünkü ulaşmamız gereken yeri zaten konum olarak biliyoruz ancak elle waypoint koyduğumuz kısımda her zaman en üstteki yolu algılamalı çünkü bizde haritada öyle görüyoruz ayrıca, 4. ekran görüntüsünde gördüğün gibi bazen boşluklar oluyor anlamsız
+
+iki ev ikonu hatası, açmadığım üçüncü adadaki blipleri görmem map kısmında bu tarz hatalar var bu map ikonlarına keşif mantığı eklememiz lazım, bir kez görüntülemediğimiz ikonları görmeyelim map üzerinde bu şekilde düzelmiş olur ayrıca map menüsündeki back yazısı hizalaması bozuldu ve benim istediğim direkt o sarı map yazısını kaldırmaktı alttaki ve diğer adada gördüğüm payphone ikonu da gözükmüyor nedense, bu blip konusunu iyice optimize sağlıklı yapmamız lazım, ben örnek bir çözüm söyledim de sen en uygun çözüm ne ise onu düşün öyle yapalım,
+
+opengl ile d3d9 arasında mouse hızı farkı var, mümkünse bu mouse hızı olayını daha spesifik ayarlama imkanımız olabilir direkt değer girerek.
+
+mimari kararı vermemiz gerekiyor, opengl mi d3d9 dan mı ilerlicez ona bakmamız lazım sen bana farklarını anlat ne kazanıcaz ne kaybedicez bu ekran yakalama ve ambilight sorunu bundan kaynaklanıyorsa onu da söyle
+
+alttab atarken nedense anlık windows 7 toolbarını görüyoruz bunu düzeltebilirsek düzeltelim
+
+oyun focusu kaybettiğinde pause a geçmeli
+
+borderless ayarının graphics kısmına alınması varolan screen format ayarlarına üçüncü olarak eklenmesi,
+
+d3d9 sürümünde fullscreen de de uyumlu çalışıyor ambilight ile, sorun opengl halinde onda hiç çalışmıyor borderless da olsa fullscreen de olsa
+
+definitve edition gibi radio ve weapon wheel eklenicek roadmap i ekle - roadmap

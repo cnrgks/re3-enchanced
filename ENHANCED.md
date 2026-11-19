@@ -1,4 +1,9 @@
-# re3 Enhanced v1.1
+# re3 Enhanced v1.2 — OpenGL display candidate
+
+> Known v1.1 issues and the latest requested save/map behavior are tracked in
+> [docs/BUGS.md](docs/BUGS.md). Future features: [ROADMAP.md](ROADMAP.md).
+> The description below records the released implementation, not confirmation
+> that every feature passes gameplay testing. Builds/tests now require the user's explicit request.
 
 Hezkore/hez-gta-re3, upstream 0145967e46f64c671aa22ed7406131cd3132f5b5.
 Native C++ features; no fixed EXE addresses or game class/save layout changes.
@@ -34,19 +39,19 @@ Settings: Options > Enhanced Options, persisted under [Enhanced] in re3.ini.
   one-way lanes are respected; complete routes and alternate endpoints used.
   Mission target selection remains a nearest-visible-objective heuristic.
 
-## Display backends
+## Display backend for this release
 
-The complete package uses Direct3D 9 as its main build. Borderless defaults ON
-for new configurations; existing ini settings take precedence. It selects a
-non-exclusive RenderWare mode before device creation, creates a desktop-sized
-WS_POPUP window on its monitor and keeps the D3D presentation Windowed=true.
-Change Borderless from the main menu before loading a game. The native graphics
-windowed/fullscreen preference is restored when Borderless is turned off.
+This v1.2 candidate builds OpenGL only. Graphics > Screen Format has Fullscreen,
+Windowed and Borderless. Changes are applied with Enter from the main menu
+before loading a game. Enhanced Options no longer contains a duplicate Borderless
+selector on the GLFW backend. [VideoMode] ScreenFormat (0/1/2) is authoritative;
+legacy Enhanced/Borderless and VideoMode/Windowed are migrated only when absent.
 
-An OpenGL EXE/PDB pair is included as a fallback, with the same gameplay changes.
-Always switch both files together. Shared game data and runtime DLLs stay put.
-Discord desktop sharing and Ambilight must be checked on the user's GPU/system;
-compilation or a genuine windowed device alone cannot certify capture behavior.
+Borderless selects a non-exclusive RW video mode before creating the GL window.
+This avoids the old exclusive-first, windowed-later startup transition. Capture
+compatibility is not yet verified. No driver settings are modified. The D3D9
+backend remains in source but is not built or bundled for this user-requested run.
+See docs/OPENGL-CAPTURE.md; other v1.1 issues in docs/BUGS.md remain open.
 
 ## Mod support
 

@@ -41,7 +41,7 @@ int8 Borderless = 1;
 #else
 int8 Borderless = 0;
 #endif
-int8 VehicleDistance = 0, PedDistance = 0;
+int8 VehicleDistance = 0, PedDistance = 0, ScreenFormat = 0;
 static float radarRange = 120.0f;
 static bool homeSaveRequested;
 static bool homeSaveActive;
@@ -101,6 +101,7 @@ wchar *GetText(const char *key)
         { "EN_HEAL", "HEAL AFTER MANUAL SAVE" },
         { "EN_GLSS", "BREAKABLE WINDSHIELDS" },
         { "EN_BORD", "BORDERLESS FULLSCREEN" },
+        { "EN_BRDL", "BORDERLESS" },
         { "EN_VDST", "VEHICLE DISTANCE" },
         { "EN_PDST", "PEDESTRIAN DISTANCE" },
         { "EN_100", "1X" }, { "EN_150", "1.5X" },
@@ -153,6 +154,15 @@ void Reset()
 void OnMissionPassed()
 {
     if (AutoSave) missionSavePending = true;
+}
+
+void ApplyScreenFormatSettings()
+{
+#ifdef IMPROVED_VIDEOMODE
+    ScreenFormat=Clamp(ScreenFormat,int8(0),int8(2));
+    Borderless=ScreenFormat==2;
+    FrontEndMenuManager.m_nPrefsWindowed=ScreenFormat!=0;
+#endif
 }
 
 void WindowModeChanged(int8, int8)

@@ -39,7 +39,11 @@
 #ifdef CUSTOM_FRONTEND_OPTIONS
 
 #if defined(IMPROVED_VIDEOMODE) && !defined(GTA_HANDHELD)
+#if defined(RW_GL3) && !defined(LIBRW_SDL2)
+    #define VIDEOMODE_SELECTOR MENUACTION_CFO_SELECT, "FEM_SCF", { new CCFOSelect(&Enhanced::ScreenFormat, "VideoMode", "ScreenFormat", screenModes, 3, true, ScreenModeAfterChange, true) },
+#else
 	#define VIDEOMODE_SELECTOR MENUACTION_CFO_SELECT, "FEM_SCF", { new CCFOSelect((int8*)&FrontEndMenuManager.m_nPrefsWindowed, "VideoMode", "Windowed", screenModes, 2, true, ScreenModeAfterChange, true) },
+#endif
 #else
 	#define VIDEOMODE_SELECTOR
 #endif
@@ -291,9 +295,16 @@ wchar* MultiSamplingDraw(bool *disabled, bool userHovering) {
 #endif
 
 #ifdef IMPROVED_VIDEOMODE
+#if defined(RW_GL3) && !defined(LIBRW_SDL2)
+const char* screenModes[] = { "FED_FLS", "FED_WND", "EN_BRDL" };
+#else
 const char* screenModes[] = { "FED_FLS", "FED_WND" };
+#endif
 void ScreenModeAfterChange(int8 before, int8 after)
 {
+#if defined(RW_GL3) && !defined(LIBRW_SDL2)
+    Enhanced::ApplyScreenFormatSettings();
+#endif
 	_psSelectScreenVM(FrontEndMenuManager.m_nPrefsVideoMode); // apply same resolution
 	FrontEndMenuManager.SetHelperText(0);
 }
@@ -944,7 +955,9 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
        MENUACTION_CFO_SELECT, "EN_PLOD", { new CCFOSelect(&Enhanced::PedDetail, "Enhanced", "PedDetail", off_on, 2, false) },
        MENUACTION_CFO_SELECT, "EN_HEAL", { new CCFOSelect(&Enhanced::HealAfterSave, "Enhanced", "HealAfterSave", off_on, 2, false) },
        MENUACTION_CFO_SELECT, "EN_GLSS", { new CCFOSelect(&Enhanced::BreakableWindscreen, "Enhanced", "BreakableWindscreen", off_on, 2, false) },
+#if !defined(RW_GL3) || defined(LIBRW_SDL2)
        MENUACTION_CFO_SELECT, "EN_BORD", { new CCFOSelect(&Enhanced::Borderless, "Enhanced", "Borderless", off_on, 2, true, Enhanced::WindowModeChanged, true) },
+#endif
        MENUACTION_CFO_SELECT, "EN_VDST", { new CCFOSelect(&Enhanced::VehicleDistance, "Enhanced", "VehicleDistance", enhancedDistances, 4, false) },
        MENUACTION_CFO_SELECT, "EN_PDST", { new CCFOSelect(&Enhanced::PedDistance, "Enhanced", "PedDistance", enhancedDistances, 4, false) },
        MENUACTION_CHANGEMENU, "FEDS_TB", { nil, SAVESLOT_NONE, MENUPAGE_NONE },

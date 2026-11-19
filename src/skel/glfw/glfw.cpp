@@ -834,7 +834,7 @@ psSelectDevice()
 			FrontEndMenuManager.m_nPrefsWidth = mode->width;
 			FrontEndMenuManager.m_nPrefsHeight = mode->height;
 			FrontEndMenuManager.m_nPrefsDepth = 32;
-			FrontEndMenuManager.m_nPrefsWindowed = 0;
+			FrontEndMenuManager.m_nPrefsWindowed = Enhanced::ScreenFormat != 0;
 		}
 
 		// Find the videomode that best fits what we got from the settings file
@@ -876,8 +876,13 @@ psSelectDevice()
 	RwEngineGetVideoModeInfo(&vm, GcurSelVM);
 
 #ifdef IMPROVED_VIDEOMODE
-	if (FrontEndMenuManager.m_nPrefsWindowed)
+	// Borderless must start with a windowed GL context. Creating an exclusive
+	// window and changing it after RW initialization needlessly enters the
+	// driver's fullscreen presentation path before capture can attach.
+	if (FrontEndMenuManager.m_nPrefsWindowed || Enhanced::Borderless) {
+		if (bestWndMode < 0) return FALSE;
 		GcurSelVM = bestWndMode;
+	}
 
 	// Now GcurSelVM is 0 but vm has sizes(and fullscreen flag) of the video mode we want, that's why we changed the rwVIDEOMODEEXCLUSIVE conditions below
 	FrontEndMenuManager.m_nPrefsWidth = vm.width;
@@ -926,7 +931,7 @@ psSelectDevice()
 		RsGlobal.width = FrontEndMenuManager.m_nPrefsWidth;
 		RsGlobal.height = FrontEndMenuManager.m_nPrefsHeight;
 		
-		PSGLOBAL(fullScreen) = !FrontEndMenuManager.m_nPrefsWindowed;
+		PSGLOBAL(fullScreen) = !FrontEndMenuManager.m_nPrefsWindowed && !Enhanced::Borderless;
 #endif
 
 #ifdef MULTISAMPLING
@@ -1034,7 +1039,8 @@ void Enhanced::ApplyWindowMode(bool newWindow)
     static bool applied, wasExclusive;
     static int x, y, width, height, decoration;
     static GLFWmonitor *previousMonitor;
-    if (newWindow || boundWindow != window) {
+    const bool bindingNewWindow = newWindow || boundWindow != window;
+    if (bindingNewWindow) {
         boundWindow = window;
         applied = false;
     }
@@ -1043,7 +1049,10 @@ void Enhanced::ApplyWindowMode(bool newWindow)
         glfwGetWindowSize(window,&width,&height);
         decoration = glfwGetWindowAttrib(window,GLFW_DECORATED);
         previousMonitor = glfwGetWindowMonitor(window);
-        wasExclusive = previousMonitor != nil;
+        // A borderless startup now deliberately has no exclusive monitor.
+        // Still remember the user's underlying mode for turning it off later.
+        wasExclusive = previousMonitor != nil ||
+            (bindingNewWindow && !FrontEndMenuManager.m_nPrefsWindowed);
         // Use the monitor containing the centre of the current game window.
         GLFWmonitor *monitor = previousMonitor;
         if (!monitor) {
@@ -1059,6 +1068,7 @@ void Enhanced::ApplyWindowMode(bool newWindow)
         }
         if (!monitor) monitor=glfwGetPrimaryMonitor();
         if (!monitor) return;
+        if (wasExclusive && !previousMonitor) previousMonitor=monitor;
         const GLFWvidmode *mode=glfwGetVideoMode(monitor);
         int mx,my;
         glfwGetMonitorPos(monitor,&mx,&my);

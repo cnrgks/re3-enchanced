@@ -1,38 +1,149 @@
-# re3 Enhanced v1.1 validation
+# re3 Enhanced — güncel roadmap
 
-Implementation and runtime verification are recorded separately.
+Güncelleme: 19 Kasım 2026. Son yayımlanmış tam paket: **v1.1**.
 
-## Implemented
+Öncelik, yeni özelliklerden önce v1.1 geri bildirimlerinin düzeltilmesidir.
+Ayrıntılı belirtiler, ekran görüntüleri, beklenen davranış ve kabul ölçütleri
+[docs/BUGS.md](docs/BUGS.md) içinde tutulur. Kodlanmış olmak, oyun içinde
+çalıştığının doğrulanması anlamına gelmez.
 
-- Pause-map services: typed script metadata, garages, weapon shop pickups/cache.
-- Native speed and T radar zoom icon scaling including rotating player marker.
-- T target 2.25x (75% of the former 3x target).
-- Nested/named windscreen geometry and native seated-occupant bullet hits.
-- Remove Load Autosave; mission success queues save-slot menu, no silent write.
-- Enhanced save serialization uses the current island safehouse, no live teleport.
-- D3D9 non-exclusive borderless desktop presentation; OpenGL fallback provided.
-- Vehicle/ped spawn, removal and render distance settings.
-- Map crosshair without cursor sprite, clean footer, Back aligned above blue logo.
-- Wheel scrolls option viewport independently of selection/value.
-- Mission GPS colours, one-way/closed-road routing and complete long paths.
-- Complete versioned package with existing x64 ASI Loader/CLEO Redux support.
+## Çalışma biçimi
 
-## Required in-game validation
+- Kullanıcı **“build al”** demeden build, test paketi, workflow dispatch veya
+  otomatik CI başlatan push yapılmaz. Düzeltmeler kaynakta biriktirilir.
+- Önce maddeler tek tek ele alınır; durumları BUGS.md üzerinde güncellenir.
+- Sonraki tam sürümün numarası paketleme aşamasında artırılır. v1.1 arşivi değiştirilmez.
+- Kullanıcı istediğinde toplu derleme/doğrulama ve tam, sürümlü paket hazırlanır.
 
-- [ ] Map shows Pay 'n' Spray, Ammu-Nation, bomb shops and savehouses on all islands.
-- [ ] Icons/player scale together when accelerating, holding T and releasing T.
-- [ ] Map footer/Back/crosshair at 16:9 and 4:3; viewport scroll and keyboard input.
-- [ ] Mission success opens menu once; cancellation does not write a file.
-- [ ] F5 and mission saves load at each island's home without moving live player.
-- [ ] Ground height at homes; eight slots and mission retry; heal success/failure.
-- [ ] Front windscreen/driver shots across original/custom cars, after break/repair,
-      occluding walls/vehicles and protected cars. Merged custom glass unsupported.
-- [ ] Distance choices reduce pop-in during fast driving within native pool limits.
-- [ ] D3D9 startup, main-menu Borderless toggle, Alt-Tab, resize/multiple monitors.
-- [ ] Discord whole-desktop stream and Ambilight on user's actual machine.
-- [ ] Mission colour variants/moving targets, closed bridges, one-way turns and
-      cross-island routing; manual waypoint override, on-foot/car graph changes.
-- [ ] x64 ASI and CLEO Redux startup with the new matching PDB on both backends.
+## Öncelikli hata/davranış kuyruğu
 
-First person and ragdoll remain withdrawn as requested in the previous revision.
-Full mission-specific multi-goal understanding is still outside GPS scope.
+| Sıra | Kayıtlar | Hedef |
+| --- | --- | --- |
+| 1 | SAV-01, SAV-02, SAV-03 | F5 mevcut konum; görev sonrası doğru ev kayıt noktası; kayıt engelleri |
+| 2 | VEH-01 | Kırık ön camdan gerçek sürücü/yolcu isabeti |
+| 3 | MAP-01, MAP-02, MAP-03 | Tek ev ikonu, keşif/ilerleme, görülen payphone'un korunması |
+| 4 | MAP-04, MAP-05 | Sarı MAP şeridinin tamamını kaldırma; Back hizası/kesilmesi |
+| 5 | GPS-01, GPS-02 | Elle waypoint'te en üst yol; rota bağlantıları/boşlukları |
+| 6 | DIST-01, DIST-02 | Araç ve yaya mesafelerinin kararlılığı; belirti ayrıntısı gerekli |
+| 7 | RM-05, INPUT-01, WIN-01, WIN-02, UI-01 | Backend kararı, fare hızı, Alt-Tab, odak kaybı pause, üçlü ekran biçimi |
+
+CAP-01 için kaynakta aday değişiklik var; build/oyun doğrulaması yok.
+Önceki hata kuyruğu açık kalır; ayrıntılı durumlar BUGS.md içinde tutulur.
+Kayıt ve harita maddeleri ortak nedenlere sahip olabilir; ayrı kabul ölçütleri korunur.
+
+OpenGL ekran yakalama incelemesi (CAP-01), son kullanıcı talebiyle ayrıca
+ele alınıyor. [Teşhis ve yapılan aday değişiklik](docs/OPENGL-CAPTURE.md).
+
+## Gelecek özellikler
+
+### RM-01 — düzgün trainer arayüzü
+
+Durum: roadmap / uygulanmadı.
+
+Ctrl+M/debug arayüzünün yerine sağlıklı, düzenli bir trainer ekranı.
+Debug'daki ayarlar da erişilebilir olmalı. Kullanıcının mevcut arayüzde gördüğü
+çok hızlı gezinme/ayar değişimi yeniden oluşmamalı. FPS etkisi şu anda yalnızca
+bir şüphe; giriş tekrar aralığı ve zaman hesabı incelenmeli. Yeni arayüzün
+gezinmesi farklı FPS'lerde tutarlı olacak; açma kısayolu ve kategoriler ayrıca tasarlanacak.
+
+### RM-02 — radyo çarkı
+
+Durum: roadmap / uygulanmadı.
+
+Definitive Edition benzeri radyo wheel arayüzü. Mevcut radyo/istasyon davranışı
+ile uyumlu olacak. Açma-kapama girdileri, seçim/iptal, oyun zamanı/ses politikası
+ve kontrolcü desteği uygulama aşamasında netleştirilecek; henüz sözleşmesi kesin değil.
+
+### RM-03 — silah çarkı
+
+Durum: roadmap / uygulanmadı.
+
+Definitive Edition benzeri weapon wheel. Oyuncunun gerçekten sahip olduğu
+silah/mühimmat ve native silah seçimiyle uyumlu olmalı. Kısayollar, kontrolcü,
+seçim/iptal ve yavaşlatma davranışı tasarım aşamasında kararlaştırılacak.
+
+### RM-04 — doğrudan sayısal fare hassasiyeti
+
+Durum: geliştirme isteği / uygulanmadı.
+
+INPUT-01'deki backend hız farkını gidermekten ayrı olarak, hassasiyeti doğrudan
+sayısal değer yazarak ayarlayabilmek. Geçerli aralık, hassasiyet/basamak, ini
+saklama biçimi ve kullanıcıya gösterilen birim belirlenecek. Menü imleci ile
+oyun içi kamera ayarı karıştırılmayacak. Mevcut değerlerin geçişi korunacak.
+
+### RM-05 — OpenGL / Direct3D 9 mimari kararı
+
+Durum: **Son kullanıcı kararı — OpenGL ana geliştirme yolu.** Önceki D3D9
+Windows varsayılanı önerisi değiştirildi. Platformlar arası yapı ve mevcut
+OpenGL/librw yolu korunacak; D3D9 alternatif kalacak. Yayımlanmış v1.1
+değiştirilmedi; sonraki paketin ana backend'i bu karara göre düzenlenecek.
+
+OpenGL yakalama sorunu CAP-01 olarak açık. Kullanıcı Discord'un normal
+pencerede yakaladığını, fullscreen/borderless'ta yakalamadığını netleştirdi.
+Kaynak düzeltmesi adayı hazırlandı; derlenmedi/test edilmedi.
+[Teşhis notu](docs/OPENGL-CAPTURE.md), [mimari gerekçe](docs/ARCHITECTURE.md).
+
+Kullanıcı farkların, kazanım/kayıpların ve yakalama/Ambilight ilişkisinin
+anlatılmasını istiyor. Karşılaştırma ölçülmemiş performans iddialarına dayandırılmayacak.
+
+| Başlık | Şu an bilinen | Açık nokta |
+| --- | --- | --- |
+| Ambilight | Kullanıcı D3D9 fullscreen'de çalıştığını; OpenGL fullscreen/borderless'ta çalışmadığını bildirdi | GPU/uygulama yakalama yolundaki kesin neden bilinmiyor |
+| Discord | D3D9 önizleme sorunsuz; OpenGL normal pencere yakalanıyor, fullscreen/borderless yakalanmıyor | Kesin neden ve gerçek uygulama GPU eşleşmesi hâlâ açık |
+| Fare | Kullanıcı iki backend arasında hız farkı bildirdi | Delta, DPI, FPS, kamera/menü ayrımı incelenecek |
+| Pencere kodu | D3D9 native Windows; OpenGL GLFW entegrasyonu kullanıyor | Pause, Alt-Tab ve üçlü ekran biçimi eşit davranmalı |
+| Performans/görüntü | Karşılaştırmalı ölçüm yapılmadı | Aynı sahne/ayar/FPS koşullarında incelenecek; biri daha hızlı diye varsayılmayacak |
+| ASI/CLEO | İki x64 yapı için eşleşen PDB dağıtılıyor | Backend seçimi genel x86 mod uyumluluğu sağlamaz; mod bazında doğrulama gerekir |
+
+**Çıkarım, kesin teşhis değil:** OpenGL'de hem fullscreen hem borderless'ın
+başarısız, D3D9 fullscreen'in başarılı olması, sorunun yalnızca borderless
+pencere stilinden ibaret olmadığını destekliyor. Grafik API/yakalama yolu ve
+sürücü etkileşimi aday nedenler. Bundan “D3D9 her sistemde her yakalama
+uygulamasını kesin düzeltir” sonucu çıkarılmayacak.
+
+Yeni input/pencere düzeltmelerinde öncelik OpenGL'dir. Bu tercih FPS/görüntü
+kalitesinde ölçülmüş üstünlük veya bütün eski ASI'lerle uyumluluk iddiası değildir.
+
+### RM-06 — Skip Intros ayarı
+
+Durum: özellik isteği / arayüzü uygulanmadı; hata kaydı değildir.
+
+Kullanıcı D3D9'da Rockstar ve GTA açılış videolarının oynadığını, OpenGL'de
+oynamadığını bildirdi. Kaynakta da Windows yolundaki `PlayMovieInWindow`
+çağrıları etkin; GLFW yolundakiler yorum satırında ve durumlar ilerletiliyor.
+Bu, OpenGL'in genel olarak video oynatamayacağı anlamına gelmez.
+
+İstek: oyun ayarlarına **Skip Intros: ON/OFF** eklemek. Yalnızca Rockstar/GTA
+açılış videolarını etkiler; görev sinematiklerini etkilemez. Tercih saklanır ve
+sonraki açılışta uygulanır. Video yoksa/oynatılamıyorsa açılış akışı takılmamalı.
+Varsayılan değer henüz seçilmedi.
+
+Mevcut altyapı: `gbNoMovies`, `[General] NoMovies` ile zaten okunup kaydediliyor
+(`re3.cpp`); Windows açılış akışı bu bayrağı kullanıyor. Yeni, çakışan bir
+bayrak yerine bu altyapıya UI bağlanması incelenecek. OpenGL alternatifinde
+video desteği eklenmeden OFF seçeneği videolar çalışıyormuş gibi sunulmamalı.
+
+## v1.1 doğrulama geçmişi ve korunacak kontroller
+
+- İki x64 backend derlendi; önceki birim testleri, EXE/PDB eşleşmeleri ve ZIP
+  bütünlüğü doğrulandı. Bunlar yeni hata kayıtlarını kapatmaz.
+- Kullanıcı manuel kayıtta can doldurmayı doğruladı; korunacak.
+- Kayıtta doğru ada seçiliyor; çatıda doğma ve F5 konum politikası hâlâ açık.
+- Ambilight gözlemi yukarıdaki RM-05'te. Discord için kullanıcı D3D9 yayın
+  önizlemesini kontrol etti ve şu an sorun görmediğini bildirdi; bu olumlu sonuç
+  yalnızca D3D9'a aittir ve uzun süreli yayın sonucu olarak genellenmez.
+  Sonraki kullanıcı testi OpenGL'de Discord'un çalışmadığını doğrulayan başarısız
+  sonuç olarak kaydedildi; OpenGL yakalama sorunu açık kalır.
+- Henüz sonucu bildirilmeyen önceki kontroller: hız/T ikon ölçeği, GPS renkleri
+  ve hareketli hedefler, kapalı köprü/tek yön rotaları, görev-sonu menünün tek
+  tetiklenmesi ve iptali, sekiz kayıt slotu/mission retry, sağlık kaydı/başarısız
+  save geri alma, 16:9–4:3 arayüz, çoklu monitör/Alt-Tab ve x64 ASI/CLEO açılışı.
+- First person ve ragdoll önceki kullanıcı isteğiyle kaldırılmış durumda kalır.
+- Çok hedefli görevlerin tam görev mantığını anlama hâlâ GPS kapsamı dışında;
+  renk ve gerçek hedef yüksekliği davranışı korunmalı.
+
+## Kullanıcı onaylı dar kapsamlı derleme
+
+v1.2: yalnızca OpenGL; CAP-01 başlangıç adayı + UI-01 Screen Format üçüncü
+seçeneği. Kullanıcı bu iki değişikliği denemek için build istedi. Sürücü
+ayarlarına müdahale yok. Diğer hata kayıtları açık kalır.

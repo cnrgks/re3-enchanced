@@ -1,49 +1,38 @@
-RE3 ENHANCED v1.1 - TOPLU PAKET
+RE3 ENHANCED v1.2 - OPENGL DENEME PAKETI
+
+Bu surum yalnizca OpenGL olarak derlendi. D3D9 build'i veya eski bir D3D9
+EXE/PDB cifti pakete eklenmedi. x64 ASI Loader ve CLEO Redux dahildir.
 
 KURULUM
-1. Oyunu kapat, mevcut re3.exe ve re3.pdb dosyalarini yedekle.
-2. Bu paketteki game klasorunun ICINDEKILERI GTA III klasorune kopyala.
-3. re3.exe ile ac. Enhanced secenekleri Options > Enhanced Options altinda.
-4. Borderless'i ana menudeyken, oyunu yuklemeden ayarla ve Enter ile uygula.
-   Ana Direct3D 9 surumunde yeni ayarlarda varsayilan aciktir. Eski ini tercihleri korunur.
+1. Oyunu kapat. Mevcut re3.exe ve re3.pdb dosyalarini birlikte yedekle.
+2. Paketin game klasorunun ICINDEKILERI GTA III kurulumuna kopyala.
+3. Oyunu ac; henuz save yuklemeden Options > Graphics > Screen Format'a git.
+4. Fullscreen / Windowed / Borderless seceneklerinden birini secip Enter ile uygula.
+   Native guvenlik nedeniyle ekran bicimi secimi oyun yukluyken kilitlidir.
 
-ASI Loader, CLEO Redux ve x64 CLEO eklentileri dahildir. Mevcut re3.ini ve
-kayit dosyalarina bu paket dokunmaz. Orijinal GTA III oyun verileri dahil degildir.
-Eski quick_save.js ve ayni isi yapan referans ASI modlarini kapali tut.
-Her eski GTA III x86 ASI veya CS modu bu mimariyle uyumlu degildir.
+BU DENEMENIN KAPSAMI
+- Borderless GL penceresi bastan windowed video moduyla olusturulur;
+  once exclusive acilip sonra borderless'a cevrilmez.
+- Borderless Screen Format'in ucuncu secenegidir; OpenGL'de Enhanced Options
+  altindaki eski ayri secenek kaldirildi.
+- Eski [Enhanced] Borderless ve [VideoMode] Windowed ayarlari, yeni anahtar
+  yoksa [VideoMode] ScreenFormat degerine aktarilir. 0=Fullscreen, 1=Windowed,
+  2=Borderless. Yeni deger varsa eskiler onu ezmez.
+- NVIDIA/Windows surucu ayarlari degistirilmez. Ek harici ayar gerektiren
+  bir cozum bu paketin parcasi degildir.
 
-BU SURUMDE
-- Gorev sonunda otomatik dosya yazmak yerine guvenli anda kayit slotu menusu.
-- Load Autosave kaldirildi. Eski ayri autosave dosyasi silinmez.
-- F5/gorev-sonu Enhanced kayitlari, hangi adadaysan o adanin ev konumunu
-  kayda yazar. Canli oyuncu yerinde kalir; kayit yuklenince evde baslar.
-- Haritada Pay 'n' Spray, Ammu-Nation, bomba dukkanlari ve ev servis ikonlari.
-- Hizla radar uzaklasirken ikonlar ve oyuncu oku birlikte kuculur.
-- T menzili 3x yerine 2.25x (onceki menzilin yuzde 75'i).
-- Cam geometrisi/alt bilesenleri; kirik camdan surucu/yolcuya native mermi hasari.
-  Korumali arac kurallari surer. Govdeye birlestirilmis ozel model camlari otomatik ayrilmaz.
-- Arac/yaya mesafeleri: 1x, 1.5x, 2x, 3x. Yuksek deger daha fazla islem ister;
-  native havuz limitleri nedeniyle sinirsiz arac/yaya olusmaz.
-- Mapte normal imlec yok, yatay/dikey cizgiler var; alt kontrol yazilari yok.
-  Back tusu mavi Rockstar logosunun ustunde ayni sol hizada.
-- Graphics gibi uzun menulerde tekerlek secenegi degistirmez, gorunen alani kaydirir.
-- Gorev GPS cizgisi hedef ikonunun acik/koyu rengini izler; elle waypoint kirmizidir.
-  Kapali yollar, tek yonler, alternatif baglantilar ve uzun rotalar ele alinir.
+DENEYECEGIMIZ SEY
+Ayni OpenGL EXE ile once Windowed, sonra Borderless, sonra Fullscreen acarak
+Discord'da ayni tam ekran paylasimini dene. Ambilight'i de ayri kontrol et.
+Ozellikle Borderless seciminin gorunmesi, Alt-Tab, oyunu kapatip tekrar acinca
+secimin korunmasi ve normal pencereye geri donus kontrol edilecek.
 
-EKRAN YAKALAMA / ALTERNATIF
-Ana surum Direct3D 9'da gercek pencere modunda masaustu boyutunda borderless
-sunum kullanir. Discord'da tum ekran paylasimini ve Ambilight'i bu surumle dene.
-Bunlar senin GPU/sisteminde henuz dogrulanmadi; cozuldu garantisi verilmiyor.
-OpenGL'e donmek icin alternatives/OpenGL icindeki re3.exe VE re3.pdb'yi birlikte
-oyun klasorune kopyala. Diger dosyalar ayni kalir. Ana D3D9'a donmek icin game
-klasorundeki iki dosyayi tekrar birlikte kopyala.
+Ekran yakalama henuz oyun icinde dogrulanmadi; bu bir cozum adayi.
+Onceki notlardaki save/cati, camdan hasar, GPS, map ikonlari ve diger hatalar
+bu denemenin kapsaminda duzeltilmedi. docs/BUGS.md ve ROADMAP.md durumlari tutar.
+Mevcut re3.ini veya kullanici kayitlari bu paket tarafindan degistirilmez;
+oyun ayarlari kullanici secimiyle kendi ini dosyasina kaydedilir.
 
-TEST SIRASI
-Harita/tekerlek ve radar -> F5 ile yeni bos slot -> kaydi yukleyip adanin evini
-kontrol et -> gorev bitirip menunun acilmasi/iptal -> arac camindan surucuya atis
--> mesafeler -> Discord tam ekran paylasimi. Onemli kaydinin uzerine test yapma.
-Guvenli kayit icin yaya, hareketsiz, aranmasiz ve gorev/sinematik disinda ol.
-
-Kaynak surum ve SHA-256 listesi manifest.json icinde. Teknik sinirlar/test
-durumu docs/ENHANCED.md ve docs/ROADMAP.md icinde. Derleme ve birim testleri,
-oyun ici kontrollerin tamamlandigi anlamina gelmez.
+Orijinal GTA III oyun verileri dahil degildir. Uyumsuz x86 ASI/CS modlari
+otomatik uyumlu hale gelmez. Ayni isi yapan eski referans modlarini kapali tut.
+EXE/PDB eslesmesi, kaynak commit'i ve SHA-256 listesi manifest.json icindedir.

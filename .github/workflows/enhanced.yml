@@ -2,6 +2,12 @@ name: Build re3 Enhanced
 
 on:
   workflow_dispatch:
+    inputs:
+      renderer:
+        description: Renderer to build
+        type: choice
+        options: [opengl, d3d9, all]
+        default: opengl
   push:
     branches: [enhanced-source]
 
@@ -17,11 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - platform: win-amd64-librw_d3d9-oal
-            artifact: re3-enhanced-x64-d3d9-exe-pdb
-          - platform: win-amd64-librw_gl3_glfw-oal
-            artifact: re3-enhanced-x64-exe-pdb
+        include: ${{ fromJSON(inputs.renderer == 'opengl' && '[{"platform":"win-amd64-librw_gl3_glfw-oal","artifact":"re3-enhanced-x64-exe-pdb"}]' || inputs.renderer == 'd3d9' && '[{"platform":"win-amd64-librw_d3d9-oal","artifact":"re3-enhanced-x64-d3d9-exe-pdb"}]' || '[{"platform":"win-amd64-librw_gl3_glfw-oal","artifact":"re3-enhanced-x64-exe-pdb"},{"platform":"win-amd64-librw_d3d9-oal","artifact":"re3-enhanced-x64-d3d9-exe-pdb"}]') }}
     runs-on: windows-2022
     timeout-minutes: 45
     defaults:
