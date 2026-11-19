@@ -37,6 +37,19 @@ $docs=Join-Path $release 'docs'
 foreach($folder in @($game,$docs)) { $null=New-Item -ItemType Directory -Path $folder -Force }
 Get-ChildItem -LiteralPath $primary -Force | Copy-Item -Destination $game -Recurse -Force
 Get-ChildItem -LiteralPath $runtime -Force | Copy-Item -Destination $game -Recurse -Force
+$requiredGameFiles=@(
+    're3.exe', 're3.pdb', 'winmm.dll', 'winmm.ini', 'cleo_redux64.asi',
+    'OpenAL32.dll', 'libmpg123-0.dll',
+    'CLEO/CLEO_PLUGINS/dylib64.cleo', 'CLEO/CLEO_PLUGINS/Events64.cleo',
+    'CLEO/CLEO_PLUGINS/FxtLoader64.cleo', 'CLEO/CLEO_PLUGINS/IdeLoader64.cleo',
+    'CLEO/CLEO_PLUGINS/IniFiles64.cleo', 'CLEO/CLEO_PLUGINS/Input64.cleo',
+    'CLEO/CLEO_PLUGINS/TextLoader64.cleo'
+)
+foreach ($name in $requiredGameFiles) {
+    if (!(Test-Path -LiteralPath (Join-Path $game $name) -PathType Leaf)) {
+        throw "Required game file missing: $name"
+    }
+}
 if (!$OpenGLOnly) {
     $null=New-Item -ItemType Directory -Path $alternative -Force
     foreach($name in @('re3.exe','re3.pdb','BUILD-COMMIT.txt','BUILD-SHA256.txt')) {
@@ -76,7 +89,7 @@ Compress-Archive -LiteralPath $release -DestinationPath $zipStage
 # Publish only after all checks and compression succeed. All moves stay within
 # the explicitly selected workspace; existing published versions stay immutable.
 $workspacePrefix=[IO.Path]::GetFullPath($WorkspaceRoot).TrimEnd('\')+'\'
-foreach($path in @($release,$publishRelease,$zipStage,$zipPath)) {
+foreach($path in @($staging,$release,$publishRelease,$zipStage,$zipPath)) {
     if (![IO.Path]::GetFullPath($path).StartsWith($workspacePrefix,[StringComparison]::OrdinalIgnoreCase)) {
         throw 'Publish path escapes workspace'
     }
@@ -85,5 +98,8 @@ Move-Item -LiteralPath $release -Destination $publishRelease
 Move-Item -LiteralPath $zipStage -Destination $zipPath
 Get-FileHash -LiteralPath $zipPath -Algorithm SHA256 | Format-List | Out-String |
     Set-Content -LiteralPath "$zipPath.sha256.txt" -Encoding UTF8
+if (@(Get-ChildItem -LiteralPath $staging -Force).Count -eq 0) {
+    [IO.Directory]::Delete([IO.Path]::GetFullPath($staging))
+}
 Write-Output "PACKAGED v$Version source=$commit files=$($files.Count)"
 Get-Item -LiteralPath $zipPath | Select-Object FullName,Length

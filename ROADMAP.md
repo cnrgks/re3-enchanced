@@ -3,7 +3,7 @@
 Güncelleme 20 Kasım 2026. Son paket **v1.26 OpenGL**. Son kullanıcı
 geri bildirimlerine ait değişiklikler derlendi. Oyun içi doğrulama bekliyor.
 
-## Geliştirmedeki özellikler
+## Paketteki özellikler ve kalan doğrulamalar
 
 ### RM-01 — Liberty City Trainer
 
@@ -61,8 +61,9 @@ uygulanması, video bulunamaması ve farklı ekran biçimlerinde açılış.
   autosave/yükleme ve HUD bildirimi.
 - **DIST-01/02** · Trafik ve yaya üretimi, yeni dünya ayarı, park edilmiş araçlar
   ve fiziksel havuz sınırları.
-- **INPUT-04/05, WIN-02/03** · Tek basışta araca giriş, Alt+Tab imleci ve odak
-  dönüşünde Pause menüsü. Yükleme sırasında Alt+Tab ve güvenli dönüş.
+- **INPUT-04/05, WIN-02** · Tek basışta araca giriş, Alt+Tab imleci ve odak
+  dönüşünde Pause menüsü. WIN-03 için v1.26’da olumlu sonuç bildirildi.
+  WIN-04 Alt+Tab dönüş süresi çalışması kullanıcı isteğiyle durduruldu.
 - **MAP-01–07, GPS-04, UI-03** · Harita, rota ve Restore Defaults kapsamındaki
   açık doğrulamalar.
 - **Options** · Yeni menü sırası ve Gameplay/Graphics/Display düzeni.
@@ -70,6 +71,17 @@ uygulanması, video bulunamaması ve farklı ekran biçimlerinde açılış.
 Kayıt bazındaki durumlar, kabul ölçütleri ve geçmiş sonuçlar [BUGS.md](docs/BUGS.md)
 içinde. OpenGL ana geliştirme yolu, D3D9 alternatif. Bu karar
 [mimari notlarında](docs/ARCHITECTURE.md) kayıtlı.
+
+## Sonraki paket öncesi
+
+- Temiz GTA III kurulumunda OpenGL x64 başlangıcı, ekran biçimleri ve kayıt
+  yükleme. v1.26 doğrulanan Fullscreen/Borderless yakalama ve imleç davranışları
+  sonraki paket için regresyon kontrolü.
+- ASI Loader günlüğünde x64 yüklemesini, CLEO Redux günlüğünde re3 sembol
+  çözümlemesini ve küçük bir JS/TS betiğinin çalışmasını doğrula.
+- Eşleşen EXE/PDB, runtime ve mod yükleyicileriyle SHA-256 manifestli tek
+  sürüm klasörü ve ZIP. Kurulum notları ve ASI/CLEO sınırları
+  [ENHANCED.md](ENHANCED.md) içinde.
 
 ## Çalışma biçimi
 

@@ -57,6 +57,9 @@ sonraki düzeltmeleri ve doğrulama durumlarını kaydeder.
 | WIN-02 | Odak kaybında pause, dönüşte Pause menüsünde kalma | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
 | UI-03 | Restore Defaults onayı ve hizmet blip saydamlığı | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
 | UI-01 | Borderless, Graphics ekran biçiminin üçüncü seçeneği olmalı | Kapalı — kullanıcı doğruladı |
+| WIN-03 | Yükleme ekranı ve sonrasındaki Alt+Tab kilitlenmesi | v1.26 — kullanıcı ilk denemesinde düzeldiğini bildirdi |
+| WIN-04 | Fullscreen’e geri dönüş gecikmesi | Ertelendi — kullanıcı mevcut davranışı kabul etti |
+| MOD-01 | Temiz kurulumda ASI Loader ve CLEO Redux başlatma/betik kontrolü | Paket içeriği doğrulandı — çalışma zamanı kontrolü bekliyor |
 
 ### SAV-01 — F5/quicksave konumu
 
@@ -576,10 +579,10 @@ değiştirme sınırları arayüzde doğru gösterilir. RM-05 backend kararıyla
 - Önceden listelenen ama bu notta sonucu belirtilmeyen radar ölçekleme, GPS renkleri,
   görev-sonu menünün tek tetiklenmesi, sağlık kaydı ve ASI/CLEO kontrolleri doğrulanmış sayılmaz.
 
-## Kalan iş sırası
+## İlk geri bildirimdeki iş sırası
 
 1. SAV-01 → SAV-02 → SAV-03: F5 konumu, görev sonrası evde doğru doğma ve kayıt kısıtlamaları.
-2. VEH-01: kırık camdan geçen atışın sürücüye hasar vermemesi.
+2. VEH-01: kırılabilir ön cam özelliği sonradan kullanıcı isteğiyle kaldırıldı.
 3. DIST-01 → DIST-02: 1× üzerindeki araç ve yaya spawn bozulması.
 4. WIN-02: odak kaybında pause ve odak geri dönüşü.
 
@@ -1128,3 +1131,26 @@ korundu. Yeni aday derleme ve oyun içi doğrulama bekliyor.
 Kaynak 75712e3f, GitHub Actions run 44637887040. OpenGL x64 derlemesi
 ve üç CI birim kontrolü geçti. WIN-03, kayıt sonrası ekran geçişi
 sırasında Alt+Tab ve normal Pause davranışı oyun içinde doğrulanmayı bekliyor.
+
+### WIN-03 doğrulaması ve WIN-04 — Fullscreen Alt+Tab gecikmesi
+
+Kullanıcı v1.26 ile yükleme sonrası Alt+Tab kilitlenmesinin çözülmüş
+göründüğünü bildirdi. WIN-03 için ilk olumlu oyun içi sonuç kaydedildi.
+
+Eski GLFW/OpenGL sunumu doğrudan RwCameraShowRaster kullanıyordu.
+Güncel Fullscreen, OpenGL karesini WGL/D3D11 interop ile DXGI'ye veriyor.
+Alt+Tab çıkışında SetFullscreenState(FALSE), dönüşte TRUE ve ilk sunum
+aynı oyun iş parçacığında çalışıyor. Yerel son örneklerde mod değişikliği
+istenmeden ve tamponlar yeniden kullanılırken bile çıkış 145–157 ms,
+giriş 164–223 ms sürüyor. v1.25 tanı örneğinde Pause açılışı 25 ms,
+ilk sunum çağrısı 244 ms. Bunlar monitörün tepki süresi ölçümü değil.
+
+Ek aday maliyetler uygulamanın pencereyi ayrıca küçültmesi, odak
+bekleme döngüsü ve ilk Pause açılışındaki eşzamanlı menü doku yüklemesi.
+İlk düşük kapsamlı deney, exclusive zinciri, sunum ve fare ayarlarını
+koruyarak yalnızca ilave küçültmeyi ölçmek/karşılaştırmak. İyileşme
+yetersizse Pause/doku yükü ayrı ölçülür. v1.24 çerçevesiz discard-model
+yolu kullanıcıda imleç gecikmesini artırdı. Windowed flip-model ayrı
+opt-in prototip olarak değerlendirilebilir; varsayılan değişmeden önce
+Fullscreen ve Borderless Discord/Ambilight ile menü imleci ve kamera
+tepkisi doğrulanmalı. Bu adım analiz ve kayıt; kaynak davranışı değişmedi.

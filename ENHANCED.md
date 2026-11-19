@@ -59,11 +59,24 @@ See docs/OPENGL-CAPTURE.md; other v1.1 issues in docs/BUGS.md remain open.
 
 ## Mod support
 
-The package includes the existing x64 Ultimate ASI Loader (winmm.dll), CLEO Redux
-and CLEO plugins. ASIs: scripts/ or plugins/. JS/TS: CLEO/. FXT: CLEO/CLEO_TEXT/.
-Original GTA III x86 ASIs and legacy CS scripts are not generally compatible.
-Disable duplicate quicksave and GPS reference mods when using native ones.
-No proprietary GTA III game data or reference mod binaries are incorporated.
+The OpenGL x64 package ships Ultimate ASI Loader 10.0.3 as `winmm.dll`
+with its configuration, and CLEO Redux 1.5.1 as `cleo_redux64.asi` with
+seven x64 CLEO plugins. Keep the matching `re3.pdb` next to `re3.exe` so
+CLEO Redux can find re3 symbols. Put compatible ASIs in `scripts/` or
+`plugins/`, JS/TS in `CLEO/` and FXT in `CLEO/CLEO_TEXT/`.
+
+ASI plugins must target x64 and the re3 executable and ABI. Old GTA III
+x86 ASIs and plugins using fixed `gta3.exe` addresses require porting.
+Compiled CLEO scripts depend on the target game and opcodes used. Check
+each mod individually and avoid duplicate quicksave or GPS mods.
+For a clean x64 test, keep any legacy x86 CLEO installation in a separate
+folder. Package integrity confirms the binaries are present and match
+the architecture. Runtime initialization and script execution are
+covered by the separate release verification list in [ROADMAP.md](ROADMAP.md).
+
+[Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader#usage) ·
+[CLEO Redux re3 support](https://re.cleo.li/docs/en/troubleshooting.html) ·
+[CLEO Redux script formats](https://re.cleo.li/docs/en/scripts.html)
 
 ## Validation
 
