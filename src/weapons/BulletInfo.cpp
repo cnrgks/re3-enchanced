@@ -1,5 +1,4 @@
 #include "common.h"
-#include "Enhanced.h"
 
 #include "BulletInfo.h"
 
@@ -113,8 +112,7 @@ void CBulletInfo::Update(void)
 		CWorld::pIgnoreEntity = pBullet->m_pSource;
 		CColPoint point;
 		CEntity* pHitEntity;
-        bool hit=CWorld::ProcessLineOfSight(vecOldPos, vecNewPos, point, pHitEntity, true, true, true, true, true, true);
-        hit=Enhanced::ProcessWindscreenShot(vecOldPos,vecNewPos,pBullet->m_pSource,hit,point,pHitEntity);
+		const bool hit = CWorld::ProcessLineOfSight(vecOldPos, vecNewPos, point, pHitEntity, true, true, true, true, true, true);
 		if (hit) {
 			if (pBullet->m_pSource && (pHitEntity->IsPed() || pHitEntity->IsVehicle()))
 				CStats::InstantHitsHitByPlayer++;

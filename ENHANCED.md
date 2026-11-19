@@ -31,11 +31,6 @@ Settings: Options > Enhanced Options, persisted under [Enhanced] in re3.ini.
   render LOD/visibility ranges scale together; density grows modestly. Native
   pool limits remain in force, so this is not an unlimited-population setting.
 - High Detail Vehicles/Pedestrians selects native detailed render meshes.
-- Windscreen shots test actual mesh triangles, nested component frames and named
-  fallback frames. Coarse car collision no longer prevents a pane hit. Broken
-  panes still define the aperture. Seated driver/passenger hit models feed the
-  ordinary weapon damage flow; bulletproof/script protections stay in effect.
-  A custom car with glass merged into an unrelated body mesh is not inferred.
 - Manual waypoints activate GPS directly. The Mission GPS setting controls
   automatic routing to mission targets. Mission lines match actual blip RGBA,
   including dim colours; manual waypoints stay red. Disabled roads and native
@@ -67,7 +62,7 @@ See docs/OPENGL-CAPTURE.md; other v1.1 issues in docs/BUGS.md remain open.
 The package includes the existing x64 Ultimate ASI Loader (winmm.dll), CLEO Redux
 and CLEO plugins. ASIs: scripts/ or plugins/. JS/TS: CLEO/. FXT: CLEO/CLEO_TEXT/.
 Original GTA III x86 ASIs and legacy CS scripts are not generally compatible.
-Disable duplicate quicksave/GPS/windscreen reference mods when using native ones.
+Disable duplicate quicksave and GPS reference mods when using native ones.
 No proprietary GTA III game data or reference mod binaries are incorporated.
 
 ## Validation

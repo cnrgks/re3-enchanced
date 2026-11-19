@@ -2021,7 +2021,7 @@ int8 CRunningScript::ProcessCommands900To999(int32 command)
 			return 0;
 		}
 		wchar* text = CTheScripts::GetTextByKeyFromScript(&m_nIp);
-		CHud::SetHelpMessage(text, false);
+		CHud::SetScriptHelpMessage(text);
 		return 0;
 	}
 	case COMMAND_CLEAR_HELP:

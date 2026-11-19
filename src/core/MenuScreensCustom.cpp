@@ -958,7 +958,6 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
        MENUACTION_CFO_SELECT, "EN_VLOD", { new CCFOSelect(&Enhanced::VehicleDetail, "Enhanced", "VehicleDetail", off_on, 2, false) },
        MENUACTION_CFO_SELECT, "EN_PLOD", { new CCFOSelect(&Enhanced::PedDetail, "Enhanced", "PedDetail", off_on, 2, false) },
        MENUACTION_CFO_SELECT, "EN_HEAL", { new CCFOSelect(&Enhanced::HealAfterSave, "Enhanced", "HealAfterSave", off_on, 2, false) },
-       MENUACTION_CFO_SELECT, "EN_GLSS", { new CCFOSelect(&Enhanced::BreakableWindscreen, "Enhanced", "BreakableWindscreen", off_on, 2, false) },
 #if !defined(RW_GL3) || defined(LIBRW_SDL2)
        MENUACTION_CFO_SELECT, "EN_BORD", { new CCFOSelect(&Enhanced::Borderless, "Enhanced", "Borderless", off_on, 2, true, Enhanced::WindowModeChanged, true) },
 #endif
@@ -966,6 +965,7 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
        MENUACTION_CFO_SELECT, "EN_PDST", { new CCFOSelect(&Enhanced::PedDistance, "Enhanced", "PedDistance", enhancedDistances, 3, false) },
        MENUACTION_CFO_SELECT, "EN_VMUL", { new CCFOSelect(&Enhanced::VehicleTrafficMultiplier, "Enhanced", "VehicleTrafficMultiplier", trafficMultipliers, ARRAY_SIZE(trafficMultipliers), false) },
        MENUACTION_CFO_SELECT, "EN_PMUL", { new CCFOSelect(&Enhanced::PedTrafficMultiplier, "Enhanced", "PedTrafficMultiplier", trafficMultipliers, ARRAY_SIZE(trafficMultipliers), false) },
+       MENUACTION_CFO_SELECT, "EN_PSEP", { new CCFOSelect(&Enhanced::SeparateTrafficPedBudget, "Enhanced", "SeparateTrafficPedBudget", off_on, 2, false) },
        MENUACTION_CHANGEMENU, "FEDS_TB", { nil, SAVESLOT_NONE, MENUPAGE_NONE },
    },
 

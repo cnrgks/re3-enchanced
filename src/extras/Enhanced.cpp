@@ -42,14 +42,13 @@
 namespace Enhanced {
 int8 QuickSave = 0, AutoSave = 0, RadarZoom = 0;
 int8 GPS = 0, MenuMap = 1, VehicleDetail = 0, PedDetail = 0, HealAfterSave = 0;
-int8 BreakableWindscreen = 0;
 #ifdef RW_D3D9
 int8 Borderless = 1;
 #else
 int8 Borderless = 0;
 #endif
 int8 VehicleDistance = 0, PedDistance = 0, ScreenFormat = 0;
-int8 VehicleTrafficMultiplier = 0, PedTrafficMultiplier = 0;
+int8 VehicleTrafficMultiplier = 0, PedTrafficMultiplier = 0, SeparateTrafficPedBudget = 0;
 #ifdef _WIN32
 int8 BorderlessCaptureProbe = 1, FullscreenDXGIFlipY = 1;
 #else
@@ -63,6 +62,7 @@ static uint32 radarTime;
 static bool missionSavePending;
 bool TraceTraffic = false;
 TrafficSpawnStats VehicleSpawnStats, PedSpawnStats;
+VehicleTrafficDiagnostics VehicleTrafficStats;
 static uint32 trafficReportTime;
 
 struct TrafficArea {
@@ -123,13 +123,13 @@ wchar *GetText(const char *key)
         { "EN_VLOD", "HIGH DETAIL VEHICLES" },
         { "EN_PLOD", "HIGH DETAIL PEDESTRIANS" },
         { "EN_HEAL", "HEAL AFTER SAVING" },
-        { "EN_GLSS", "BREAKABLE WINDSHIELDS" },
         { "EN_BORD", "BORDERLESS FULLSCREEN" },
         { "EN_BRDL", "BORDERLESS" },
         { "EN_VDST", "VEHICLE DISTANCE" },
         { "EN_PDST", "PEDESTRIAN DISTANCE" },
         { "EN_VMUL", "VEHICLE TRAFFIC MULTIPLIER" },
         { "EN_PMUL", "PEDESTRIAN TRAFFIC MULTIPLIER" },
+        { "EN_PSEP", "SEPARATE TRAFFIC PED BUDGET" },
         { "EN_100", "1X" },
         { "EN_200", "2X" }, { "EN_300", "3X" }, { "EN_400", "4X" },
         { "EN_500", "5X" }, { "EN_600", "6X" }, { "EN_700", "7X" },
@@ -178,6 +178,7 @@ void Reset()
     homeSaveActive = false;
     VehicleSpawnStats = {};
     PedSpawnStats = {};
+    VehicleTrafficStats = {};
     carTraffic = {};
     pedTraffic = {};
     trafficReportTime = CTimer::GetTimeInMilliseconds();
@@ -634,8 +635,20 @@ int TrafficAttempts(bool vehicles, const CVector &centre, float nearbyRadius, bo
     const float range = vehicles ? VehicleRangeMultiplier() : PedRangeMultiplier();
     const float localTarget = area.target / range;
     const bool thin = area.nearby.size() < localTarget * 0.75f && area.arrivals < localTarget * 0.15f;
-    const int attempts = thin && (CTimer::GetFrameCounter() & 1) == 0 ? 2 : 1;
-    return attempts * TrafficMultiplier(vehicles);
+    const int current = vehicles ? CCarCtrl::NumRandomCars : CPopulation::PedCountForSpawnBudget();
+    const int slots = vehicles
+        ? Min(CCarCtrl::AmbientVehicleSlotsAvailable(), CPopulation::AmbientVehicleOccupantSlotsAvailable())
+        : CPopulation::AmbientPedSlotsAvailable();
+    const int deficit = Min(Max(0, area.target - current), slots);
+    // Keep one budget check so menu changes and newly freed slots are picked up.
+    if (deficit <= 0) return 1;
+
+    const float remaining = float(deficit) / Max(1, area.target);
+    const int multiplier = TrafficMultiplier(vehicles);
+    int attempts = 1 + int(ceilf((multiplier - 1) * remaining));
+    if (thin && (CTimer::GetFrameCounter() & 1) == 0)
+        attempts += int(ceilf(3.0f * remaining));
+    return Min(attempts, deficit);
 }
 
 int TrafficTarget(bool vehicles, int limit, bool warmingUp)
@@ -687,11 +700,24 @@ static void ReportTraffic()
             PedSpawnStats.attempts[1], PedSpawnStats.spawned[1],
             carTraffic.target, carTraffic.networkLength, carTraffic.arrivals, VehicleSpawnStats.noCandidate, VehicleSpawnStats.exposed,
             pedTraffic.target, pedTraffic.networkLength, pedTraffic.arrivals, PedSpawnStats.noCandidate, PedSpawnStats.exposed);
+        const auto &car = VehicleTrafficStats;
+        fprintf(log, "time=%u car_rejections target=%u car_budget=%u ped_pool=%u occupant_budget=%u no_models_ticks=%u "
+            "route=%u lane=%u ground=%u visibility=%u collision=%u direction=%u "
+            "range_removed=%u offscreen_removed=%u moving_offscreen_kept=%u "
+            "vehicle_pool_used=%d vehicle_pool_size=%d ambient_ped_slots=%d occupant_slots=%d traffic_occupants=%d occupant_target=%d separate_ped_budget=%d\n",
+            now, car.targetFull, car.carBudgetFull, car.pedPoolLow, car.occupantBudgetFull, car.noModels,
+            car.routeRejected, car.laneRejected, car.groundRejected, car.visibilityRejected,
+            car.collisionRejected, car.directionRejected, car.rangeRemoved, car.offscreenRemoved,
+            car.movingOffscreenKept, CPools::GetVehiclePool()->GetNoOfUsedSpaces(),
+            CPools::GetVehiclePool()->GetSize(), CPopulation::AmbientPedSlotsAvailable(),
+            CPopulation::AmbientVehicleOccupantSlotsAvailable(), CPopulation::CountAmbientVehicleOccupants(),
+            CPopulation::AmbientVehicleOccupantTarget(), int(SeparateTrafficPedBudget));
         fclose(log);
     }
     trafficReportTime = now;
     VehicleSpawnStats = {};
     PedSpawnStats = {};
+    VehicleTrafficStats = {};
 }
 
 void Process()
@@ -715,7 +741,7 @@ void Process()
         homeSaveActive = true;
         const bool saved = PcSaveHelper.SaveSlot(SLOT_COUNT - 1, true);
         homeSaveActive = false;
-        CHud::SetHelpMessage(GetText(saved ? "EN_ASOK" : "EN_ASER"), false);
+        CHud::SetPriorityHelpMessage(GetText(saved ? "EN_ASOK" : "EN_ASER"));
     }
     UpdateRoute();
 }

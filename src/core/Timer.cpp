@@ -100,6 +100,18 @@ void CTimer::Shutdown(void)
 	;
 }
 
+void CTimer::ResetFrameClock(void)
+{
+#ifdef _WIN32
+	if (_nCyclesPerMS != 0)
+		QueryPerformanceCounter(&_oldPerfCounter);
+	else
+#endif
+		oldPcTimer = RsTimer();
+	logicalFrameTime = 0.0;
+	m_LogicalFramesPassed = 0;
+}
+
 // Called once per rendered frame. Measures the time since the last call, works out how
 // many logical frames that is and what time step the rendered frame gets. The game clock
 // itself is not touched here, that happens in UpdateLogicalFrame().
@@ -114,7 +126,7 @@ void CTimer::Update(void)
 		LARGE_INTEGER pc;
 		QueryPerformanceCounter(&pc);
 
-		int32 updInCycles = (pc.LowPart - _oldPerfCounter.LowPart); // & 0x7FFFFFFF; pointless
+		const int64 updInCycles = pc.QuadPart - _oldPerfCounter.QuadPart;
 
 		_oldPerfCounter = pc;
 
@@ -135,13 +147,14 @@ void CTimer::Update(void)
 
 	m_LogicalFramesPassed = 0;
 	logicalFrameTime += updInMs;
-	while(logicalFrameTime >= LOGICAL_FRAME_MS){
-		logicalFrameTime -= LOGICAL_FRAME_MS;
-		m_LogicalFramesPassed++;
-	}
-	if(m_LogicalFramesPassed > MAX_LOGICAL_FRAMES_PER_UPDATE){
+	if (logicalFrameTime >= (MAX_LOGICAL_FRAMES_PER_UPDATE + 1) * LOGICAL_FRAME_MS) {
 		m_LogicalFramesPassed = MAX_LOGICAL_FRAMES_PER_UPDATE;
 		logicalFrameTime = 0.0;
+	} else {
+		while (logicalFrameTime >= LOGICAL_FRAME_MS) {
+			logicalFrameTime -= LOGICAL_FRAME_MS;
+			m_LogicalFramesPassed++;
+		}
 	}
 	ms_fLogicalFrameFraction = (float)(logicalFrameTime / LOGICAL_FRAME_MS);
 	ms_fRenderFrameLength = (float)(updInMs / LOGICAL_FRAME_MS);
@@ -263,7 +276,7 @@ void CTimer::Resume(void)
 		LARGE_INTEGER pc;
 		QueryPerformanceCounter(&pc);
 
-		_oldPerfCounter.LowPart += pc.LowPart - perfSuspendCounter.LowPart;
+		_oldPerfCounter.QuadPart += pc.QuadPart - perfSuspendCounter.QuadPart;
 	}
 	else
 #endif
@@ -287,7 +300,11 @@ uint32 CTimer::GetCurrentTimeInCycles(void)
 	{
 		LARGE_INTEGER pc;
 		QueryPerformanceCounter(&pc);
-		return (pc.LowPart - _oldPerfCounter.LowPart); // & 0x7FFFFFFF; pointless
+		const int64 elapsed = pc.QuadPart - _oldPerfCounter.QuadPart;
+		if (elapsed <= 0)
+			return 0;
+		const uint32 maxCycles = uint32(-1);
+		return elapsed > maxCycles ? maxCycles : uint32(elapsed);
 	}
 	else
 #endif

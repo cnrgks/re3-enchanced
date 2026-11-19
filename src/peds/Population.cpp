@@ -547,12 +547,54 @@ CPopulation::AddPed(ePedType pedType, uint32 miOrCopType, CVector const &coors)
 	}
 }
 
+namespace {
+constexpr int32 reservedMissionPedSlots = 24;
+}
+
+int32
+CPopulation::AmbientVehicleOccupantSlotsAvailable()
+{
+	const auto pool = CPools::GetPedPool();
+	const int32 available = pool->GetSize() - pool->GetNoOfUsedSpaces() - reservedMissionPedSlots;
+	return Max(0, available);
+}
+
+int32
+CPopulation::AmbientVehicleOccupantTarget()
+{
+	constexpr int32 minimumStreetPedSlots = 16;
+	const int32 requested = 16 * int32(Enhanced::VehicleRangeMultiplier()) * Enhanced::TrafficMultiplier(true);
+	const int32 usable = CPools::GetPedPool()->GetSize() - reservedMissionPedSlots - minimumStreetPedSlots;
+	return Min(requested, Max(0, usable));
+}
+
+int32
+CPopulation::CountAmbientVehicleOccupants()
+{
+	const auto pool = CPools::GetPedPool();
+	int32 occupants = 0;
+	for (int i = 0; i < pool->GetSize(); ++i) {
+		CPed *ped = pool->GetSlot(i);
+		if (ped && !ped->IsPlayer() && ped->CharCreatedBy == RANDOM_CHAR && ped->bInVehicle && ped->m_pMyVehicle &&
+			ped->m_pMyVehicle->VehicleCreatedBy == RANDOM_VEHICLE)
+			++occupants;
+	}
+	return occupants;
+}
+
+int32
+CPopulation::PedCountForSpawnBudget()
+{
+	const int32 occupants = Enhanced::SeparateTrafficPedBudget ? CountAmbientVehicleOccupants() : 0;
+	return Max(0, int32(ms_nTotalPeds) - occupants);
+}
+
 int32
 CPopulation::AmbientPedSlotsAvailable()
 {
-	const auto pool = CPools::GetPedPool();
-	constexpr int reservedPedSlots = 24;
-	const int32 available = pool->GetSize() - pool->GetNoOfUsedSpaces() - reservedPedSlots;
+	const int32 unfilledOccupantTarget = AmbientVehicleOccupantTarget() - CountAmbientVehicleOccupants();
+	const int32 reservedOccupantSlots = Max(4, unfilledOccupantTarget);
+	const int32 available = AmbientVehicleOccupantSlotsAvailable() - reservedOccupantSlots;
 	return Max(0, available);
 }
 
@@ -610,7 +652,7 @@ CPopulation::AddToPopulation(bool hiddenFeed, bool warmingUp)
 	ms_nTotalPeds = ms_nNumDummy + ms_nNumEmergency + ms_nNumCop + ms_nTotalGangPeds + ms_nTotalCivPeds;
 
 	const float fullRange = Enhanced::PedRangeMultiplier();
-	const int32 total = int32(ms_nTotalPeds);
+	const int32 total = PedCountForSpawnBudget();
 	const int32 limit = basePedLimit * int32(fullRange) * Enhanced::TrafficMultiplier(false);
 	const int32 target = Enhanced::TrafficTarget(false, limit, warmingUp);
 	const int32 openBudget = addCop ? 1 : target - total;

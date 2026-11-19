@@ -21,6 +21,7 @@
 #include "Gangs.h"
 #include "Garages.h"
 #include "GenericGameStorage.h"
+#include "Hud.h"
 #include "Pad.h"
 #include "Particle.h"
 #include "ParticleObject.h"
@@ -472,6 +473,7 @@ GenericLoad()
 	}
 
 	TracePcSaveLoad("Resuming saved scripts");
+	CHud::SuppressScriptHelpAfterLoad();
 	DoGameSpecificStuffAfterSucessLoad();
 	TracePcSaveLoad("Save data loaded");
 	debug("Game successfully loaded \n");

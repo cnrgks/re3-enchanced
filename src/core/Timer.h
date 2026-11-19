@@ -65,6 +65,7 @@ public:
 	static void Initialise(void);
 	static void Shutdown(void);
 	static void Update(void);
+	static void ResetFrameClock(void);
 	static void UpdateLogicalFrame(void);
 	static void SetTimeStepForRender(void);
 	static bool IsLogicalFrameDue(float msSinceUpdate);

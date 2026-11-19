@@ -44,6 +44,8 @@ public:
 	static bool bDontAllowWeaponChange;
 #endif
 
+	static uint32 m_lastManualVehicleEntryTime;
+
 	CPlayerPed();
 	~CPlayerPed();
 	void SetMoveAnim() { };

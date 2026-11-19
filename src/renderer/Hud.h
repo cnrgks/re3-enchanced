@@ -72,6 +72,9 @@ public:
 	static void GetRidOfAllHudMessages();
 	static void SetZoneName(wchar *name);
 	static void SetHelpMessage(wchar *message, bool quick);
+	static void SetPriorityHelpMessage(wchar *message);
+	static void SetScriptHelpMessage(wchar *message);
+	static void SuppressScriptHelpAfterLoad();
 	static void SetVehicleName(wchar *name);
 	static void Draw();
 	static void DrawAfterFade();

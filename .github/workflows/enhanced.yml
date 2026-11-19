@@ -45,7 +45,7 @@ jobs:
           Invoke-WebRequest 'https://github.com/glfw/glfw/releases/download/3.3.2/glfw-3.3.2.bin.WIN64.zip' -OutFile glfw.zip
           Expand-Archive -LiteralPath glfw.zip -DestinationPath .
 
-      - name: Test windscreen geometry and smooth zoom
+      - name: Test enhanced math, routing and script helpers
         shell: cmd
         run: |
           for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do call "%%i\VC\Auxiliary\Build\vcvars64.bat"

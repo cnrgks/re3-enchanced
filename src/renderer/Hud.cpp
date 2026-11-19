@@ -1,4 +1,5 @@
 #include "common.h"
+#include <deque>
 
 #include "Camera.h"
 #include "DMAudio.h"
@@ -118,6 +119,18 @@ int32 CHud::m_HelpMessageFadeTimer;
 uint32 CHud::m_HelpMessageState;
 bool CHud::m_HelpMessageQuick;
 float CHud::m_HelpMessageDisplayTime;
+
+namespace {
+struct PendingHelpMessage {
+	wchar text[HELP_MSG_LENGTH];
+	bool quick;
+};
+std::deque<PendingHelpMessage> pendingHelpMessages;
+wchar priorityHelpMessage[HELP_MSG_LENGTH];
+float priorityHelpTime;
+uint32 scriptHelpSuppressionStart;
+bool suppressScriptHelp;
+}
 int32 CHud::SpriteBrightness;
 bool CHud::m_Wants_To_Draw_Hud;
 bool CHud::m_Wants_To_Draw_3dMarkers;
@@ -274,6 +287,9 @@ void CHud::GetRidOfAllHudMessages()
 	m_HelpMessageState = 0;
 	m_HelpMessageQuick = 0;
 	m_HelpMessageDisplayTime = 1.0f;
+	pendingHelpMessages.clear();
+	priorityHelpTime = 0.0f;
+	suppressScriptHelp = false;
 	m_pVehicleName = nil;
 	m_pLastVehicleName = nil;
 	m_pVehicleNameToPrint = nil;
@@ -299,17 +315,51 @@ void CHud::SetZoneName(wchar *name)
 
 void CHud::SetHelpMessage(wchar *message, bool quick)
 {
-	if (!CReplay::IsPlayingBack()) {
-		CMessages::WideStringCopy(m_HelpMessage, message, HELP_MSG_LENGTH);
-		CMessages::InsertPlayerControlKeysInString(m_HelpMessage);
+	if (CReplay::IsPlayingBack())
+		return;
 
-		for (int i = 0; i < HELP_MSG_LENGTH; i++) {
-			m_LastHelpMessage[i] = 0;
-		}
-
-		m_HelpMessageState = 0;
-		m_HelpMessageQuick = quick;
+	PendingHelpMessage help = {};
+	CMessages::WideStringCopy(help.text, message, HELP_MSG_LENGTH);
+	CMessages::InsertPlayerControlKeysInString(help.text);
+	help.quick = quick;
+	if (!help.text[0]) {
+		pendingHelpMessages.clear();
+	} else if (priorityHelpTime > 0.0f || !pendingHelpMessages.empty()) {
+		for (auto &pending : pendingHelpMessages)
+			if (CMessages::WideStringCompare(pending.text, help.text, HELP_MSG_LENGTH))
+				return;
+		if (!m_HelpMessageState || !CMessages::WideStringCompare(m_HelpMessage, help.text, HELP_MSG_LENGTH))
+			pendingHelpMessages.push_back(help);
+		return;
 	}
+	if (CMessages::WideStringCompare(m_HelpMessage, help.text, HELP_MSG_LENGTH))
+		return;
+	CMessages::WideStringCopy(m_HelpMessage, help.text, HELP_MSG_LENGTH);
+	m_LastHelpMessage[0] = 0;
+	m_HelpMessageState = 0;
+	m_HelpMessageQuick = quick;
+}
+
+void CHud::SetPriorityHelpMessage(wchar *message)
+{
+	CMessages::WideStringCopy(priorityHelpMessage, message, HELP_MSG_LENGTH);
+	priorityHelpTime = 3000.0f;
+	if (TheCamera.m_ScreenReductionPercentage == 0.0f)
+		DMAudio.PlayFrontEndSound(SOUND_HUD, 0);
+}
+
+void CHud::SuppressScriptHelpAfterLoad()
+{
+	scriptHelpSuppressionStart = CTimer::GetTimeInMilliseconds();
+	suppressScriptHelp = true;
+}
+
+void CHud::SetScriptHelpMessage(wchar *message)
+{
+	if (suppressScriptHelp && CTimer::GetTimeInMilliseconds() - scriptHelpSuppressionStart < 5000)
+		return;
+	suppressScriptHelp = false;
+	SetHelpMessage(message, false);
 }
 
 void CHud::SetVehicleName(wchar *name)
@@ -1318,7 +1368,21 @@ void CHud::DrawAfterFade()
 	if (CTimer::GetIsUserPaused() || CReplay::IsPlayingBack())
 		return;
 
-	if (m_HelpMessage[0]) {
+	const bool priority = priorityHelpTime > 0.0f;
+	if (!priority && !m_HelpMessageState && !pendingHelpMessages.empty() &&
+		CMessages::WideStringCompare(m_HelpMessage, m_LastHelpMessage, HELP_MSG_LENGTH)) {
+		PendingHelpMessage &help = pendingHelpMessages.front();
+		CMessages::WideStringCopy(m_HelpMessage, help.text, HELP_MSG_LENGTH);
+		m_HelpMessageQuick = help.quick;
+		m_LastHelpMessage[0] = 0;
+		pendingHelpMessages.pop_front();
+	}
+
+	float fAlpha = 225.0f;
+	if (priority) {
+		if (!CTimer::GetIsPaused())
+			priorityHelpTime -= CTimer::GetTimeStepInMilliseconds();
+	} else if (m_HelpMessage[0]) {
 		if (!CMessages::WideStringCompare(m_HelpMessage, m_LastHelpMessage, HELP_MSG_LENGTH)) {
 			switch (m_HelpMessageState) {
 			case 0:
@@ -1344,7 +1408,6 @@ void CHud::DrawAfterFade()
 			CMessages::WideStringCopy(m_LastHelpMessage, m_HelpMessage, HELP_MSG_LENGTH);
 		}
 
-		float fAlpha = 225.0f;
 
 		if (m_HelpMessageState != 0) {
 			switch (m_HelpMessageState) {
@@ -1386,36 +1449,37 @@ void CHud::DrawAfterFade()
 			}
 
 			m_HelpMessageTimer += CTimer::GetTimeStepInMilliseconds();
-
-			CFont::SetAlphaFade(fAlpha);
-			CFont::SetCentreOff();
-			CFont::SetPropOn();
-
-			if (CGame::germanGame)
-				CFont::SetScale(SCREEN_SCALE_X(0.52f * 0.85f), SCREEN_SCALE_Y(1.1f * 0.85f));
-#ifdef MORE_LANGUAGES
-			else if (CFont::IsJapanese())
-				CFont::SetScale(SCREEN_SCALE_X(0.52f) * 1.35f, SCREEN_SCALE_Y(1.1f) * 1.25f);
-#endif
-			else
-				CFont::SetScale(SCREEN_SCALE_X(0.52f), SCREEN_SCALE_Y(1.1f));
-
-			CFont::SetColor(CRGBA(175, 175, 175, 255));
-			CFont::SetJustifyOff();			
-#ifdef MORE_LANGUAGES
-			if (CFont::IsJapanese())
-				CFont::SetWrapx(SCREEN_SCALE_X(229.0f) + SCREEN_SCALE_FROM_LEFT(26.0f) - SCREEN_SCALE_X_FIX(4.0f));
-			else
-#endif
-				CFont::SetWrapx(SCREEN_SCALE_X(200.0f) + SCREEN_SCALE_FROM_LEFT(26.0f) - SCREEN_SCALE_X_FIX(4.0f));
-			CFont::SetFontStyle(FONT_LOCALE(FONT_BANK));
-			CFont::SetBackgroundOn();
-			CFont::SetBackGroundOnlyTextOff();
-			CFont::SetBackgroundColor(CRGBA(0, 0, 0, fAlpha * 0.9f));
-			CFont::SetColor(CRGBA(175, 175, 175, 255));
-			CFont::PrintString(SCREEN_SCALE_FROM_LEFT(26.0f), SCREEN_SCALE_Y(28.0f) + SCREEN_SCALE_Y_FIX((150.0f - PagerXOffset) * 0.6f), m_HelpMessageToPrint);
-			CFont::SetAlphaFade(255.0f);
 		}
+	}
+	if (priority || m_HelpMessageState != 0) {
+		CFont::SetAlphaFade(fAlpha);
+		CFont::SetCentreOff();
+		CFont::SetPropOn();
+
+		if (CGame::germanGame)
+			CFont::SetScale(SCREEN_SCALE_X(0.52f * 0.85f), SCREEN_SCALE_Y(1.1f * 0.85f));
+#ifdef MORE_LANGUAGES
+		else if (CFont::IsJapanese())
+			CFont::SetScale(SCREEN_SCALE_X(0.52f) * 1.35f, SCREEN_SCALE_Y(1.1f) * 1.25f);
+#endif
+		else
+			CFont::SetScale(SCREEN_SCALE_X(0.52f), SCREEN_SCALE_Y(1.1f));
+
+		CFont::SetColor(CRGBA(175, 175, 175, 255));
+		CFont::SetJustifyOff();
+#ifdef MORE_LANGUAGES
+		if (CFont::IsJapanese())
+			CFont::SetWrapx(SCREEN_SCALE_X(229.0f) + SCREEN_SCALE_FROM_LEFT(26.0f) - SCREEN_SCALE_X_FIX(4.0f));
+		else
+#endif
+			CFont::SetWrapx(SCREEN_SCALE_X(200.0f) + SCREEN_SCALE_FROM_LEFT(26.0f) - SCREEN_SCALE_X_FIX(4.0f));
+		CFont::SetFontStyle(FONT_LOCALE(FONT_BANK));
+		CFont::SetBackgroundOn();
+		CFont::SetBackGroundOnlyTextOff();
+		CFont::SetBackgroundColor(CRGBA(0, 0, 0, fAlpha * 0.9f));
+		CFont::SetColor(CRGBA(175, 175, 175, 255));
+		CFont::PrintString(SCREEN_SCALE_FROM_LEFT(26.0f), SCREEN_SCALE_Y(28.0f) + SCREEN_SCALE_Y_FIX((150.0f - PagerXOffset) * 0.6f), priority ? priorityHelpMessage : m_HelpMessageToPrint);
+		CFont::SetAlphaFade(255.0f);
 	}
 
 	for (int i = 0; i < ARRAY_SIZE(CTheScripts::IntroTextLines); i++) {

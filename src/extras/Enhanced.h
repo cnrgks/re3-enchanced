@@ -7,7 +7,7 @@ struct sRadarTrace;
 namespace Enhanced {
 extern int8 QuickSave, AutoSave, RadarZoom, GPS, MenuMap;
 extern int8 VehicleDistance, PedDistance, ScreenFormat;
-extern int8 VehicleTrafficMultiplier, PedTrafficMultiplier;
+extern int8 VehicleTrafficMultiplier, PedTrafficMultiplier, SeparateTrafficPedBudget;
 int TrafficMultiplier(bool vehicles);
 extern int8 BorderlessCaptureProbe, FullscreenDXGIFlipY;
 extern bool TraceVehicleEntry;
@@ -19,11 +19,17 @@ struct TrafficSpawnStats {
     uint32 exposed;
 };
 extern TrafficSpawnStats VehicleSpawnStats, PedSpawnStats;
+struct VehicleTrafficDiagnostics {
+    uint32 targetFull, carBudgetFull, pedPoolLow, occupantBudgetFull, noModels;
+    uint32 routeRejected, laneRejected, groundRejected, visibilityRejected, collisionRejected, directionRejected;
+    uint32 rangeRemoved, offscreenRemoved, movingOffscreenKept;
+};
+extern VehicleTrafficDiagnostics VehicleTrafficStats;
 int TrafficAttempts(bool vehicles, const CVector &centre, float nearbyRadius, bool warmingUp);
 int TrafficTarget(bool vehicles, int limit, bool warmingUp);
 bool IsTrafficSpawnOccluded(const CVector &position);
 void ApplyScreenFormatSettings();
-extern int8 VehicleDetail, PedDetail, HealAfterSave, BreakableWindscreen, Borderless;
+extern int8 VehicleDetail, PedDetail, HealAfterSave, Borderless;
 
 wchar *GetText(const char *key);
 void Process();
@@ -38,7 +44,6 @@ void WindowModeChanged(int8 before, int8 after);
 #if defined(RW_GL3) && !defined(LIBRW_SDL2)
 void ApplyWindowMode(bool newWindow = false);
 #endif
-bool ProcessWindscreenShot(const CVector &source, const CVector &target, CEntity *shooter, bool hit, CColPoint &point, CEntity *&entity, bool hitOccupants = true);
 void ResetServices();
 void DiscoverServices();
 bool IsServiceBlip(const sRadarTrace &trace);

@@ -64,6 +64,8 @@ unsigned char act_align[6];
 CKeyboardState CPad::OldKeyState;
 CKeyboardState CPad::NewKeyState;
 CKeyboardState CPad::TempKeyState;
+static bool vehicleEntryPressPending;
+static bool vehicleEntryPressThisFrame;
 
 char CPad::KeyBoardCheatString[20];
 
@@ -432,6 +434,7 @@ void CPad::Clear(bool bResetPlayerControls)
 	NewKeyState.Clear();
 	OldKeyState.Clear();
 	TempKeyState.Clear();
+	vehicleEntryPressPending = vehicleEntryPressThisFrame = false;
 
 	NewMouseControllerState.Clear();
 	OldMouseControllerState.Clear();
@@ -1113,8 +1116,15 @@ void CPad::ResetOnWindowFocusChange(bool focused)
 	syncInputAfterFocus = focused;
 }
 
+void CPad::QueueVehicleEntryPress()
+{
+	vehicleEntryPressPending = true;
+}
+
 void CPad::UpdatePads(void)
 {
+	vehicleEntryPressThisFrame = vehicleEntryPressPending && !syncInputAfterFocus && !CTimer::GetIsPaused();
+	vehicleEntryPressPending = false;
 	bool bUpdate = true;
 
 	GetPad(0)->UpdateMouseForLogicalFrame();
@@ -2032,6 +2042,8 @@ bool CPad::ExitVehicleJustDown(void)
 {
 	if ( ArePlayerControlsDisabled() )
 		return false;
+	if (this == GetPad(0) && vehicleEntryPressThisFrame)
+		return true;
 
 	switch (CURMODE)
 	{

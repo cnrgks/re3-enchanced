@@ -24,6 +24,8 @@
 bool CPlayerPed::bDontAllowWeaponChange;
 #endif
 
+uint32 CPlayerPed::m_lastManualVehicleEntryTime;
+
 const uint32 CPlayerPed::nSaveStructSize =
 #ifdef COMPATIBLE_SAVES
 	1520;
@@ -38,6 +40,7 @@ CPlayerPed::~CPlayerPed()
 
 CPlayerPed::CPlayerPed(void) : CPed(PEDTYPE_PLAYER1)
 {
+	m_lastManualVehicleEntryTime = 0;
 	m_fMoveSpeed = 0.0f;
 	SetModelIndex(MI_PLAYER);
 #ifdef FIX_BUGS
@@ -1445,9 +1448,12 @@ CPlayerPed::ProcessControl(void)
 				m_fMoveSpeed = Min(2.0f, 2.0f * (m_vecSeekPos - GetPosition()).Magnitude2D());
 			}
 			if (padUsed && !padUsed->ArePlayerControlsDisabled()) {
-				if (padUsed->GetTarget() || padUsed->GetLeftStickXJustDown() || padUsed->GetLeftStickYJustDown() ||
-					padUsed->GetDPadUpJustDown() || padUsed->GetDPadDownJustDown() || padUsed->GetDPadLeftJustDown() ||
-					padUsed->GetDPadRightJustDown()) {
+				const bool manualEntryStarting = m_lastManualVehicleEntryTime &&
+					CTimer::GetTimeInMilliseconds() - m_lastManualVehicleEntryTime < 200;
+				const bool changedDirection = padUsed->GetLeftStickXJustDown() || padUsed->GetLeftStickYJustDown() ||
+					padUsed->GetDPadUpJustDown() || padUsed->GetDPadDownJustDown() ||
+					padUsed->GetDPadLeftJustDown() || padUsed->GetDPadRightJustDown();
+				if (padUsed->GetTarget() || (changedDirection && !manualEntryStarting)) {
 
 					RestorePreviousState();
 					if (m_objective == OBJECTIVE_ENTER_CAR_AS_PASSENGER || m_objective == OBJECTIVE_ENTER_CAR_AS_DRIVER) {

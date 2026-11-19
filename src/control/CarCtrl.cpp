@@ -97,13 +97,20 @@ CCarCtrl::RandomCarLimit(float trafficMultiplier)
 	return baseLimit * int32(Enhanced::VehicleRangeMultiplier()) * Enhanced::TrafficMultiplier(true);
 }
 
-bool
-CCarCtrl::HasRoomForTraffic()
+int32
+CCarCtrl::AmbientVehicleSlotsAvailable()
 {
 	const auto pool = CPools::GetVehiclePool();
 	// Leave slots for scripted vehicles and emergency services.
 	constexpr int reservedVehicleSlots = 16;
-	return pool->GetNoOfUsedSpaces() < pool->GetSize() - reservedVehicleSlots &&
+	const int32 available = pool->GetSize() - pool->GetNoOfUsedSpaces() - reservedVehicleSlots;
+	return Max(0, available);
+}
+
+bool
+CCarCtrl::HasRoomForTraffic()
+{
+	return AmbientVehicleSlotsAvailable() > 0 &&
 		// Random police and emergency vehicles already contribute to NumRandomCars.
 		NumParkedCars + NumMissionCars + NumRandomCars <
 			MaxNumberOfCarsInUse * Enhanced::VehicleRangeMultiplier() * Enhanced::TrafficMultiplier(true);
@@ -114,6 +121,8 @@ CCarCtrl::GenerateRandomCars()
 {
 	if (CCutsceneMgr::IsRunning())
 		return;
+	if (CStreaming::ms_numVehiclesLoaded == 0 && Enhanced::TraceTraffic)
+		++Enhanced::VehicleTrafficStats.noModels;
 	if (CStreaming::ms_numVehiclesLoaded > 0) {
 		const bool warmingUp = CountDownToCarsAtStart > 0 && TheCamera.GetScreenFadeStatus() == FADE_2;
 		if (CountDownToCarsAtStart > 0) {
@@ -161,9 +170,19 @@ CCarCtrl::GenerateOneRandomCar(bool hiddenFeed, bool warmingUp)
 	const int32 target = Enhanced::TrafficTarget(true, totalLimit, warmingUp);
 	CWanted* pWanted = pPlayer->m_pPed->m_pWanted;
 	const bool pursuit = pWanted->GetWantedLevel() > 1;
-	if (NumRandomCars >= (pursuit ? totalLimit : target) ||
-		!HasRoomForTraffic() || CPopulation::AmbientPedSlotsAvailable() < 4)
+	if (NumRandomCars >= (pursuit ? totalLimit : target)) {
+		if (Enhanced::TraceTraffic) ++Enhanced::VehicleTrafficStats.targetFull;
 		return;
+	}
+	if (!HasRoomForTraffic()) {
+		if (Enhanced::TraceTraffic) ++Enhanced::VehicleTrafficStats.carBudgetFull;
+		return;
+	}
+	const int32 occupantSlots = CPopulation::AmbientVehicleOccupantSlotsAvailable();
+	if (occupantSlots < 1) {
+		if (Enhanced::TraceTraffic) ++Enhanced::VehicleTrafficStats.pedPoolLow;
+		return;
+	}
 
 	const float fullRange = Enhanced::VehicleRangeMultiplier();
 	const bool distant = !warmingUp && !hiddenFeed && fullRange > 1.0f;
@@ -184,6 +203,19 @@ CCarCtrl::GenerateOneRandomCar(bool hiddenFeed, bool warmingUp)
 			/* All cop spawns with wanted level are handled by condition above. */
 			/* In particular it means that cop cars never spawn if player has wanted level of 1. */
 			return;
+	}
+	if (carClass != COPS && Enhanced::SeparateTrafficPedBudget &&
+		CPopulation::CountAmbientVehicleOccupants() >= CPopulation::AmbientVehicleOccupantTarget()) {
+		if (Enhanced::TraceTraffic) ++Enhanced::VehicleTrafficStats.occupantBudgetFull;
+		return;
+	}
+	if (carClass == COPS) {
+		const bool tacticalVehicle = carModel == MI_FBICAR || carModel == MI_ENFORCER;
+		const int requiredSlots = tacticalVehicle ? 4 : (pWanted->GetWantedLevel() > 1 ? 2 : 1);
+		if (occupantSlots < requiredSlots) {
+			if (Enhanced::TraceTraffic) ++Enhanced::VehicleTrafficStats.pedPoolLow;
+			return;
+		}
 	}
 	float frontX, frontY;
 	float preferredDistance, angleLimit;
@@ -333,12 +365,14 @@ CCarCtrl::GenerateOneRandomCar(bool hiddenFeed, bool warmingUp)
 	}
 	int16 colliding;
 	CWorld::FindObjectsKindaColliding(spawnPosition, 10.0f, true, &colliding, 2, nil, false, true, true, false, false);
-	if (colliding)
-		/* If something is already present in spawn position, do not create vehicle*/
+	if (colliding) {
+		if (Enhanced::TraceTraffic) ++Enhanced::VehicleTrafficStats.collisionRejected;
 		return;
-	if (!ThePaths.TestCoorsCloseness(vecTargetPos, PATH_CAR, spawnPosition, creationRange))
-		/* Testing if spawn position can reach target position via valid path. */
+	}
+	if (!ThePaths.TestCoorsCloseness(vecTargetPos, PATH_CAR, spawnPosition, creationRange)) {
+		if (Enhanced::TraceTraffic) ++Enhanced::VehicleTrafficStats.routeRejected;
 		return;
+	}
 	int16 idInNode = 0;
 	CPathNode* pCurNode = &ThePaths.m_pathNodes[curNodeId];
 	CPathNode* pNextNode = &ThePaths.m_pathNodes[nextNodeId];
@@ -349,10 +383,10 @@ CCarCtrl::GenerateOneRandomCar(bool hiddenFeed, bool warmingUp)
 	CCarPathLink* pPathLink = &ThePaths.m_carPathLinks[connectionId];
 	int16 lanesOnCurrentRoad = pPathLink->pathNodeIndex == nextNodeId ? pPathLink->numLeftLanes : pPathLink->numRightLanes;
 	CVehicleModelInfo* pModelInfo = (CVehicleModelInfo*)CModelInfo::GetModelInfo(carModel);
-	if (lanesOnCurrentRoad == 0 || pModelInfo->m_vehicleType == VEHICLE_TYPE_BIKE)
-		/* Not spawning vehicle if road is one way and intended direction is opposide to that way. */
-		/* Also not spawning bikes but they don't exist in final game. */
+	if (lanesOnCurrentRoad <= 0 || pModelInfo->m_vehicleType == VEHICLE_TYPE_BIKE) {
+		if (Enhanced::TraceTraffic) ++Enhanced::VehicleTrafficStats.laneRejected;
 		return;
+	}
 	CAutomobile* pVehicle = new CAutomobile(carModel, RANDOM_VEHICLE);
 	pVehicle->AutoPilot.m_nPrevRouteNode = 0;
 	pVehicle->AutoPilot.m_nCurrentRouteNode = curNodeId;
@@ -569,6 +603,7 @@ CCarCtrl::GenerateOneRandomCar(bool hiddenFeed, bool warmingUp)
 	}
 	if (groundZ == INFINITE_Z || ABS(groundZ - finalPosition.z) > 7.0f) {
 		/* Failed to find ground or too far from expected position. */
+		if (Enhanced::TraceTraffic) ++Enhanced::VehicleTrafficStats.groundRejected;
 		delete pVehicle;
 		return;
 	}
@@ -613,14 +648,17 @@ CCarCtrl::GenerateOneRandomCar(bool hiddenFeed, bool warmingUp)
 #endif
 			if ((vecTargetPos - pVehicle->GetPosition()).Magnitude2D() > offscreenLimit) {
 				/* Too far away cars that are not visible aren't needed. */
+				if (Enhanced::TraceTraffic) ++Enhanced::VehicleTrafficStats.visibilityRejected;
 				delete pVehicle;
 				return;
 			}
 		}else if((vecTargetPos - pVehicle->GetPosition()).Magnitude2D() > (TheCamera.GenerationDistMultiplier * creationRange) * 130.0f ||
 			(vecTargetPos - pVehicle->GetPosition()).Magnitude2D() < (TheCamera.GenerationDistMultiplier * creationRange) * 110.0f){
+			if (Enhanced::TraceTraffic) ++Enhanced::VehicleTrafficStats.visibilityRejected;
 			delete pVehicle;
 			return;
 		}else if((TheCamera.GetPosition() - pVehicle->GetPosition()).Magnitude2D() < 90.0f * (TheCamera.GenerationDistMultiplier * creationRange)){
+			if (Enhanced::TraceTraffic) ++Enhanced::VehicleTrafficStats.visibilityRejected;
 			delete pVehicle;
 			return;
 		}
@@ -630,17 +668,20 @@ CCarCtrl::GenerateOneRandomCar(bool hiddenFeed, bool warmingUp)
 	if (testForCollision){
 		CWorld::FindObjectsKindaColliding(pVehicle->GetPosition(), radiusToTest + 20.0f, true, &colliding, 2, nil, false, true, false, false, false);
 		if (colliding){
+			if (Enhanced::TraceTraffic) ++Enhanced::VehicleTrafficStats.collisionRejected;
 			delete pVehicle;
 			return;
 		}
 	}
 	CWorld::FindObjectsKindaColliding(pVehicle->GetPosition(), radiusToTest, true, &colliding, 2, nil, false, true, false, false, false);
 	if (colliding){
+		if (Enhanced::TraceTraffic) ++Enhanced::VehicleTrafficStats.collisionRejected;
 		delete pVehicle;
 		return;
 	}
 	if (speedDifferenceWithTarget.x * distanceToTarget.x +
 		speedDifferenceWithTarget.y * distanceToTarget.y >= 0.0f){
+		if (Enhanced::TraceTraffic) ++Enhanced::VehicleTrafficStats.directionRejected;
 		delete pVehicle;
 		return;
 	}
@@ -774,7 +815,8 @@ CCarCtrl::RemoveDistantCars()
 		if (!pVehicle)
 			continue;
 		PossiblyRemoveVehicle(pVehicle);
-		if (pVehicle->bCreateRoadBlockPeds){
+		pVehicle = CPools::GetVehiclePool()->GetSlot(i);
+		if (pVehicle && pVehicle->bCreateRoadBlockPeds){
 			if ((pVehicle->GetPosition() - FindPlayerCentreOfWorld(CWorld::PlayerInFocus)).Magnitude2D() < DISTANCE_TO_SPAWN_ROADBLOCK_PEDS) {
 				CRoadBlocks::GenerateRoadBlockCopsForCar(pVehicle, pVehicle->m_nRoadblockType, pVehicle->m_nRoadblockNode);
 				pVehicle->bCreateRoadBlockPeds = false;
@@ -823,6 +865,8 @@ CCarCtrl::PossiblyRemoveVehicle(CVehicle* pVehicle)
 			if (pVehicle->GetIsOnScreen() && CRenderer::IsEntityCullZoneVisible(pVehicle)) {
 				pVehicle->bFadeOut = true;
 			}else{
+				if (Enhanced::TraceTraffic && pVehicle->VehicleCreatedBy == RANDOM_VEHICLE)
+					++Enhanced::VehicleTrafficStats.rangeRemoved;
 				CWorld::Remove(pVehicle);
 				delete pVehicle;
 			}
@@ -839,6 +883,15 @@ CCarCtrl::PossiblyRemoveVehicle(CVehicle* pVehicle)
 		!CTrafficLights::ShouldCarStopForLight(pVehicle, true) &&
 		!CTrafficLights::ShouldCarStopForBridge(pVehicle) &&
 		!CGarages::IsPointWithinHideOutGarage(pVehicle->GetPosition())){
+		const bool ambient = pVehicle->VehicleCreatedBy == RANDOM_VEHICLE;
+		// Mission age alone does not identify a stuck car. At extended range this
+		// cleanup can fire before moving traffic has time to reach the player.
+		if (ambient && Enhanced::VehicleRangeMultiplier() > 1.0f &&
+			pVehicle->GetMoveSpeed().MagnitudeSqr2D() > sq(0.02f)) {
+			if (Enhanced::TraceTraffic) ++Enhanced::VehicleTrafficStats.movingOffscreenKept;
+			return;
+		}
+		if (Enhanced::TraceTraffic && ambient) ++Enhanced::VehicleTrafficStats.offscreenRemoved;
 		CWorld::Remove(pVehicle);
 		delete pVehicle;
 		return;
@@ -2732,7 +2785,7 @@ void CCarCtrl::GenerateEmergencyServicesCar(void)
 	if (FindPlayerPed()->m_pWanted->GetWantedLevel() > 3)
 		return;
 	const auto pool = CPools::GetVehiclePool();
-	if (pool->GetNoOfUsedSpaces() >= pool->GetSize() - 2 || CPopulation::AmbientPedSlotsAvailable() < 4)
+	if (pool->GetNoOfUsedSpaces() >= pool->GetSize() - 2 || CPopulation::AmbientVehicleOccupantSlotsAvailable() < 4)
 		return;
 	if (NumParkedCars + NumMissionCars + NumRandomCars >
 		MaxNumberOfCarsInUse * Enhanced::VehicleRangeMultiplier() * Enhanced::TrafficMultiplier(true))

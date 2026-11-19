@@ -57,6 +57,7 @@ public:
 	static void RemoveFromInterestingVehicleList(CVehicle*);
 	static int32 RandomCarLimit(float trafficMultiplier);
 	static bool HasRoomForTraffic();
+	static int32 AmbientVehicleSlotsAvailable();
 	static void GenerateRandomCars(void);
 	static void GenerateOneRandomCar(bool hiddenFeed, bool warmingUp);
 	static int32 CountNearbyTraffic(const CVector &centre);

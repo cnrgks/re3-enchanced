@@ -78,6 +78,10 @@ public:
 	static float PedCreationDistMultiplier();
 	static CPed *AddPed(ePedType pedType, uint32 mi, CVector const &coors);
 	static int32 AmbientPedSlotsAvailable();
+	static int32 AmbientVehicleOccupantSlotsAvailable();
+	static int32 AmbientVehicleOccupantTarget();
+	static int32 CountAmbientVehicleOccupants();
+	static int32 PedCountForSpawnBudget();
 	static void AddToPopulation(bool hiddenFeed, bool warmingUp);
 	static int32 CountNearbyTraffic(const CVector &centre, int32 *total = nil);
 	static void ManagePopulation(void);

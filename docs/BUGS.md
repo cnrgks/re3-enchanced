@@ -32,8 +32,9 @@ sonraki düzeltmeleri ve doğrulama durumlarını kaydeder.
 | SAV-02 | Görev sonrası evde çatıda doğma | Kaynak değişikliği hazır — üç ada oyun doğrulaması bekliyor |
 | SAV-03 | Quicksave engelleme koşulları | Kaynakta koşullar mevcut, uyarı güncellendi — oyun doğrulaması bekliyor |
 | SAV-04 | Araçta ve aranırken de görev sonrası 8. slota autosave | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
+| SAV-06 | Autosave ve sol üst HUD uyarılarının sırası | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
 | SAV-05 | Autosave ve quicksave yüklerken menüde takılma | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
-| VEH-01 | Kırık ön camdan sürücü hasar almıyor | Açık — kullanıcı bildirdi |
+| VEH-01 | Enhanced kırılabilir ön cam özelliği | Kapalı — özellik kullanıcı isteğiyle kaldırıldı |
 | DIST-01 | Vehicle Distance 1× üzerindeyken araç spawn akışı bozuluyor | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
 | DIST-02 | Pedestrian Distance 1× üzerindeyken yaya spawn akışı bozuluyor | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
 | GPS-01 | Elle waypoint'te üst/alt yol katmanı karışıyor | Kapalı — kullanıcı doğruladı |
@@ -50,7 +51,7 @@ sonraki düzeltmeleri ve doğrulama durumlarını kaydeder.
 | CAP-01 | OpenGL fullscreen/borderless yakalama | Kapalı — kullanıcı doğruladı |
 | INPUT-02 | Borderless kayıtlıyken yeniden açılışta imleç sola kilitleniyor | Kapalı — kullanıcı doğruladı |
 | INPUT-03 | Borderless modunda imleç gecikmesi sürüyor | Kapalı — kullanıcı doğruladı |
-| INPUT-04 | Araca binmek bazen ikinci basışı gerektiriyor | Kapalı — kullanıcı doğruladı |
+| INPUT-04 | Araca binmek bazen ikinci basışı gerektiriyor | Tekrarlandı — kaynak değişikliği hazır |
 | INPUT-05 | Alt+Tab sonrası masaüstü imleci bazen görünmüyor | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
 | WIN-01 | Alt-Tab sırasında eski Windows çerçevesi/toolbar parlaması | Kapalı — kullanıcı artık görmediğini bildirdi |
 | WIN-02 | Odak kaybında pause, dönüşte Pause menüsünde kalma | Kaynak değişikliği hazır — oyun doğrulaması bekliyor |
@@ -113,6 +114,12 @@ tamamlanınca sol üstte `Autosaved.` gösteriliyor. Geçici dosya doğrulanırs
 eski slot değiştirilir. İşlem hata verirse eski slot korunur ve hata gösterilir.
 `Heal After Saving` hem manuel hem otomatik kayda uygulanıyor.
 Otomatik kayıt manuel kaydın altı saat ilerletme işlemini çağırmıyor.
+
+### SAV-06 — autosave ve sol üst HUD uyarılarının sırası
+
+Autosave sonucu önce üç saniye gösterilir. Önceki uyarı kaldığı yerden
+devam eder, bekleyen farklı uyarılar sırayla gösterilir. Yüklemenin ilk
+beş oyun saniyesindeki betik yardım mesajları engellenir. Oyun testi bekliyor.
 
 ### SAV-05 — kayıt yüklerken menüde takılma
 
@@ -208,6 +215,34 @@ ayarları eklendi. Çarpan ilgili türün adet tavanına ve normal oynanıştaki
 üretim denemesi sayısına uygulanıyor. Karanlık ekran açılış dolumu mevcut
 kare başına deneme sınırını kullanıyor. Nokta, görüş, çarpışma ve fiziksel
 havuz kontrolleri uygulanıyor. Trafik günlüğü iki çarpanı da kaydediyor.
+
+**v1.16 kullanıcı sonucu:** Çarpanla da istenen araç yoğunluğuna ulaşılamadı.
+Kaynakta uzak üretimle çakışan eski ekran dışı temizlik kuralı bulundu.
+Beş saniyelik görev yaşı, aracın hareketsiz olduğunu doğrulamadan silmeyi
+başlatabiliyordu. 2×/3× ayarlarında ilerleyen ortam araçları bu temizlikten
+muaf tutuluyor. Dış mesafe ve diğer silme kuralları uygulanıyor.
+`-trace-traffic` artık araç hedefi, adet bütçesi, ped havuzu, model eksikliği,
+rota, şerit, zemin, görüş, çarpışma ve geliş yönü kaynaklı elemeleri ayrı
+sayıyor. Araç havuzu doluluğunu ve ekran dışı/menzil silmelerini de yazıyor.
+Ped Distance doğrudan araç tavanını değiştirmiyor. Yaya artışı ortak ped
+havuzunu doldurunca araçlar sürücü/yolcu ayıramıyordu. Vehicle Distance
+1×/2×/3× için sürücü ve yolcu hedefi 16/32/48 ped slotu. Mevcut rastgele
+araçlar bu payın bir kısmını karşılıyor. Ortam yayaları kalan payı ve en az
+dört kişilik araç payını kullanamıyor. Görevler için 24 ped slotu koruması
+geçerli. Normal araç bir slot ister. Polis ve acil araçlar kendi yolcu
+payını koruyor. Açılıştaki dolumdan sonra üretim hızı, hedef nüfusa olan
+açık ve o anda kullanılabilir slotlarla sınırlanıyor. Hedefe yaklaşıldıkça
+veya havuz doldukça deneme sayısı azalıyor.
+Enhanced Options altındaki isteğe bağlı Separate Traffic Ped Budget açıkken
+rastgele araçların sürücü/yolcuları yaya üretim tavanına dahil edilmiyor.
+Normal araç üretimi kendi sürücü/yolcu tavanını kullanıyor. Bu tavan
+Vehicle Distance tabanından (16/32/48) Vehicle Traffic Multiplier ile
+hesaplanıyor. Fiziksel 140 ped havuzunda görevler için 24 ve yayalar için
+16 kişilik alan hesaba katıldığı için araç hedefi en fazla 100 olabiliyor.
+Polis ve acil servis üretimi fiziksel korumaları kullanmaya devam ediyor.
+Ayar varsayılan olarak kapalı. Log sürücü/yolcu ve yaya payını ayrı
+veriyor. Baskın nedenin ölçümü yeni build ve aynı şehir rotasında oyun
+denemesi bekliyor.
 
 ### GPS-01 — elle işaretlemede üst yol
 
@@ -452,6 +487,12 @@ akışı incelenir; sadece görüntüye bakılarak sebep kesinleştirilmez.
 
 ### WIN-02 — odak kaybında pause
 
+Kullanıcı oyun bir süre arka planda kaldıktan sonra Pause ekranının donduğunu
+bildirdi. OpenGL odak dışındayken çizim yerine pencere olaylarını bekliyor.
+Dönüşte kare saati yeniden eşitleniyor ve Pause ilk karede çiziliyor. Windows
+performans sayacı farkı 64 bit okunuyor, bekleyen mantık kareleri sınırlı.
+Uzun süreli Alt+Tab ve geri dönüş oyun testi bekliyor.
+
 **Son kullanıcı isteği:** Odak dönünce oyun Pause menüsünde kalmalı. Kaynakta
 odak kaybı simülasyonu durduruyor. Oyun sırasında odak geri geldiğinde
 Pause menüsü açılıyor ve manuel devam bekleniyor. Açık menü sayfası korunuyor.
@@ -630,6 +671,11 @@ Gecikmeyi karşılaştırmak için Borderless ve Fullscreen aynı FPS ve VSync
 ayarlarıyla denenebilir.
 
 ### INPUT-04 — Araca binmek için ikinci basış gerekiyor
+
+Kullanıcı kısa durma ve ikinci basışın tekrarlandığını bildirdi. GLFW kısa
+araç giriş basışını sonraki pad örneğine taşıyor. İlk 200 ms boyunca
+hareket yönü değişikliği giriş hedefini iptal etmiyor. Nişan alma ve süre
+sonrasında yön değişikliğiyle bilinçli iptal korunuyor. Oyun testi bekliyor.
 
 Kullanıcı Borderless modunda başka bir tuşa basmıyorken araca binme komutunun
 ilk basışta bazen takıldığını, ikinci basışta karakterin araca bindiğini

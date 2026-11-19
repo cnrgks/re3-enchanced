@@ -1,10 +1,18 @@
-RE3 ENHANCED v1.16 - OPENGL x64
+RE3 ENHANCED v1.17 - OPENGL x64
 
 KURULUM
 Oyunu kapat ve mevcut re3.exe/re3.pdb ciftini yedekle. Paketin game
 klasorunun icerigini GTA III kurulumuna kopyala. Oyun verileri dahil
 degildir. Mevcut ini ve kayitlari koru. x64 ASI Loader, CLEO Redux ve
 runtime kutuphaneleri dahildir.
+
+v1.17 TRAFIK DENEMESI
+Separate Traffic Ped Budget varsayilan olarak kapali. Acikken rastgele
+arac suruculeri ve yolculari yaya butcesinden dusulmez. Arac ici ped
+hedefi Vehicle Distance ve Vehicle Traffic Multiplier ile hesaplanir.
+Fiziksel ped havuzu ve gorev rezervi gecerlidir. Bos slot ve hedefe
+olan acik, uretim denemelerinin hizini belirler. -trace-traffic ile
+re3-traffic.log dosyasinda ayarlari ve eleme nedenlerini karsilastir.
 
 v1.16 DENEMELERI
 Gorev autosave arac, hareket veya aranma seviyesinden bagimsizdir.

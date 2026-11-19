@@ -1775,9 +1775,14 @@ keypressCB(GLFWwindow* window, int key, int scancode, int action, int mods)
 		if (key == GLFW_KEY_RIGHT_SHIFT)
 			rshiftStatus = action != GLFW_RELEASE;
 
-        if (Enhanced::TraceVehicleEntry && ks!=rsNULL &&
-            (ks==ControlsManager.GetControllerKeyAssociatedWithAction(VEHICLE_ENTER_EXIT,KEYBOARD) ||
-             ks==ControlsManager.GetControllerKeyAssociatedWithAction(VEHICLE_ENTER_EXIT,OPTIONAL_EXTRA))) {
+        const bool vehicleKey = ks != rsNULL &&
+            (ks == ControlsManager.GetControllerKeyAssociatedWithAction(VEHICLE_ENTER_EXIT, KEYBOARD) ||
+             ks == ControlsManager.GetControllerKeyAssociatedWithAction(VEHICLE_ENTER_EXIT, OPTIONAL_EXTRA));
+        if (vehicleKey && action == GLFW_PRESS && gGameState == GS_PLAYING_GAME &&
+            WindowAcceptsInput(window) && !FrontEndMenuManager.m_bMenuActive && !CTimer::GetIsPaused())
+            CPad::QueueVehicleEntryPress();
+
+        if (Enhanced::TraceVehicleEntry && vehicleKey) {
             if (FILE *log=fopen("re3-vehicle-entry.log","a")) {
                 fprintf(log,"keyboard frame=%u key=%d action=%s focused=%d menu=%d\n",
                     CTimer::GetFrameCounter(),int(ks),action==GLFW_PRESS ? "press" : "release",
@@ -2403,13 +2408,22 @@ main(int argc, char *argv[])
 #endif
 			const bool acceptsInput = WindowAcceptsInput(window);
 			const bool windowPaused = gGameState == GS_PLAYING_GAME && !acceptsInput;
+			const bool focusReturned = !windowPaused && CTimer::GetIsWindowPaused();
 			if (windowPaused != CTimer::GetIsWindowPaused()) {
 				CTimer::SetWindowPause(windowPaused);
 				CPad::ResetOnWindowFocusChange(!windowPaused);
-				if (!windowPaused && gGameState == GS_PLAYING_GAME)
+				if (focusReturned && gGameState == GS_PLAYING_GAME) {
 					FrontEndMenuManager.PauseAfterWindowFocusReturns();
+					CTimer::ResetFrameClock();
+				}
+				DMAudio.Service();
 			}
 			ApplyCursorMode(window, acceptsInput);
+			if (windowPaused) {
+				// Keep processing window events without rendering to an inactive drawable.
+				glfwWaitEventsTimeout(0.05);
+				continue;
+			}
 #ifdef GET_KEYBOARD_INPUT_FROM_X11
 			checkKeyPresses();
 #endif
@@ -2620,7 +2634,7 @@ main(int argc, char *argv[])
 							// at the logical frame rate each rendered frame is one logical frame, so wait for
 							// one instead of for a fixed time, or the two drift and a frame gets none or two
 							int32 frameLimit = CMenuManager::GetFrameLimit();
-							if (frameLimit == 0 || (frameLimit == LOGICAL_FRAME_RATE ? CTimer::IsLogicalFrameDue(ms) : (1000.0f / (float)frameLimit) < ms))
+							if (focusReturned || frameLimit == 0 || (frameLimit == LOGICAL_FRAME_RATE ? CTimer::IsLogicalFrameDue(ms) : (1000.0f / (float)frameLimit) < ms))
 								RsEventHandler(rsIDLE, (void *)TRUE);
 						}
 						break;

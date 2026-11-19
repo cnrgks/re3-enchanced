@@ -126,14 +126,11 @@ CPlayerInfo::Process(void)
 	m_fRoadDensity = Clamp(m_fRoadDensity, 0.4f, 1.45f);
 
 	// Because vehicle enter/exit use same key binding.
-	bool enterOrExitVeh;
-	if (m_pPed->bVehExitWillBeInstant && m_pPed->bInVehicle)
-		enterOrExitVeh = CPad::GetPad(0)->ExitVehicleJustDown();
-	else
-		enterOrExitVeh = CPad::GetPad(0)->GetExitVehicle();
+	CPad *pad = CPad::GetPad(0);
+	const bool enterOrExitVeh = !m_pPed->bInVehicle || m_pPed->bVehExitWillBeInstant ?
+		pad->ExitVehicleJustDown() : pad->GetExitVehicle();
 
-    const bool entryEdge=Enhanced::TraceVehicleEntry && !m_pPed->bInVehicle &&
-        CPad::GetPad(0)->ExitVehicleJustDown();
+    const bool entryEdge = Enhanced::TraceVehicleEntry && !m_pPed->bInVehicle && enterOrExitVeh;
     if (entryEdge) {
         if (FILE *log=fopen("re3-vehicle-entry.log","a")) {
             fprintf(log,"pad frame=%u state=%d objective=%d\n",
@@ -182,73 +179,73 @@ CPlayerInfo::Process(void)
 			}
 		} else {
 			// Enter vehicle
-			if (CPad::GetPad(0)->ExitVehicleJustDown()) {
-				bool weAreOnBoat = false;
-				float lastCloseness = 0.0f;
-				CVehicle *carBelow = nil;
-				CEntity *surfaceBelow = m_pPed->m_pCurrentPhysSurface;
-				if (surfaceBelow && surfaceBelow->IsVehicle()) {
-					carBelow = (CVehicle*)surfaceBelow;
-					if (carBelow->IsBoat()) {
-						weAreOnBoat = true;
-						m_pPed->bOnBoat = true;
+			bool weAreOnBoat = false;
+			float lastCloseness = 0.0f;
+			CVehicle *carBelow = nil;
+			CEntity *surfaceBelow = m_pPed->m_pCurrentPhysSurface;
+			if (surfaceBelow && surfaceBelow->IsVehicle()) {
+				carBelow = (CVehicle*)surfaceBelow;
+				if (carBelow->IsBoat()) {
+					weAreOnBoat = true;
+					m_pPed->bOnBoat = true;
 #ifdef VC_PED_PORTS
-						if (carBelow->GetStatus() != STATUS_WRECKED && carBelow->GetUp().z > 0.3f)
+					if (carBelow->GetStatus() != STATUS_WRECKED && carBelow->GetUp().z > 0.3f)
 #else
-						if (carBelow->GetStatus() != STATUS_WRECKED)
+					if (carBelow->GetStatus() != STATUS_WRECKED)
 #endif
-							m_pPed->SetSeekBoatPosition(carBelow);
+						m_pPed->SetSeekBoatPosition(carBelow);
+				}
+			}
+			// Find closest car
+			if (!weAreOnBoat) {
+				float minX = m_pPed->GetPosition().x - 10.0f;
+				float maxX = 10.0f + m_pPed->GetPosition().x;
+				float minY = m_pPed->GetPosition().y - 10.0f;
+				float maxY = 10.0f + m_pPed->GetPosition().y;
+
+				int minXSector = CWorld::GetSectorIndexX(minX);
+				if (minXSector < 0) minXSector = 0;
+				int minYSector = CWorld::GetSectorIndexY(minY);
+				if (minYSector < 0) minYSector = 0;
+				int maxXSector = CWorld::GetSectorIndexX(maxX);
+				if (maxXSector > NUMSECTORS_X - 1) maxXSector = NUMSECTORS_X - 1;
+				int maxYSector = CWorld::GetSectorIndexY(maxY);
+				if (maxYSector > NUMSECTORS_Y - 1) maxYSector = NUMSECTORS_Y - 1;
+
+				CWorld::AdvanceCurrentScanCode();
+
+				for (int curY = minYSector; curY <= maxYSector; curY++) {
+					for (int curX = minXSector; curX <= maxXSector; curX++) {
+						CSector *sector = CWorld::GetSector(curX, curY);
+						FindClosestCarSectorList(sector->m_lists[ENTITYLIST_VEHICLES], m_pPed,
+							minX, minY, maxX, maxY, &lastCloseness, &carBelow);
+						FindClosestCarSectorList(sector->m_lists[ENTITYLIST_VEHICLES_OVERLAP], m_pPed,
+							minX, minY, maxX, maxY, &lastCloseness, &carBelow);
 					}
 				}
-				// Find closest car
-				if (!weAreOnBoat) {
-					float minX = m_pPed->GetPosition().x - 10.0f;
-					float maxX = 10.0f + m_pPed->GetPosition().x;
-					float minY = m_pPed->GetPosition().y - 10.0f;
-					float maxY = 10.0f + m_pPed->GetPosition().y;
-
-					int minXSector = CWorld::GetSectorIndexX(minX);
-					if (minXSector < 0) minXSector = 0;
-					int minYSector = CWorld::GetSectorIndexY(minY);
-					if (minYSector < 0) minYSector = 0;
-					int maxXSector = CWorld::GetSectorIndexX(maxX);
-					if (maxXSector > NUMSECTORS_X - 1) maxXSector = NUMSECTORS_X - 1;
-					int maxYSector = CWorld::GetSectorIndexY(maxY);
-					if (maxYSector > NUMSECTORS_Y - 1) maxYSector = NUMSECTORS_Y - 1;
-
-					CWorld::AdvanceCurrentScanCode();
-
-					for (int curY = minYSector; curY <= maxYSector; curY++) {
-						for (int curX = minXSector; curX <= maxXSector; curX++) {
-							CSector *sector = CWorld::GetSector(curX, curY);
-							FindClosestCarSectorList(sector->m_lists[ENTITYLIST_VEHICLES], m_pPed,
-								minX, minY, maxX, maxY, &lastCloseness, &carBelow);
-							FindClosestCarSectorList(sector->m_lists[ENTITYLIST_VEHICLES_OVERLAP], m_pPed,
-								minX, minY, maxX, maxY, &lastCloseness, &carBelow);
-						}
-					}
-				}
-                if (entryEdge) {
-                    if (FILE *log=fopen("re3-vehicle-entry.log","a")) {
-                        fprintf(log,"search frame=%u model=%d status=%d lock=%d onBoat=%d\n",
-                            CTimer::GetFrameCounter(),carBelow ? carBelow->GetModelIndex() : -1,
-                            carBelow ? int(carBelow->GetStatus()) : -1,
-                            carBelow ? int(carBelow->m_nDoorLock) : -1,int(weAreOnBoat));
-                        fclose(log);
-                    }
+			}
+            if (entryEdge) {
+                if (FILE *log=fopen("re3-vehicle-entry.log","a")) {
+                    fprintf(log,"search frame=%u model=%d status=%d lock=%d onBoat=%d\n",
+                        CTimer::GetFrameCounter(),carBelow ? carBelow->GetModelIndex() : -1,
+                        carBelow ? int(carBelow->GetStatus()) : -1,
+                        carBelow ? int(carBelow->m_nDoorLock) : -1,int(weAreOnBoat));
+                    fclose(log);
                 }
-				// carBelow is now closest vehicle
-				if (carBelow && !weAreOnBoat) {
-					if (carBelow->GetStatus() == STATUS_TRAIN_NOT_MOVING) {
-						m_pPed->SetObjective(OBJECTIVE_ENTER_CAR_AS_PASSENGER, carBelow);
-					} else if (carBelow->IsBoat()) {
-						if (!carBelow->pDriver) {
-							m_pPed->m_vehDoor = 0;
-							m_pPed->SetEnterCar(carBelow, m_pPed->m_vehDoor);
-						}
-					} else {
-						m_pPed->SetObjective(OBJECTIVE_ENTER_CAR_AS_DRIVER, carBelow);
+            }
+			if (carBelow)
+				m_pPed->m_lastManualVehicleEntryTime = CTimer::GetTimeInMilliseconds();
+			// carBelow is now closest vehicle
+			if (carBelow && !weAreOnBoat) {
+				if (carBelow->GetStatus() == STATUS_TRAIN_NOT_MOVING) {
+					m_pPed->SetObjective(OBJECTIVE_ENTER_CAR_AS_PASSENGER, carBelow);
+				} else if (carBelow->IsBoat()) {
+					if (!carBelow->pDriver) {
+						m_pPed->m_vehDoor = 0;
+						m_pPed->SetEnterCar(carBelow, m_pPed->m_vehDoor);
 					}
+				} else {
+					m_pPed->SetObjective(OBJECTIVE_ENTER_CAR_AS_DRIVER, carBelow);
 				}
 			}
 		}
