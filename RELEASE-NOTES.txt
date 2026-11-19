@@ -1,49 +1,36 @@
-RE3 ENHANCED v1.4 - OPENGL IMLEC + DENEYSEL FULLSCREEN
+RE3 ENHANCED v1.5 - OPENGL x64 DENEME PAKETI
 
 KURULUM
-Oyunu kapat. Mevcut re3.exe ve re3.pdb ciftini yedekle. Paketin game
-klasorunun ICINDEKILERI GTA III kurulumuna kopyala. Oyun verileri dahil degil.
-Mevcut ini ve kayitlar pakette yoktur; kullanici dosyalarini silme.
-x64 ASI Loader/CLEO Redux ve runtime kutuphaneleri dahildir. x86 modlar
-otomatik uyumlu olmaz; ayni isi yapan eski modlari kapali tut.
+Oyunu kapat ve mevcut re3.exe/re3.pdb ciftini yedekle. Paketin game
+klasorunun icerigini GTA III kurulumuna kopyala. Oyun verileri dahil
+degildir. Mevcut ini ve kayitlari koru. x64 ASI Loader, CLEO Redux ve
+runtime kutuphaneleri dahildir.
 
-IMLEC
-Borderless soguk acilista +1 genislik nedeniyle sifira dusen tamsayi oran
- duzeltildi. Son framebuffer olcusu baslangicta eslenir; odak donusunde
-imlec konumu eslenir. Sol kenar x=0 gecerli girdidir. DPI koordinatlari
- dogru oranda donusturulur. Bu duzeltmeler fullscreen deneyinden bagimsizdir.
+CAP-01 - FULLSCREEN
+DXGI deneyi yeni ayarlarda varsayilan olarak kapalidir. Denemek icin
+Enhanced Options > Fullscreen Capture (Experimental) secenegini ac,
+Graphics > Screen Format > Fullscreen sec ve Enter ile uygula.
+Once oyun goruntusunu, sonra Discord ve Ambilight yakalamasini ayri
+kontrol et. re3-display.log icindeki transfer=texture-copy yeni DXGI
+aktarimini belirtir. API hatasinda oyun native OpenGL Fullscreen'e doner.
 
-FULLSCREEN DENEYI - YALNIZCA WINDOWS OPENGL
-Save yuklemeden Enhanced Options > Fullscreen Capture (Experimental) ON,
-Graphics > Screen Format > Fullscreen secip Enter ile uygula.
-Oyun OpenGL ile cizer. Son kare WGL_NV_DX_interop2 ile GPU uzerinde DXGI /
-D3D11 sunum yuzeyine aktarilir; CPU frame okumasi veya D3D9 renderer yoktur.
-DXGI gercek fullscreen ister ve durumunu kontrol eder. Destek yoksa/hata
-olursa native OpenGL fullscreen'e doner ve re3-display.log'a sebep yazar.
-Her GPU/surucude desteklenmez. Discord/Ambilight sonucu ve gecikme henuz
-kullanici denemesini bekler; bu bir garanti veya tamamlanmis fix degildir.
-Kuyruk siniri cihaz bazinda 1 istenir. VSync oyunun mevcut ayarina uyar.
-Surucu profili, registry veya global sistem ayari degistirilmez.
+Menuye ulasilamiyorsa oyunu kapat ve re3.exe -safe-display ile baslat.
+Bu secenek DXGI'yi kapatip Borderless acar. Alternatif olarak oyun
+kapaliyken re3.ini [VideoMode] bolumunde FullscreenDXGI=0 ve
+ScreenFormat=2 ayarla. Borderless +1 probu varsayilan olarak aciktir.
 
-DENEYI GERI ALMA - IMLEC DUZELTMESI KALIR
-Ana menuden Fullscreen Capture (Experimental) OFF yapip Enter ile uygula.
-Menuye ulasilamiyorsa oyunu kapat, re3.ini [VideoMode] altina
-FullscreenDXGI=0 yaz, yeniden ac. Ayni EXE/PDB kullanilir.
-Goruntu ters ise tani icin ayni bolumde FullscreenDXGIFlipY=0 denenebilir.
+INPUT-03 - IMLEC
+-trace-display-timing, re3-display.log dosyasina kare ve sunum
+istatistiklerini yazar. Ayni monitor cozunurlugu, yenileme hizi,
+FPS ve VSync ile Borderless ve native Fullscreen'i karsilastir.
+Esit framebuffer icin ilk turda BorderlessCaptureProbe=0 ve
+FullscreenDXGI=0 kullan. +1 probunu ayri dene. Menu imleci ve
+oyun ici kamerayi ayri gozle. INPUT-02 acilis duzeltmesi dahildir.
 
-BORDERLESS
-Onceki +1 genislik davranisi korunur. ScreenFormat=2, varsayilan
-BorderlessCaptureProbe=1. Probe=0 +1'i kapatir; yeniden baslatmak gerekir.
-Tam pencere boyutu, yakalama ve gecikme her modda ayri degerlendirilmelidir.
+INPUT-04 - ARAC GIRISI
+-trace-vehicle-entry, re3-vehicle-entry.log dosyasina bagli tus
+olaylarini ve arac giris durumlarini yazar. Ayni arac, kapi ve
+yaklasma konumu ile basarili ve aksayan basisi karsilastir.
 
-TEST
-Borderless seciliyken kapat/ac: fare menude ve oyunda normal mi?
-Fullscreen'de Discord tam ekran paylasimi ve Ambilight'i ayri dene.
-Alt-Tab, geri odaklanma ve diger ekran bicimlerine donusu dene.
-Logda 'dxgi: active fullscreen=1' yeni yolun acildigini gosterir;
-'returning to native OpenGL fullscreen' fallback'tir, yakalama fix'i degildir.
-Gecikme icin ayni FPS/VSync ayariyla karsilastir. Paket yalnizca OpenGL'dir.
-
-Kayit/cati, on camdan hasar, GPS ve harita backlog'u bu surumde degismedi.
-docs/BUGS.md, ROADMAP.md ve docs/DISPLAY-REPORT-v1.3.md ayrintilari tutar.
-EXE/PDB kaynak eslesmesi ve SHA-256 listesi manifest.json icindedir.
+Paket yalnizca OpenGL x64'tur. EXE/PDB ve SHA-256 bilgileri
+manifest.json dosyasindadir. Oyun ici sonuclar deneme bekliyor.

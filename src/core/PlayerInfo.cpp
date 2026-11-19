@@ -9,6 +9,8 @@
 #include "Explosion.h"
 #include "Fire.h"
 #include "Frontend.h"
+#include "Enhanced.h"
+#include <cstdio>
 #include "General.h"
 #include "HandlingMgr.h"
 #include "Messages.h"
@@ -130,6 +132,16 @@ CPlayerInfo::Process(void)
 	else
 		enterOrExitVeh = CPad::GetPad(0)->GetExitVehicle();
 
+    const bool entryEdge=Enhanced::TraceVehicleEntry && !m_pPed->bInVehicle &&
+        CPad::GetPad(0)->ExitVehicleJustDown();
+    if (entryEdge) {
+        if (FILE *log=fopen("re3-vehicle-entry.log","a")) {
+            fprintf(log,"pad frame=%u state=%d objective=%d\n",
+                CTimer::GetFrameCounter(),int(m_pPed->m_nPedState),int(m_pPed->m_objective));
+            fclose(log);
+        }
+    }
+
 	if (enterOrExitVeh && m_pPed->m_nPedState != PED_SNIPER_MODE && m_pPed->m_nPedState != PED_ROCKET_MODE) {
 		if (m_pPed->bInVehicle) {
 			if (!m_pRemoteVehicle) {
@@ -216,6 +228,15 @@ CPlayerInfo::Process(void)
 						}
 					}
 				}
+                if (entryEdge) {
+                    if (FILE *log=fopen("re3-vehicle-entry.log","a")) {
+                        fprintf(log,"search frame=%u model=%d status=%d lock=%d onBoat=%d\n",
+                            CTimer::GetFrameCounter(),carBelow ? carBelow->GetModelIndex() : -1,
+                            carBelow ? int(carBelow->GetStatus()) : -1,
+                            carBelow ? int(carBelow->m_nDoorLock) : -1,int(weAreOnBoat));
+                        fclose(log);
+                    }
+                }
 				// carBelow is now closest vehicle
 				if (carBelow && !weAreOnBoat) {
 					if (carBelow->GetStatus() == STATUS_TRAIN_NOT_MOVING) {
@@ -232,6 +253,32 @@ CPlayerInfo::Process(void)
 			}
 		}
 	}
+    if (Enhanced::TraceVehicleEntry && this==&CWorld::Players[CWorld::PlayerInFocus]) {
+        static int lastState=-1, lastObjective=-1, lastBlocked=-1, lastInVehicle=-1;
+        static uint32 startTime;
+        static bool tracing;
+        const uint32 now=CTimer::GetTimeInMilliseconds();
+        if (entryEdge) {
+            tracing=true;
+            startTime=now;
+        }
+        const int state=m_pPed->m_nPedState, objective=m_pPed->m_objective;
+        const int blocked=m_pPed->bVehEnterDoorIsBlocked, inVehicle=m_pPed->bInVehicle;
+        if (tracing && (entryEdge || state!=lastState || objective!=lastObjective ||
+                        blocked!=lastBlocked || inVehicle!=lastInVehicle)) {
+            if (FILE *log=fopen("re3-vehicle-entry.log","a")) {
+                fprintf(log,"ped frame=%u state=%d objective=%d blocked=%d inVehicle=%d\n",
+                    CTimer::GetFrameCounter(),state,objective,blocked,inVehicle);
+                fclose(log);
+            }
+            lastState=state;
+            lastObjective=objective;
+            lastBlocked=blocked;
+            lastInVehicle=inVehicle;
+        }
+        if (inVehicle || now-startTime>=5000)
+            tracing=false;
+    }
 	if (m_bInRemoteMode) {
 		uint32 timeWithoutRemoteCar = CTimer::GetTimeInMilliseconds() - m_nTimeLostRemoteCar;
 		if (CTimer::GetPreviousTimeInMilliseconds() - m_nTimeLostRemoteCar < 1000 && timeWithoutRemoteCar >= 1000 && m_WBState == WBSTATE_PLAYING) {

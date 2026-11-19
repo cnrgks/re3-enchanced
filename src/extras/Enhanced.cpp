@@ -43,7 +43,7 @@ int8 Borderless = 0;
 #endif
 int8 VehicleDistance = 0, PedDistance = 0, ScreenFormat = 0;
 #ifdef _WIN32
-int8 BorderlessCaptureProbe = 1, FullscreenDXGI = 1, FullscreenDXGIFlipY = 1;
+int8 BorderlessCaptureProbe = 1, FullscreenDXGI = 0, FullscreenDXGIFlipY = 1;
 #else
 int8 BorderlessCaptureProbe = 0, FullscreenDXGI = 0, FullscreenDXGIFlipY = 1;
 #endif
@@ -170,6 +170,8 @@ void ApplyScreenFormatSettings()
     FrontEndMenuManager.m_nPrefsWindowed=ScreenFormat!=0;
 #endif
 }
+
+bool TraceVehicleEntry = false;
 
 void FullscreenPresenterChanged(int8, int8)
 {

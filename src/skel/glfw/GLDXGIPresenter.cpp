@@ -32,7 +32,7 @@ struct Presenter {
     ID3D11DeviceContext *context;
     IDXGISwapChain *chain;
     IDXGIOutput *output;
-    ID3D11Texture2D *backBuffer;
+    ID3D11Texture2D *backBuffer, *interopTexture;
     DXGI_MODE_DESC mode;
     HANDLE interopDevice, interopObject;
     GLuint sharedBuffer, sharedFbo, resolveTexture, resolveFbo;
@@ -48,7 +48,7 @@ void Log(const char *format,...)
 {
     FILE *file=fopen("re3-display.log","a");
     if (!file) return;
-    fputs("v1.4 dxgi: ",file);
+    fputs("v1.5 dxgi: ",file);
     va_list args;
     va_start(args,format);
     vfprintf(file,format,args);
@@ -112,6 +112,7 @@ void ReleaseBuffers()
     if (state.sharedBuffer) glDeleteRenderbuffers(1,&state.sharedBuffer);
     if (state.resolveTexture) glDeleteTextures(1,&state.resolveTexture);
     state.sharedFbo=state.resolveFbo=state.sharedBuffer=state.resolveTexture=0;
+    Release(state.interopTexture);
     Release(state.backBuffer);
     state.width=state.height=0;
 }
@@ -146,9 +147,18 @@ bool CreateBuffers(int width,int height)
     if (FAILED(hr)) { Log("ResizeBuffers hr=0x%08lX",(unsigned long)hr); return false; }
     hr=state.chain->GetBuffer(0,__uuidof(ID3D11Texture2D),(void**)&state.backBuffer);
     if (FAILED(hr)) return false;
+    // Keep WGL ownership transfers off the swap-chain surface.
+    D3D11_TEXTURE2D_DESC textureDesc;
+    state.backBuffer->GetDesc(&textureDesc);
+    textureDesc.Usage=D3D11_USAGE_DEFAULT;
+    textureDesc.BindFlags=D3D11_BIND_RENDER_TARGET;
+    textureDesc.CPUAccessFlags=0;
+    textureDesc.MiscFlags=0;
+    hr=state.device->CreateTexture2D(&textureDesc,nil,&state.interopTexture);
+    if (FAILED(hr)) { Log("CreateTexture2D hr=0x%08lX",(unsigned long)hr); return false; }
     GLBindings restore;
     glGenRenderbuffers(1,&state.sharedBuffer);
-    state.interopObject=state.registerObject(state.interopDevice,state.backBuffer,
+    state.interopObject=state.registerObject(state.interopDevice,state.interopTexture,
         state.sharedBuffer,GL_RENDERBUFFER,AccessWriteDiscard);
     if (!state.interopObject) { Log("wglDXRegisterObjectNV error=%lu",GetLastError()); return false; }
     if (!state.lock(state.interopDevice,1,&state.interopObject)) return false;
@@ -193,7 +203,7 @@ bool EnterFullscreen()
     glfwGetFramebufferSize(state.window,&width,&height);
     if (width<=0 || height<=0 || !CreateBuffers(width,height)) return false;
     state.suspended=false;
-    Log("active fullscreen=1 framebuffer=%dx%d flipY=%d latencyLimitApplied=%d",
+    Log("active fullscreen=1 transfer=texture-copy framebuffer=%dx%d flipY=%d latencyLimitApplied=%d",
         width,height,int(FullscreenDXGIFlipY),int(state.latencyLimited));
     return true;
 }
@@ -336,6 +346,7 @@ bool PresentFullscreenDXGI(void *handle, bool vsync)
         if (!CreateBuffers(width,height)) return Fail("resize buffers");
     }
     if (!CopyFrame()) return Fail("GPU copy/interop");
+    state.context->CopyResource(state.backBuffer,state.interopTexture);
     hr=state.chain->Present(vsync ? 1 : 0,0);
     if (FAILED(hr)) return Fail("Present",hr);
     return true;

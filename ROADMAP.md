@@ -172,3 +172,11 @@ Kaynakta tamsayı koordinat oranı ve başlangıç senkronizasyonu incelendi. Ö
 bu input blokajı, sonra kayıt hataları. Gerçek exclusive fullscreen yakalaması
 ayrı tasarım işi olarak açık. [Tam rapor](docs/DISPLAY-REPORT-v1.3.md).
 Bu adım yalnızca raporlama; yeni kod/build/test/push yapılmadı.
+
+## Ayarlar menüsünün sırasını yeniden düzenleme
+
+Kullanıcı ayarlar menüsündeki seçeneklerin sırasını karmaşık buldu ve
+düzenlenmesini istedi. Yeni sıralama ve gruplama kullanıcı tarafından daha
+sonra tarif edilecek. O tarif gelene kadar mevcut arayüzde değişiklik yapılmayacak.
+Kapsam menü düzenidir; ayarların davranışını değiştirme isteği olarak
+yorumlanmamalı.

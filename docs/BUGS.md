@@ -32,8 +32,8 @@ geri bildirimini kaydeder; burada listelenen maddeler henüz düzeltilmiş sayı
 | SAV-02 | Görev sonrası evde çatıda doğma | Açık — kullanıcı bildirdi |
 | SAV-03 | Quicksave engelleme koşulları | İstenen davranış / kontrol edilecek |
 | VEH-01 | Kırık ön camdan sürücü hasar almıyor | Açık — kullanıcı bildirdi |
-| DIST-01 | Vehicle Distance kararsızlığı | İnceleme gerekiyor — belirti ayrıntısı eksik |
-| DIST-02 | Pedestrian Distance kararsızlığı | İnceleme gerekiyor — belirti ayrıntısı eksik |
+| DIST-01 | Vehicle Distance 1× üzerindeyken araç spawn akışı bozuluyor | Açık — çarpanlar ve araç adet sınırı incelenecek |
+| DIST-02 | Pedestrian Distance 1× üzerindeyken yaya spawn akışı bozuluyor | Açık — çarpanlar ve yaya adet sınırı incelenecek |
 | GPS-01 | Elle waypoint'te üst/alt yol katmanı karışıyor | Açık — kullanıcı bildirdi |
 | GPS-02 | Rota boşlukları ve anlamsız geri dönüşler | Açık — SS3/SS4 |
 | MAP-01 | Çift ev ikonu | Açık — SS1/SS3 |
@@ -43,7 +43,9 @@ geri bildirimini kaydeder; burada listelenen maddeler henüz düzeltilmiş sayı
 | MAP-05 | Back kesiliyor / hizası bozuk | Açık — SS3 |
 | INPUT-01 | OpenGL–D3D9 fare hassasiyeti farklı | Açık — kullanıcı bildirdi |
 | CAP-01 | OpenGL fullscreen/borderless yakalama | v1.3 +1 borderless kullanıcıda şimdilik olumlu; exclusive fullscreen açık |
-| INPUT-02 | Borderless kayıtlıyken yeniden açılışta imleç sola kilitleniyor | Açık — kaynakta tamsayı bölme kusuru bulundu, henüz düzeltilmedi |
+| INPUT-02 | Borderless kayıtlıyken yeniden açılışta imleç sola kilitleniyor | v1.4 kaynak düzeltmesi derlendi, oyun içi doğrulama bekliyor |
+| INPUT-03 | Borderless modunda imleç gecikmesi sürüyor | Açık — v1.4 kullanıcı gözlemi |
+| INPUT-04 | Araca binmek bazen ikinci basışı gerektiriyor | Açık — Borderless'ta gözlendi, bağlantı belirsiz |
 | WIN-01 | Alt-Tab sırasında eski Windows çerçevesi/toolbar parlaması | Açık — kullanıcı bildirdi |
 | WIN-02 | Odak kaybında otomatik pause | İstenen davranış / eksik |
 | UI-01 | Borderless, Graphics ekran biçiminin üçüncü seçeneği olmalı | OpenGL derlendi / oyun testi bekleniyor |
@@ -99,17 +101,23 @@ Araç/silah bazlı tekrar üretim henüz yok; kök neden kesinleşmedi.
 
 ### DIST-01 / DIST-02 — araç ve yaya mesafeleri
 
-**Gözlem:** Notta her iki ayar için “kararlı çalışmıyor sanırım” deniyor; cümle
-tamamlanmamış. Hangi değer, araç/yaya durumu ve bozulma biçimi olduğu belirtilmemiş.
-Çökme, FPS düşüşü veya belirli mesafede yok olma **bildirilmiş gibi kaydedilmedi**.
+**Gözlem:** Kullanıcı, her iki ayar 1× üstüne çıktığında spawn davranışının
+bozulduğunu ve 1,5×, 2×, 3× seçeneklerinin etkisinin beklediği gibi görünmediğini
+bildirdi. Öncelik spawn akışındaki bozulma. Kesin tetikleyici ve neden araştırılacak.
 
 **Beklenen:** Her seçenek doğma, görünürlük/LOD ve silinme eşiklerini tutarlı etkiler;
 hızlı yolculukta önde ani belirme azalır. Native havuz sınırları ve görev varlıkları korunur.
 Araç ve yaya ayarları ayrı takip edilir. Bir ayarı büyütmek diğer eşikte anlık silinme yaratmamalı.
+1,5× seçeneği kaldırılabilir. Kalan 1×, 2× ve 3× seçeneklerinin gerçek
+etkisi ve eski ayar dosyalarındaki değerlerin geçişi kontrol edilmeli.
+İstenen ek davranış, ortamda doğal olarak üretilen araç ve yaya adet sınırlarının
+ilgili ayarın çarpanıyla ayrı ayrı ölçeklenmesi. Fiziksel havuz kapasitesi ve görev
+varlıkları hesaba katılmalı.
 
 **İnceleme:** `CarCtrl.cpp`, `Population.cpp`, `VisibilityPlugins.cpp`; grafik draw
 distance ile etkileşim, görünen/görünmeyen varlık eşikleri ve havuz doygunluğu.
-Ayrıntılı belirti, bu maddelere geçerken netleştirilecek; şimdilik varsayımla teşhis konmayacak.
+Spawn mesafesi ve adet sınırı ayrı incelenmeli. Aynı rota ve koşullarda 1×,
+2× ve 3× ile spawn sıklığı, eşikler ve aktif varlık sayısı karşılaştırılmalı.
 
 ### GPS-01 — elle işaretlemede üst yol
 
@@ -338,3 +346,98 @@ başarıyla derlendi. Üç mevcut birim programı, yeni imleç oranı regresyonl
 dahil geçti. D3D9 işi çalıştırılmadı. INPUT-02 kaynak/derleme doğrulandı;
 soğuk açılış, Alt-Tab, CAP-01 fullscreen Discord/Ambilight ve gecikme kullanıcı
 denemesini bekliyor. Hiçbir runtime bug bu derleme sonucuyla kapatılmadı.
+
+### v1.4 kullanıcı denemesi — fullscreen siyah ekran
+
+Kullanıcı deneysel fullscreen etkinleştirildiğinde görüntünün tamamen
+siyah olduğunu ve ayarı menüden geri alamadığını bildirdi. Günlük DXGI
+fullscreen durumuna geçildiğini gösteriyor. Görüntü hatasının nedeni
+henüz belirlenmedi. Günlük kanıtı
+[burada](feedback/2026-11-19/v1.4-fullscreen-black-screen.txt).
+
+Kurulu oyunun ayarı yedeklendi, FullscreenDXGI=0 ve ScreenFormat=2
+uygulandı. Kurtarma sonrası görüntü ve Borderless imleci kullanıcı
+doğrulamasını bekliyor. CAP-01 açık.
+
+### INPUT-03 — Borderless imleç gecikmesi
+
+Kullanıcı v1.4'te Borderless modunda imleç gecikmesinin sürdüğünü bildirdi.
+INPUT-02, açılışta imlecin sola kilitlenmesiyle ilgili ayrı bir kayıt.
+Gecikmeyi karşılaştırmak için Borderless ve Fullscreen aynı FPS ve VSync
+ayarlarıyla denenebilir.
+
+### INPUT-04 — Araca binmek için ikinci basış gerekiyor
+
+Kullanıcı Borderless modunda başka bir tuşa basmıyorken araca binme komutunun
+ilk basışta bazen takıldığını, ikinci basışta karakterin araca bindiğini
+bildirdi. Kullanıcının Fullscreen denemesinde sorun görülmedi.
+Ekran modu ile bağlantısı henüz belirlenmedi. Karşılaştırmada aynı araç,
+yaklaşma konumu ve tuş kullanılmalı. Beklenen davranış, binme koşulları
+sağlandığında tek basışla araca binilmesi.
+
+### Ayrı sohbet devri — CAP-01, INPUT-03 ve INPUT-04
+
+- **CAP-01:** OpenGL normal pencere Discord'da çalışıyordu. Borderless +1 piksel
+  kullanıcıda şimdilik olumlu. Gerçek Fullscreen'de Discord/Ambilight yakalaması
+  açık sorun. v1.4 DXGI denemesi tamamen siyah ekran verdi. Günlük DXGI fullscreen
+  geçişini kaydetti. Kurulu oyun `FullscreenDXGI=0` ve `ScreenFormat=2` ile
+  kurtarıldı. Önce [deneme günlüğünü](feedback/2026-11-19/v1.4-fullscreen-black-screen.txt)
+  ve [yakalama notlarını](OPENGL-CAPTURE.md) oku. Oyun içinde uygulanabilir
+  çözüm ve menü erişilemezse geri dönüş yolu gerekli.
+- **INPUT-03:** Borderless imleç gecikmesi v1.4'te sürüyor. Açılışta sola
+  yapışmayı hedefleyen INPUT-02 kaynak düzeltmesi ayrı commit'te (`9553703c`).
+  Gecikmeyi aynı çözünürlük, FPS ve VSync ile karşılaştır.
+- **INPUT-04:** İlk araç giriş komutu bazen takılıyor, ikinci basışta biniyor.
+  Borderless'ta görüldü, kullanıcının Fullscreen denemesinde görülmedi. İlişki
+  belirsiz. Tuş olayını ve araç giriş durumunu aynı koşullarda ayrı izle.
+- Bu sohbetin kapsamı bu üç madde. DIST-01 ve DIST-02 ayrı takip edilecek.
+
+
+### Bu sohbette yapılan kaynak incelemesi
+
+**CAP-01.** v1.4 günlüğü DXGI exclusive durumuna geçişi ve 1920×1080
+framebuffer'ı kaydediyor. Önceden mevcut GL hatası olarak kaydedilen tek
+`0x501` satırı, siyah karenin oluştuğu aşamayı belirlemiyor. Yeni adayda
+WGL, swap-chain backbuffer yerine aynı boyut ve biçimde ayrı bir D3D11
+render texture'a yazıyor. WGL kilidi açıldıktan sonra kare GPU üzerinde
+`CopyResource` ile backbuffer'a aktarılıyor. Günlükte
+`transfer=texture-copy` yeni yolu işaretliyor. API hatalarında mevcut
+native OpenGL dönüşü geçerli. Siyah ekran, Discord ve Ambilight sonuçları
+ayrı ayrı açık. [Microsoft D3D11 CopyResource](https://learn.microsoft.com/en-us/windows/win32/api/d3d11/nf-d3d11-id3d11devicecontext-copyresource)
+
+Yeni varsayılan `FullscreenDXGI=0`. Mevcut INI'deki açık tercih okunuyor.
+Yeni Windows OpenGL EXE'yi `-safe-display` ile başlatmak, pencere
+oluşturulmadan önce DXGI'yi kapatır ve `ScreenFormat=2` seçer. Oyun
+ayarları kaydedilirse güvenli değerler INI'ye de yazılabilir. v1.4 için
+menüsüz kurtarma, oyun kapalıyken `re3.ini` dosyasındaki `[VideoMode]`
+bölümünde `FullscreenDXGI=0` ve `ScreenFormat=2` ayarlarıdır.
+
+**INPUT-03.** Menü imleci GLFW callback koordinatıyla oyun karesine
+çiziliyor. Oyun içi fare hareketi render karesinde örnekleniyor ve mantık
+karesine aktarılıyor. Windows OpenGL'de `-trace-display-timing`, her
+120 karede gerçek FPS'yi, framebuffer boyutunu, FPS limitini, VSync'i,
+menü durumunu ve sunum çağrısının ortalama süresini `re3-display.log`
+dosyasına yazıyor. Uçtan uca gecikme için fiziksel hareket ve ekran
+tepkisi aynı yöntemle görüntülenmeli.
+
+İlk karşılaştırmada aynı monitör, yenileme hızı, sahne, framebuffer
+çözünürlüğü, FPS ve VSync kullanılmalı. Eşit framebuffer için
+`BorderlessCaptureProbe=0`, `FullscreenDXGI=0` ve iki modda monitörün
+çözünürlüğü kullanılmalı. Borderless +1 ayrı turda ölçülmeli. Menü imleci
+ve oyun içi kamera ayrı gözlenmeli. INPUT-02 koordinat oranı ve başlangıç
+eşitlemesi korunuyor. Gecikme ölçümü bekleniyor.
+
+**INPUT-04.** GLFW basışı ve bırakışı geçici klavye durumuna iletiyor.
+İkisi aynı mantık karesi örnekleme aralığına düşerse kısa basış pad
+kenarına dönüşmeyebilir. Yaya araç girişi `ExitVehicleJustDown()` ile
+başlıyor. Tuş kenarı alınsa bile araç araması, giriş hedefi, kapı ve ped
+durumu sonucu belirleyebilir. Bildirilen olayın hangi aşamada gerçekleştiği
+ve ekran moduyla ilişkisi açık.
+
+GLFW EXE'de `-trace-vehicle-entry`, bağlı klavye tuşunun basış ve bırakışını,
+pad kenarını, araç aramasını ve takip eden ped/hedef/kapı değişimlerini
+`re3-vehicle-entry.log` dosyasına kaydediyor. Aynı araç, kapı, yaklaşma
+konumu ve tuşla başarılı ve aksayan deneme karşılaştırılmalı. Giriş
+kuralları bu aşamada aynen çalışıyor.
+
+Bu değişikliklerin derleme ve oyun içi doğrulaması bekliyor.

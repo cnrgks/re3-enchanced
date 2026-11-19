@@ -80,6 +80,9 @@ rw::EngineOpenParams openParams;
 static RwBool		  ForegroundApp = TRUE;
 static RwBool		  WindowIconified = FALSE;
 static RwBool		  WindowFocused = TRUE;
+#ifdef _WIN32
+static bool TraceDisplayTiming;
+#endif
 
 static RwBool		  RwInitialised = FALSE;
 static bool enhancedWindowResize = false;
@@ -206,11 +209,51 @@ psCameraBeginUpdate(RwCamera *camera)
 void
 psCameraShowRaster(RwCamera *camera)
 {
-    if (Enhanced::PresentFullscreenDXGI(PSGLOBAL(window),CMenuManager::m_PrefsVsync!=0)) return;
-	if (CMenuManager::m_PrefsVsync)
-		RwCameraShowRaster(camera, PSGLOBAL(window), rwRASTERFLIPWAITVSYNC);
-	else
-		RwCameraShowRaster(camera, PSGLOBAL(window), rwRASTERFLIPDONTWAIT);
+    const bool vsync=CMenuManager::m_PrefsVsync!=0;
+#ifdef _WIN32
+    const double start=TraceDisplayTiming ? glfwGetTime() : 0.0;
+#endif
+    const bool dxgi=Enhanced::PresentFullscreenDXGI(PSGLOBAL(window),vsync);
+    if (!dxgi)
+        RwCameraShowRaster(camera,PSGLOBAL(window),vsync ? rwRASTERFLIPWAITVSYNC : rwRASTERFLIPDONTWAIT);
+#ifdef _WIN32
+    if (TraceDisplayTiming && WindowFocused && !WindowIconified) {
+        struct Timing {
+            int format,width,height,limit;
+            bool vsync,dxgi,menu;
+            unsigned frames;
+            double firstEnd,lastEnd,totalPresent;
+        };
+        static Timing previous={};
+        const double end=glfwGetTime();
+        Timing current={};
+        glfwGetFramebufferSize(PSGLOBAL(window),&current.width,&current.height);
+        current.format=Enhanced::ScreenFormat;
+        current.limit=CMenuManager::GetFrameLimit();
+        current.vsync=vsync;
+        current.dxgi=dxgi;
+        current.menu=FrontEndMenuManager.m_bMenuActive;
+        if (previous.frames && end-previous.lastEnd<0.25 &&
+            current.format==previous.format && current.width==previous.width &&
+            current.height==previous.height && current.limit==previous.limit &&
+            vsync==previous.vsync && dxgi==previous.dxgi && current.menu==previous.menu)
+            current=previous;
+        if (current.frames==0)
+            current.firstEnd=end;
+        current.lastEnd=end;
+        current.totalPresent+=end-start;
+        if (++current.frames==120) {
+            if (FILE *log=fopen("re3-display.log","a")) {
+                fprintf(log,"timing format=%d dxgi=%d menu=%d framebuffer=%dx%d limit=%d vsync=%d fps=%.2f presentMeanMs=%.2f\n",
+                    current.format,int(dxgi),int(current.menu),current.width,current.height,current.limit,int(vsync),
+                    (current.frames-1)/(end-current.firstEnd),1000.0*current.totalPresent/current.frames);
+                fclose(log);
+            }
+            current.frames=0;
+        }
+        previous=current;
+    }
+#endif
 
 	return;
 }
@@ -1149,7 +1192,7 @@ void Enhanced::ApplyWindowMode(bool newWindow)
     glfwGetWindowPos(window,&wx,&wy);
     FILE *displayLog=fopen("re3-display.log","a");
     if (displayLog) {
-        fprintf(displayLog,"v1.4 format=%d probe=%d monitorAttached=%d window=%dx%d framebuffer=%dx%d pos=%d,%d\n",
+        fprintf(displayLog,"v1.5 format=%d probe=%d monitorAttached=%d window=%dx%d framebuffer=%dx%d pos=%d,%d\n",
             int(ScreenFormat),int(BorderlessCaptureProbe),glfwGetWindowMonitor(window)!=nil,ww,wh,fw,fh,wx,wy);
         fclose(displayLog);
     }
@@ -1685,6 +1728,16 @@ keypressCB(GLFWwindow* window, int key, int scancode, int action, int mods)
 		if (key == GLFW_KEY_RIGHT_SHIFT)
 			rshiftStatus = action != GLFW_RELEASE;
 
+        if (Enhanced::TraceVehicleEntry && ks!=rsNULL &&
+            (ks==ControlsManager.GetControllerKeyAssociatedWithAction(VEHICLE_ENTER_EXIT,KEYBOARD) ||
+             ks==ControlsManager.GetControllerKeyAssociatedWithAction(VEHICLE_ENTER_EXIT,OPTIONAL_EXTRA))) {
+            if (FILE *log=fopen("re3-vehicle-entry.log","a")) {
+                fprintf(log,"keyboard frame=%u key=%d action=%s focused=%d menu=%d\n",
+                    CTimer::GetFrameCounter(),int(ks),action==GLFW_PRESS ? "press" : "release",
+                    int(WindowFocused),int(FrontEndMenuManager.m_bMenuActive));
+                fclose(log);
+            }
+        }
 		if (action == GLFW_RELEASE) RsKeyboardEventHandler(rsKEYUP, &ks);
 		else if (action == GLFW_PRESS) RsKeyboardEventHandler(rsKEYDOWN, &ks);
 	}
@@ -2088,6 +2141,22 @@ main(int argc, char *argv[])
 #endif
 	for(i=1; i<argc; i++)
 	{
+#ifdef _WIN32
+        if (strcmp(argv[i],"-trace-display-timing")==0) {
+            TraceDisplayTiming=true;
+            continue;
+        }
+        if (strcmp(argv[i],"-safe-display")==0) {
+            Enhanced::FullscreenDXGI=0;
+            Enhanced::ScreenFormat=2;
+            Enhanced::ApplyScreenFormatSettings();
+            continue;
+        }
+#endif
+        if (strcmp(argv[i],"-trace-vehicle-entry")==0) {
+            Enhanced::TraceVehicleEntry=true;
+            continue;
+        }
 		RsEventHandler(rsPREINITCOMMANDLINE, argv[i]);
 	}
 
