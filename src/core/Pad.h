@@ -320,6 +320,7 @@ public:
 	bool GetCharJustDown(int32 c) { return !!(NewKeyState.VK_KEYS[c] && !OldKeyState.VK_KEYS[c]); }
 	bool GetFJustDown(int32 n)    { return !!(NewKeyState.F[n] && !OldKeyState.F[n]); }
 	bool GetEscapeJustDown()      { return !!(NewKeyState.ESC && !OldKeyState.ESC); }
+	void ConsumeEscapeJustDown()  { OldKeyState.ESC = NewKeyState.ESC; }
 	bool GetInsertJustDown()      { return !!(NewKeyState.INS && !OldKeyState.INS); }
 	bool GetDeleteJustDown()      { return !!(NewKeyState.DEL && !OldKeyState.DEL); }
 	bool GetHomeJustDown()        { return !!(NewKeyState.HOME && !OldKeyState.HOME); }

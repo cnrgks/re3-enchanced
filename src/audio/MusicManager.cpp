@@ -6,6 +6,7 @@
 #include "ControllerConfig.h"
 #include "Camera.h"
 #include "Font.h"
+#include "Enhanced.h"
 #include "Hud.h"
 #include "ModelIndices.h"
 #include "Replay.h"
@@ -72,6 +73,23 @@ cMusicManager::PlayerInCar()
 	}
 }
 
+wchar *
+cMusicManager::GetRadioStationLabel(int station) const
+{
+	static const char *const keys[] = {
+		"FEA_FM0", "FEA_FM1", "FEA_FM2", "FEA_FM3", "FEA_FM4",
+		"FEA_FM5", "FEA_FM6", "FEA_FM7", "FEA_FM8", "FEA_FM9",
+	};
+	if (station >= HEAD_RADIO && station <= USERTRACK)
+		return TheText.Get(keys[station]);
+	if (station == RADIO_OFF) {
+		extern wchar WideErrorString[];
+		wchar *label = TheText.Get("FEA_FMN");
+		return label == WideErrorString ? TheText.Get("EN_ROFF") : label;
+	}
+	return nil;
+}
+
 void
 cMusicManager::DisplayRadioStationName()
 {
@@ -80,6 +98,11 @@ cMusicManager::DisplayRadioStationName()
 	int8 gRetuneCounter;
 	static wchar *pCurrentStation = nil;
 	static uint8 cDisplay = 0;
+
+	if (Enhanced::IsRadioWheelOpen()) {
+		pCurrentStation = nil;
+		return;
+	}
 
 	if(!CTimer::GetIsPaused() && !TheCamera.m_WideScreenOn && PlayerInCar() &&
 	   !CReplay::IsPlayingBack()) {
@@ -114,7 +137,7 @@ cMusicManager::DisplayRadioStationName()
 		if(SampleManager.IsMP3RadioChannelAvailable()) {
 			gStreamedSound = curRadio;
 
-			if(gStreamedSound == STREAMED_SOUND_CITY_AMBIENT ||
+			if(gStreamedSound == RADIO_OFF || gStreamedSound == STREAMED_SOUND_CITY_AMBIENT ||
 			   gStreamedSound == STREAMED_SOUND_WATER_AMBIENT) { // which means OFF
 				gStreamedSound = NUM_RADIOS;
 			} else if(gStreamedSound > STREAMED_SOUND_RADIO_MP3_PLAYER)
@@ -158,36 +181,9 @@ cMusicManager::DisplayRadioStationName()
 			}
 		}
 
-		wchar *string;
-
-		switch(pRetune) {
-		case HEAD_RADIO: string = TheText.Get("FEA_FM0"); break;
-		case DOUBLE_CLEF: string = TheText.Get("FEA_FM1"); break;
-		case JAH_RADIO: string = TheText.Get("FEA_FM2"); break;
-		case RISE_FM: string = TheText.Get("FEA_FM3"); break;
-		case LIPS_106: string = TheText.Get("FEA_FM4"); break;
-		case GAME_FM: string = TheText.Get("FEA_FM5"); break;
-		case MSX_FM: string = TheText.Get("FEA_FM6"); break;
-		case FLASHBACK: string = TheText.Get("FEA_FM7"); break;
-		case CHATTERBOX: string = TheText.Get("FEA_FM8"); break;
-		case USERTRACK:
-			if (!SampleManager.IsMP3RadioChannelAvailable())
-				return;
-			string = TheText.Get("FEA_FM9"); break;
-#ifdef RADIO_OFF_TEXT
-		case RADIO_OFF: {
-			extern wchar WideErrorString[];
-
-			string = TheText.Get("FEA_FMN");
-			if(string == WideErrorString) {
-				pCurrentStation = nil;
-				return;
-			}
-			break;
-		}
-#endif
-		default: return;
-		};
+		wchar *string = GetRadioStationLabel(pRetune);
+		if (!string)
+			return;
 
 		if(pCurrentStation != string ||
 			m_nNextTrack == STREAMED_SOUND_RADIO_MP3_PLAYER && m_nPlayingTrack != STREAMED_SOUND_RADIO_MP3_PLAYER) {
@@ -207,6 +203,7 @@ cMusicManager::DisplayRadioStationName()
 		CFont::SetScale(SCREEN_SCALE_X(0.8f), SCREEN_SCALE_Y(1.35f));
 		CFont::SetPropOn();
 		CFont::SetFontStyle(FONT_HEADING);
+		CFont::SetSlant(0.0f);
 		CFont::SetCentreOn();
 		// Reminder: Game doesn't have "scaling" at all, it just stretches, and it's team's decision here to not let centered text occupy all the screen.
 		//				Disable ASPECT_RATIO_SCALE and it'll go back to default behaviour; stretching.
@@ -531,9 +528,20 @@ cMusicManager::ServiceGameMode()
 			&& !FindPlayerPed()->DyingOrDead()
 			&& !CReplay::IsPlayingBack()
 			&& FindPlayerVehicle() != nil
-			&& !UsesPoliceRadio(FindPlayerVehicle())) {
+			&& !UsesPoliceRadio(FindPlayerVehicle())
+			&& !Enhanced::IsRadioWheelOpen()) {
 
-				if (CPad::GetPad(0)->ChangeStationJustDown()) {
+				CPad *pad = CPad::GetPad(0);
+#ifdef RADIO_SCROLL_TO_PREV_STATION
+				const int scroll = Enhanced::RadioWheel && !pad->ArePlayerControlsDisabled()
+					? int(pad->GetMouseWheelUp()) - int(pad->GetMouseWheelDown()) : 0;
+				if (scroll) {
+					gRetuneCounter = 30;
+					gNumRetunePresses += scroll;
+					AudioManager.PlayOneShot(AudioManager.m_nFrontEndEntity, SOUND_FRONTEND_RADIO_CHANGE, 1.0f);
+				} else
+#endif
+				if (pad->ChangeStationJustDown()) {
 					gRetuneCounter = 30;
 					gNumRetunePresses++;
 					AudioManager.PlayOneShot(AudioManager.m_nFrontEndEntity, SOUND_FRONTEND_RADIO_CHANGE, 1.0f);

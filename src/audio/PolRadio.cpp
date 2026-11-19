@@ -278,7 +278,7 @@ cAudioManager::ServicePoliceRadioChannel(uint8 wantedLevel)
 				}
 				PoliceChannelFreq = freq;
 #ifdef USE_TIME_SCALE_FOR_AUDIO
-				SampleManager.SetChannelFrequency(CHANNEL_POLICE_RADIO, freq * CTimer::GetTimeScale());
+				SampleManager.SetChannelFrequency(CHANNEL_POLICE_RADIO, freq * CTimer::GetSimulationTimeScale());
 #else
 				SampleManager.SetChannelFrequency(CHANNEL_POLICE_RADIO, freq);
 #endif

@@ -954,7 +954,7 @@ cAudioManager::ProcessActiveQueues()
 #endif
 
 #ifdef USE_TIME_SCALE_FOR_AUDIO
-	float timeScale = m_bIsPaused ? 1.0f : CTimer::GetTimeScale();
+	float timeScale = m_bIsPaused ? 1.0f : CTimer::GetSimulationTimeScale();
 #endif
 
 	for (uint8 i = 0; i < m_nActiveSamples; i++) {

@@ -950,3 +950,16 @@ havuz sınırları ve yeni tanı sayaçları oyun içi deneme bekliyor.
 Kaynak a0dd7340, GitHub Actions run 44610384118. OpenGL x64 derlemesi
 ve mevcut üç CI birim kontrolü geçti. Trainer, radyo ve silah çarkları,
 Skip Intros ve Distant and Crowded World oyun içinde doğrulanmayı bekliyor.
+
+### v1.18 kullanıcı geri bildirimi — 20 Kasım 2026
+
+| Kayıt | Bildirilen davranış | Kaynak değişikliği |
+| --- | --- | --- |
+| INTRO-01 | İlk açılış videoları boyunca Windows imleci görünüyor | Windows GLFW açılışında DirectShow oynatımı boyunca imleç gizleniyor. Oynatma bittiğinde Windows imleç sayacı önceki değerine döndürülüyor. |
+| TRAINER-01 | Esc pause menüsünü açıyor ve kontrol açıklamaları alt sınıra yakın | Esc ve Backspace alt menüden geri gider, kökte trainer'ı kapatır. F8 doğrudan kapatır. Alt boşluk artırıldı. |
+| WHEEL-01 | Uzun adlar çarkın ortasından taşıyor, yazı italik, istasyon adları farklı ve özel seçenekler üstte | İsimler merkez genişliğine sığıyor. Dik font kullanılıyor. İstasyon adları klasik HUD ile ortak GXT kaynağından geliyor. Unarmed ve Radio Off altta. Kontrol açıklamaları kaldırıldı. |
+| WHEEL-02 | Çark tuşları, kullanım biçimi ve ayarlar değişmeli | Gameplay Setup içinde iki ayrı ON/OFF seçeneği. Tab silah çarkını, R radyo çarkını açıyor; bırakınca seçim uygulanıyor. R basılıyken scroll çarkı, tek başına scroll klasik istasyon göstergesini kontrol ediyor. |
+| WHEEL-03 | Silah çarkı açıkken oyunun sesi normal perdede kalıyor | Efekt frekansları ve OpenAL akış perdesi çarkın etkin oyun hızını kullanıyor. Kapanışta normal perde geri geliyor. |
+
+Kanıt: [Silah adı taşması ve eski tuş satırı](feedback/2026-11-20/v1.18-weapon-wheel-overflow.png).
+Kaynak değişiklikleri derleme ve oyun içi doğrulama bekliyor.

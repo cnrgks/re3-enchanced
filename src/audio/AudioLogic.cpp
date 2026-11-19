@@ -1655,7 +1655,7 @@ PlayCruising:
 				if (engineSoundType == SFX_BANK_TRUCK)
 					freq >>= 1;
 #ifdef USE_TIME_SCALE_FOR_AUDIO
-				SampleManager.SetChannelFrequency(CHANNEL_PLAYER_VEHICLE_ENGINE, freq * CTimer::GetTimeScale());
+				SampleManager.SetChannelFrequency(CHANNEL_PLAYER_VEHICLE_ENGINE, freq * CTimer::GetSimulationTimeScale());
 #else
 				SampleManager.SetChannelFrequency(CHANNEL_PLAYER_VEHICLE_ENGINE, freq);
 #endif

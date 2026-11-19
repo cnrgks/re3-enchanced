@@ -2508,6 +2508,11 @@ main(int argc, char *argv[])
 #ifdef _WIN32
 						if (!gbNoMovies) {
 							GLFWwindow *window = PSGLOBAL(window);
+							// The DirectShow child does not use GLFW's cursor mode.
+							int hideCalls = 1;
+							while (ShowCursor(FALSE) >= 0)
+								++hideCalls;
+							SetCursor(nil);
 							PlayStartupMovie(window, L"movies\\Logo.mpg");
 							if (!RsGlobal.quit && !glfwWindowShouldClose(window) &&
 							    glfwGetWindowAttrib(window, GLFW_FOCUSED)) {
@@ -2519,6 +2524,8 @@ main(int argc, char *argv[])
 								    ? localized : L"movies\\GTAtitles.mpg";
 								PlayStartupMovie(window, titles);
 							}
+							for (int i = 0; i < hideCalls; ++i)
+								ShowCursor(TRUE);
 						}
 #endif
 						gGameState = GS_INIT_ONCE;

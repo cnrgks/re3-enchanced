@@ -37,6 +37,8 @@ void CancelSelectionWheelIfUnavailable();
 void DrawSelectionWheel();
 void FreeSelectionWheelTextures();
 bool IsWeaponWheelOpen();
+bool IsRadioWheelOpen();
+extern int8 RadioWheel, WeaponWheel;
 bool IsSelectionWheelOpen();
 void DrawRoute();
 void WaypointChanged();

@@ -1910,8 +1910,12 @@ cSampleManager::Service(void)
 	{
 		CStream *stream = aStream[i];
 		
-		if ( stream->IsOpened() )
+		if ( stream->IsOpened() ) {
+			const float pitch = CTimer::IsWeaponWheelSlowMotion() && !CTimer::GetIsPaused()
+				? CTimer::GetSimulationTimeScale() : 1.0f;
+			stream->SetPitch(pitch);
 			stream->Update();
+		}
 	}
 	int refCount = CChannel::channelsThatNeedService;
 	for ( int32 i = 0; refCount && i < NUM_CHANNELS; i++ )

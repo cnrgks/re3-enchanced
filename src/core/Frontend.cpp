@@ -1150,7 +1150,19 @@ CMenuManager::Draw()
 	if (aScreens[m_nCurrScreen].m_ScreenName[0] != '\0') {
 		
 		SET_FONT_FOR_MENU_HEADER
-		CFont::PrintString(PAGE_NAME_X(MENUHEADER_POS_X), SCREEN_SCALE_FROM_BOTTOM(MENUHEADER_POS_Y), TheText.Get(aScreens[m_nCurrScreen].m_ScreenName));
+		wchar *title = TheText.Get(aScreens[m_nCurrScreen].m_ScreenName);
+		const float titleX = PAGE_NAME_X(MENUHEADER_POS_X);
+		if (m_nCurrScreen == MENUPAGE_GAMEPLAY) {
+			CFont::SetSlant(0.0f);
+			CFont::SetRightJustifyWrap(0.0f);
+			const float titleWidth = CFont::GetStringWidth(title, true);
+			const float availableWidth = titleX - MENU_X(24.0f);
+			if (titleWidth > availableWidth && availableWidth > 0.0f) {
+				const float fit = availableWidth / titleWidth;
+				CFont::SetScale(MENU_X(MENUHEADER_WIDTH) * fit, MENU_Y(MENUHEADER_HEIGHT) * fit);
+			}
+		}
+		CFont::PrintString(titleX, SCREEN_SCALE_FROM_BOTTOM(MENUHEADER_POS_Y), title);
 
 		// Weird place to put that.
 		nextYToUse += 24.0f + 10.0f;

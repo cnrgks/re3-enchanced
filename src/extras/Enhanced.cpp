@@ -45,6 +45,7 @@
 
 namespace Enhanced {
 int8 QuickSave = 0, AutoSave = 0, GPS = 0, HealAfterSave = 0;
+int8 RadioWheel = 1, WeaponWheel = 1;
 #ifdef RW_D3D9
 int8 Borderless = 1;
 #else
@@ -123,6 +124,9 @@ wchar *GetText(const char *key)
         { "EN_GPS", "MISSION GPS" },
         { "EN_HEAL", "HEAL AFTER SAVING" },
         { "EN_INT", "SKIP INTROS" },
+        { "EN_RW", "RADIO WHEEL" },
+        { "EN_WW", "WEAPON WHEEL" },
+        { "EN_ROFF", "Radio Off" },
         { "EN_BORD", "BORDERLESS FULLSCREEN" },
         { "EN_BRDL", "BORDERLESS" },
         { "EN_DCW", "DISTANT AND CROWDED WORLD" },
@@ -172,13 +176,13 @@ static_assert(ARRAY_SIZE(weaponLabels) == WEAPONTYPE_TOTAL_INVENTORY_WEAPONS, "W
 static bool CanSelectRadio()
 {
     CVehicle *vehicle = FindPlayerVehicle();
-    return vehicle && MusicManager.PlayerInCar() && !MusicManager.UsesPoliceRadio(vehicle) &&
+    return RadioWheel && vehicle && MusicManager.PlayerInCar() && !MusicManager.UsesPoliceRadio(vehicle) &&
         !MusicManager.m_bRadioSetByScript && !MusicManager.m_bAnnouncementInProgress;
 }
 
 static bool CanSelectWeapon(CPlayerPed *player)
 {
-    return !player->bInVehicle && !CWorld::Players[CWorld::PlayerInFocus].m_bInRemoteMode &&
+    return WeaponWheel && !player->bInVehicle && !CWorld::Players[CWorld::PlayerInFocus].m_bInRemoteMode &&
         player->IsPedInControl() && !CDarkel::FrenzyOnGoing() &&
         player->m_nPedState != PED_ATTACK && player->m_nPedState != PED_FIGHT &&
         player->m_nPedState != PED_AIM_GUN;
@@ -193,6 +197,11 @@ static void CloseSelectionWheel()
 bool IsSelectionWheelOpen()
 {
     return selectionWheel != SelectionWheel::Closed;
+}
+
+bool IsRadioWheelOpen()
+{
+    return selectionWheel == SelectionWheel::Radio;
 }
 
 bool IsWeaponWheelOpen()
@@ -210,11 +219,11 @@ static int CollectWheelEntries(uint8 *entries)
 {
     int count = 0;
     if (selectionWheel == SelectionWheel::Radio) {
+        entries[count++] = RADIO_OFF;
         for (int i = HEAD_RADIO; i <= CHATTERBOX; ++i)
             entries[count++] = i;
         if (DMAudio.IsMP3RadioChannelAvailable())
             entries[count++] = USERTRACK;
-        entries[count++] = RADIO_OFF;
     } else {
         CPlayerPed *player = FindPlayerPed();
         for (int i = 0; i < WEAPONTYPE_TOTAL_INVENTORY_WEAPONS; ++i) {
@@ -236,15 +245,12 @@ void ProcessSelectionWheel()
 
     CPad *pad = CPad::GetPad(0);
     CPlayerPed *player = FindPlayerPed();
-    // Function-key indices are zero-based.
-    constexpr int radioKey = 5;
-    constexpr int weaponKey = 6;
     if (selectionWheel == SelectionWheel::Closed) {
         wheelPointer = CVector2D(0.0f, 0.0f);
-        if (pad->GetFJustDown(radioKey) && CanSelectRadio()) {
+        if (pad->GetCharJustDown('R') && CanSelectRadio()) {
             selectionWheel = SelectionWheel::Radio;
             wheelSelection = MusicManager.GetRadioInCar();
-        } else if (pad->GetFJustDown(weaponKey) && CanSelectWeapon(player)) {
+        } else if (pad->GetTabJustDown() && CanSelectWeapon(player)) {
             selectionWheel = SelectionWheel::Weapon;
             wheelSelection = player->GetWeapon()->m_eWeaponType;
             CTimer::SetWeaponWheelSlowMotion(true);
@@ -254,8 +260,7 @@ void ProcessSelectionWheel()
     }
 
     const bool radio = selectionWheel == SelectionWheel::Radio;
-    if (pad->GetBackspaceJustDown() ||
-        (radio ? !CanSelectRadio() : !CanSelectWeapon(player))) {
+    if (radio ? !CanSelectRadio() : !CanSelectWeapon(player)) {
         CloseSelectionWheel();
         return;
     }
@@ -271,7 +276,8 @@ void ProcessSelectionWheel()
         ++selected;
     if (entries[selected] != wheelSelection)
         selected = 0;
-    const int direction = int(pad->GetRightJustDown()) - int(pad->GetLeftJustDown());
+    const int scroll = radio ? int(pad->GetMouseWheelUp()) - int(pad->GetMouseWheelDown()) : 0;
+    const int direction = scroll ? scroll : int(pad->GetRightJustDown()) - int(pad->GetLeftJustDown());
     if (direction) {
         wheelPointer = CVector2D(0.0f, 0.0f);
         selected = (selected + count + direction) % count;
@@ -282,7 +288,7 @@ void ProcessSelectionWheel()
         wheelPointer.y += dy;
         const float distance = Sqrt(SQR(wheelPointer.x) + SQR(wheelPointer.y));
         if (distance >= 12.0f) {
-            const float angle = Atan2(wheelPointer.y, wheelPointer.x) + HALFPI + TWOPI;
+            const float angle = Atan2(wheelPointer.y, wheelPointer.x) - HALFPI + TWOPI;
             selected = int(angle / (TWOPI / count) + 0.5f) % count;
             if (distance > 48.0f) {
                 wheelPointer.x *= 48.0f / distance;
@@ -292,7 +298,7 @@ void ProcessSelectionWheel()
     }
     wheelSelection = entries[selected];
 
-    if (!pad->GetF(radio ? radioKey : weaponKey)) {
+    if (!(radio ? pad->GetChar('R') : pad->GetTab())) {
         if (radio) {
             MusicManager.SelectCarStation(wheelSelection);
         } else if (player->GetWeapon()->m_eWeaponType != wheelSelection) {
@@ -345,21 +351,25 @@ void FreeSelectionWheelTextures()
     wheelRadioIconsLoaded = false;
 }
 
-static void PrintWheelText(float x, float y, const char *label, float size)
+static void PrintWheelText(float x, float y, wchar *label, float size, float maxWidth)
 {
-    wchar wide[72];
-    AsciiToUnicode(label, wide);
-    CFont::SetScale(SCREEN_SCALE_X(size), SCREEN_SCALE_Y(size * 1.4f));
-    CFont::PrintString(x, y, wide);
+    const float width = SCREEN_SCALE_X(size);
+    const float height = SCREEN_SCALE_Y(size * 1.4f);
+    CFont::SetScale(width, height);
+    const float textWidth = CFont::GetStringWidth(label, true);
+    if (textWidth > maxWidth) {
+        const float fit = maxWidth / textWidth;
+        CFont::SetScale(width * fit, height * fit);
+    }
+    CFont::PrintString(x, y, label);
 }
 
-static const char *RadioLabel(uint8 station)
+static wchar *WheelLabel(bool radio, uint8 entry, wchar *weaponName)
 {
-    static const char *const labels[] = {
-        "Head Radio", "Double Clef FM", "K-JAH", "Rise FM", "Lips 106",
-        "Game FM", "MSX FM", "Flashback 95.6", "Chatterbox", "MP3 Player",
-    };
-    return station == RADIO_OFF ? "Radio Off" : labels[station];
+    if (radio)
+        return MusicManager.GetRadioStationLabel(entry);
+    AsciiToUnicode(weaponLabels[entry], weaponName);
+    return weaponName;
 }
 
 void DrawSelectionWheel()
@@ -392,7 +402,8 @@ void DrawSelectionWheel()
 
     CFont::SetBackgroundOff();
     CFont::SetPropOn();
-    CFont::SetFontStyle(FONT_HEADING);
+    CFont::SetFontStyle(FONT_LOCALE(FONT_BANK));
+    CFont::SetSlant(0.0f);
     CFont::SetJustifyOff();
     CFont::SetRightJustifyOff();
     CFont::SetCentreOn();
@@ -401,7 +412,7 @@ void DrawSelectionWheel()
     CFont::SetColor(CRGBA(245, 239, 212, 255));
     for (int i = 0; i < count; ++i) {
         const uint8 entry = entries[i];
-        const float angle = -HALFPI + i * sectorAngle;
+        const float angle = HALFPI + i * sectorAngle;
         const float start = angle - halfSector;
         const float end = angle + halfSector;
         const float inner = 71.0f * scale;
@@ -425,23 +436,25 @@ void DrawSelectionWheel()
         if (icon && icon->m_pTexture)
             icon->Draw(CRect(iconX - half, iconY - half, iconX + half, iconY + half),
                        CRGBA(255, 255, 255, 255));
-        else
-            PrintWheelText(iconX, iconY - 5.0f * scale,
-                           radio ? RadioLabel(entry) : weaponLabels[entry], 0.38f);
+        else {
+            wchar name[72];
+            if (wchar *label = WheelLabel(radio, entry, name))
+                PrintWheelText(iconX, iconY - 5.0f * scale, label, 0.38f, 44.0f * scale);
+        }
     }
 
-    PrintWheelText(x, y - 12.0f * scale,
-                   radio ? RadioLabel(wheelSelection) : weaponLabels[wheelSelection], 0.75f);
+    wchar name[72];
+    if (wchar *label = WheelLabel(radio, wheelSelection, name))
+        PrintWheelText(x, y - 12.0f * scale, label, 0.72f, 124.0f * scale);
     if (!radio && wheelSelection > WEAPONTYPE_BASEBALLBAT && wheelSelection != WEAPONTYPE_DETONATOR) {
         const CWeapon &weapon = FindPlayerPed()->GetWeapon(wheelSelection);
         char ammo[32];
-        snprintf(ammo, sizeof(ammo), "%u / %u", unsigned(weapon.m_nAmmoInClip),
+        wchar wideAmmo[32];
+        snprintf(ammo, sizeof(ammo), "%u OF %u", unsigned(weapon.m_nAmmoInClip),
                  unsigned(weapon.m_nAmmoTotal));
-        PrintWheelText(x, y + 10.0f * scale, ammo, 0.52f);
+        AsciiToUnicode(ammo, wideAmmo);
+        PrintWheelText(x, y + 10.0f * scale, wideAmmo, 0.52f, 124.0f * scale);
     }
-    PrintWheelText(x, y + radius + 10.0f * scale,
-                   radio ? "Mouse / Arrows: Select   Release F6: Tune   Backspace: Cancel"
-                         : "Mouse / Arrows: Select   Release F7: Equip   Backspace: Cancel", 0.48f);
 }
 
 static bool CanSaveAfterMission()

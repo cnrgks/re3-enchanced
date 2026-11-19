@@ -962,6 +962,8 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
        MENUACTION_CFO_SELECT, "EN_QSAV", { new CCFOSelect(&Enhanced::QuickSave, "Enhanced", "QuickSave", off_on, 2, false) },
        MENUACTION_CFO_SELECT, "EN_AUTO", { new CCFOSelect(&Enhanced::AutoSave, "Enhanced", "AutoSave", off_on, 2, false) },
        MENUACTION_CFO_SELECT, "EN_HEAL", { new CCFOSelect(&Enhanced::HealAfterSave, "Enhanced", "HealAfterSave", off_on, 2, false) },
+       MENUACTION_CFO_SELECT, "EN_RW", { new CCFOSelect(&Enhanced::RadioWheel, "Enhanced", "RadioWheel", off_on, 2, false) },
+       MENUACTION_CFO_SELECT, "EN_WW", { new CCFOSelect(&Enhanced::WeaponWheel, "Enhanced", "WeaponWheel", off_on, 2, false) },
 #if defined(_WIN32) && !defined(LIBRW_SDL2)
        MENUACTION_CFO_SELECT, "EN_INT", { new CCFOSelect(&gbNoMovies, "General", "NoMovies", off_on, 2, false) },
 #endif

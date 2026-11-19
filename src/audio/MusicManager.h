@@ -54,6 +54,7 @@ public:
 
 	bool8 PlayerInCar();
 	void DisplayRadioStationName();
+	wchar *GetRadioStationLabel(int station) const;
 
 	void PlayAnnouncement(uint8);
 	void PlayFrontEndTrack(uint8, bool8);

@@ -294,7 +294,7 @@ static constexpr int panelLeft = 20;
 static constexpr int panelTop = 36;
 static constexpr int panelWidth = 384;
 static constexpr int panelHeader = 54;
-static constexpr int panelFooter = 26;
+static constexpr int panelFooter = 36;
 static constexpr int rowLeading = 8;
 static constexpr int rowPadding = 12;
 
@@ -956,10 +956,6 @@ processInput(void)
 			return;
 		}
 	}
-	if (KEYJUSTDOWN(rsBACKSP) && activeMenu->parent) {
-		activeMenu = activeMenu->parent;
-		return;
-	}
 	if (mouseOverEntry && mouseOverEntry->type == MENUVAR)
 		((MenuEntry_Var *)mouseOverEntry)->processInput(true, mouseOverEntry == activeMenu->selectedEntry);
 	if (activeMenu->selectedEntry && activeMenu->selectedEntry->type == MENUVAR &&
@@ -1014,6 +1010,7 @@ DebugMenuClose(void)
 	if (!menuOn)
 		return;
 	menuOn = false;
+	activeMenu = &toplevel;
 	CPad::GetPad(0)->SetEnablePlayerControls(PLAYERCONTROL_TRAINER);
 	lastkeydown = lastbuttondown = 0;
 	mouseOverMenu = nil;
@@ -1026,12 +1023,13 @@ DebugMenuProcess(void)
 	CPad *pad = CPad::GetPad(0);
 	if (CTimer::GetIsPaused() || FrontEndMenuManager.m_bMenuActive ||
 	    FrontEndMenuManager.m_bWantToRestart || FrontEndMenuManager.m_bWantToLoad ||
-	    CCutsceneMgr::IsCutsceneProcessing() || (menuOn && pad->GetEscapeJustDown())) {
+	    CCutsceneMgr::IsCutsceneProcessing()) {
 		DebugMenuClose();
 		return;
 	}
 	if (pad->GetFJustDown(7)) { // F8
 		if (menuOn) {
+			pad->ConsumeEscapeJustDown();
 			DebugMenuClose();
 			return;
 		}
@@ -1040,6 +1038,17 @@ DebugMenuProcess(void)
 	}
 	if (!menuOn)
 		return;
+	if (pad->GetEscapeJustDown() || pad->GetBackspaceJustDown()) {
+		pad->ConsumeEscapeJustDown();
+		if (activeMenu->parent) {
+			activeMenu = activeMenu->parent;
+			mouseOverMenu = nil;
+			mouseOverEntry = nil;
+		} else {
+			DebugMenuClose();
+		}
+		return;
+	}
 
 	pad->SetDisablePlayerControls(PLAYERCONTROL_TRAINER);
 	if (!menuInitialized)
@@ -1094,7 +1103,7 @@ DebugMenuRender(void)
 	activeMenu->draw();
 	PrintTrainerLabel("Arrows: Navigate   Enter: Open / Run", panelLeft + rowPadding,
 	                  list.y + list.h + 1, list.w - 2 * rowPadding);
-	PrintTrainerLabel("Backspace: Back   F8: Close", panelLeft + rowPadding,
+	PrintTrainerLabel("Esc / Backspace: Back   F8: Close", panelLeft + rowPadding,
 	                  list.y + list.h + 13, list.w - 2 * rowPadding);
 	RtCharsetBufferFlush();
 	drawMouse();
