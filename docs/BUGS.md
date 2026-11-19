@@ -828,3 +828,9 @@ Kaynak f718de54, GitHub Actions run 44466953534. OpenGL x64 derlemesi
 ve üç mevcut birim kontrolü geçti. Yakın/uzak trafik ve açılış dolumu,
 Restore Defaults, hizmet blip'leri, görev autosave ve Alt-Tab dönüşü
 oyun içinde doğrulanmayı bekliyor.
+
+### v1.15 OpenGL derleme sonucu
+
+Kaynak 58c0417d, GitHub Actions run 44470661806. OpenGL x64 derlemesi
+ve üç mevcut birim kontrolü geçti. SAV-04/05, INPUT-05, Restore Defaults
+tipografisi, GPS, radar ve trafik davranışı oyun içi doğrulama bekliyor.
