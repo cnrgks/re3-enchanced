@@ -282,3 +282,6 @@ CAP-01 için +1 genişlik probu kullanıcı tarafından denemeye alındı. Yaln�
 Windows OpenGL Borderless etkilenir. Kaynak değişikliği ve tek seferlik
 pencere boyutu günlüğü hazır; sürücü ayarı yok. Kayıt/cam/GPS/harita gibi
 diğer açık hatalar bu denemede değiştirilmedi. Build ve runtime sonuçları ayrı izlenecek.
+
+v1.3 için tek OpenGL derlemesi ve mevcut birim kontrolleri geçti. CAP-01
+yakalama sonucu henüz yok; hata kapanmadı. v1.2 başarısızlık kaydı korunur.

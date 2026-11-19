@@ -1,6 +1,6 @@
 # CAP-01 — OpenGL ekran yakalama incelemesi
 
-Durum: **kullanıcı v1.2 adayının sorunu çözmediğini bildirdi; CAP-01 açık**.
+Durum: **v1.2 başarısız; v1.3 +1 genişlik adayı derlendi, kullanıcı yakalama sonucu bekleniyor**.
 Kesin kök neden veya çözülme iddiası yok. Son kullanıcı kararı: OpenGL ana yol.
 
 ## v1.2 sonrası sonuç ve sıradaki aday
@@ -115,3 +115,10 @@ tam genişliğe geri dönebilir (oyunu yeniden başlatmak gerekir).
 bağlantısını başlangıç/mod değişiminde kaydeder. Sağ kenardaki taşan sütun,
 çoklu monitör, görüntü oranı ve fare koordinatları denemede değerlendirilecek.
 Sürücü ayarı yok; yalnızca OpenGL build/paket hazırlanacak. Yakalama sonucu bilinmiyor.
+
+### v1.3 derleme sonucu
+
+Tek OpenGL işi başarıyla tamamlandı; mevcut birim kontrolleri geçti.
+D3D9 build başlatılmadı. Derlenen kaynak commit: c3b6c52e. Bu sonuç
+1 piksel geometrisinin gerçek çalışmasını veya Discord/Ambilight başarısını
+kanıtlamaz; pencere ölçü günlüğü ve kullanıcı denemesi bekleniyor.
