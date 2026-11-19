@@ -865,3 +865,9 @@ oyun içinde doğrulanmayı bekliyor.
 Kaynak 58c0417d, GitHub Actions run 44470661806. OpenGL x64 derlemesi
 ve üç mevcut birim kontrolü geçti. SAV-04/05, INPUT-05, Restore Defaults
 tipografisi, GPS, radar ve trafik davranışı oyun içi doğrulama bekliyor.
+
+### v1.16 OpenGL derleme sonucu
+
+Kaynak a2804901, GitHub Actions run 44474644361. OpenGL x64 derlemesi
+ve üç mevcut birim kontrolü geçti. Paylaşılan 8. slot, yeni autosave,
+F5 yükleme, Alt+Tab ve Restore Defaults oyun içi doğrulama bekliyor.
