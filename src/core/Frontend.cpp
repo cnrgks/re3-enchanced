@@ -7,6 +7,7 @@
 #include "platform.h"
 #include "Frontend.h"
 #include "Enhanced.h"
+#include "EnhancedMath.h"
 #include "Font.h"
 #include "Pad.h"
 #include "Text.h"
@@ -384,33 +385,21 @@ const char* MenuFilenames[][2] = {
 // --- Functions not in the game/inlined starts
 
 void
-CMenuManager::ScrollUpListByOne() 
+CMenuManager::ScrollUpListByOne()
 {
-	if (m_nSelectedListRow == m_nFirstVisibleRowOnList) {
-		if (m_nFirstVisibleRowOnList > 0) {
-			m_nSelectedListRow--;
-			m_nFirstVisibleRowOnList--;
-			m_nScrollbarTopMargin -= SCROLLBAR_MAX_HEIGHT / m_nTotalListRow;
-		}
-	} else {
-		m_nSelectedListRow--;
-	}
+    m_nSelectedListRow=Max(0,int(m_nSelectedListRow)-1);
+    m_nFirstVisibleRowOnList=EnhancedMath::ScrollFirstVisible(m_nFirstVisibleRowOnList,
+        m_nSelectedListRow,m_nTotalListRow,MAX_VISIBLE_OPTION_ON_SCREEN);
+    m_nScrollbarTopMargin=m_nTotalListRow ? (SCROLLBAR_MAX_HEIGHT/m_nTotalListRow)*m_nFirstVisibleRowOnList : 0;
 }
 
 void
 CMenuManager::ScrollDownListByOne()
 {
-	if (m_nSelectedListRow == m_nFirstVisibleRowOnList + MAX_VISIBLE_OPTION_ON_SCREEN - 1) {
-		if (m_nFirstVisibleRowOnList < m_nTotalListRow - MAX_VISIBLE_OPTION_ON_SCREEN) {
-			m_nSelectedListRow++;
-			m_nFirstVisibleRowOnList++;
-			m_nScrollbarTopMargin += SCROLLBAR_MAX_HEIGHT / m_nTotalListRow;
-		}
-	} else {
-		if (m_nSelectedListRow < m_nTotalListRow - 1) {
-			m_nSelectedListRow++;
-		}
-	}
+    m_nSelectedListRow=Min(Max(0,int(m_nTotalListRow)-1),int(m_nSelectedListRow)+1);
+    m_nFirstVisibleRowOnList=EnhancedMath::ScrollFirstVisible(m_nFirstVisibleRowOnList,
+        m_nSelectedListRow,m_nTotalListRow,MAX_VISIBLE_OPTION_ON_SCREEN);
+    m_nScrollbarTopMargin=m_nTotalListRow ? (SCROLLBAR_MAX_HEIGHT/m_nTotalListRow)*m_nFirstVisibleRowOnList : 0;
 }
 
 void

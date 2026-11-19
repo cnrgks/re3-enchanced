@@ -8,6 +8,9 @@ void require(bool condition,const char *message)
 }
 int main()
 {
+    require(EnhancedMath::ScrollFirstVisible(8,0,20,12)==0,"keyboard focus returns to view after independent wheel scrolling");
+    require(EnhancedMath::ScrollFirstVisible(0,19,20,12)==8,"last focused row remains visible");
+    require(EnhancedMath::ScrollFirstVisible(9,3,4,12)==0,"short menu has no scroll offset");
     require(EnhancedMath::RadarIconScale(120)==1,"stationary radar icon size");
     require(EnhancedMath::RadarIconScale(350)<EnhancedMath::RadarIconScale(180),"native speed zoom shrinks icons");
     require(EnhancedMath::RadarIconScale(350*2.25f)<EnhancedMath::RadarIconScale(350),"T zoom adds proportional scaling");

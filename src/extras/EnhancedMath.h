@@ -2,6 +2,15 @@
 #include <cmath>
 
 namespace EnhancedMath {
+inline int ScrollFirstVisible(int first, int selected, int count, int visible)
+{
+    if (count<=visible || visible<=0) return 0;
+    if (selected<first) first=selected;
+    if (selected>=first+visible) first=selected-visible+1;
+    if (first<0) first=0;
+    if (first>count-visible) first=count-visible;
+    return first;
+}
 inline float RadarIconScale(float range)
 {
     float scale=1.0f/std::sqrt(range>120.0f ? range/120.0f : 1.0f);
