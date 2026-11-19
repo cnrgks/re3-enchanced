@@ -441,3 +441,10 @@ konumu ve tuşla başarılı ve aksayan deneme karşılaştırılmalı. Giriş
 kuralları bu aşamada aynen çalışıyor.
 
 Bu değişikliklerin derleme ve oyun içi doğrulaması bekliyor.
+
+### v1.5 derleme sonucu
+
+Kaynak 56b63808, GitHub Actions run 44447245429. OpenGL x64
+derlemesi ve uc mevcut birim programi basarili. Windows oyun ici goruntu,
+Discord, Ambilight, imlec gecikmesi ve arac girisi dogrulamasi bekliyor.
+
