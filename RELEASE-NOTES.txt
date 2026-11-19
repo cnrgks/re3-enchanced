@@ -1,0 +1,49 @@
+RE3 ENHANCED v1.1 - TOPLU PAKET
+
+KURULUM
+1. Oyunu kapat, mevcut re3.exe ve re3.pdb dosyalarini yedekle.
+2. Bu paketteki game klasorunun ICINDEKILERI GTA III klasorune kopyala.
+3. re3.exe ile ac. Enhanced secenekleri Options > Enhanced Options altinda.
+4. Borderless'i ana menudeyken, oyunu yuklemeden ayarla ve Enter ile uygula.
+   Ana Direct3D 9 surumunde yeni ayarlarda varsayilan aciktir. Eski ini tercihleri korunur.
+
+ASI Loader, CLEO Redux ve x64 CLEO eklentileri dahildir. Mevcut re3.ini ve
+kayit dosyalarina bu paket dokunmaz. Orijinal GTA III oyun verileri dahil degildir.
+Eski quick_save.js ve ayni isi yapan referans ASI modlarini kapali tut.
+Her eski GTA III x86 ASI veya CS modu bu mimariyle uyumlu degildir.
+
+BU SURUMDE
+- Gorev sonunda otomatik dosya yazmak yerine guvenli anda kayit slotu menusu.
+- Load Autosave kaldirildi. Eski ayri autosave dosyasi silinmez.
+- F5/gorev-sonu Enhanced kayitlari, hangi adadaysan o adanin ev konumunu
+  kayda yazar. Canli oyuncu yerinde kalir; kayit yuklenince evde baslar.
+- Haritada Pay 'n' Spray, Ammu-Nation, bomba dukkanlari ve ev servis ikonlari.
+- Hizla radar uzaklasirken ikonlar ve oyuncu oku birlikte kuculur.
+- T menzili 3x yerine 2.25x (onceki menzilin yuzde 75'i).
+- Cam geometrisi/alt bilesenleri; kirik camdan surucu/yolcuya native mermi hasari.
+  Korumali arac kurallari surer. Govdeye birlestirilmis ozel model camlari otomatik ayrilmaz.
+- Arac/yaya mesafeleri: 1x, 1.5x, 2x, 3x. Yuksek deger daha fazla islem ister;
+  native havuz limitleri nedeniyle sinirsiz arac/yaya olusmaz.
+- Mapte normal imlec yok, yatay/dikey cizgiler var; alt kontrol yazilari yok.
+  Back tusu mavi Rockstar logosunun ustunde ayni sol hizada.
+- Graphics gibi uzun menulerde tekerlek secenegi degistirmez, gorunen alani kaydirir.
+- Gorev GPS cizgisi hedef ikonunun acik/koyu rengini izler; elle waypoint kirmizidir.
+  Kapali yollar, tek yonler, alternatif baglantilar ve uzun rotalar ele alinir.
+
+EKRAN YAKALAMA / ALTERNATIF
+Ana surum Direct3D 9'da gercek pencere modunda masaustu boyutunda borderless
+sunum kullanir. Discord'da tum ekran paylasimini ve Ambilight'i bu surumle dene.
+Bunlar senin GPU/sisteminde henuz dogrulanmadi; cozuldu garantisi verilmiyor.
+OpenGL'e donmek icin alternatives/OpenGL icindeki re3.exe VE re3.pdb'yi birlikte
+oyun klasorune kopyala. Diger dosyalar ayni kalir. Ana D3D9'a donmek icin game
+klasorundeki iki dosyayi tekrar birlikte kopyala.
+
+TEST SIRASI
+Harita/tekerlek ve radar -> F5 ile yeni bos slot -> kaydi yukleyip adanin evini
+kontrol et -> gorev bitirip menunun acilmasi/iptal -> arac camindan surucuya atis
+-> mesafeler -> Discord tam ekran paylasimi. Onemli kaydinin uzerine test yapma.
+Guvenli kayit icin yaya, hareketsiz, aranmasiz ve gorev/sinematik disinda ol.
+
+Kaynak surum ve SHA-256 listesi manifest.json icinde. Teknik sinirlar/test
+durumu docs/ENHANCED.md ve docs/ROADMAP.md icinde. Derleme ve birim testleri,
+oyun ici kontrollerin tamamlandigi anlamina gelmez.
