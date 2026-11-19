@@ -37,11 +37,11 @@ geri bildirimini kaydeder; burada listelenen maddeler henüz düzeltilmiş sayı
 | GPS-01 | Elle waypoint'te üst/alt yol katmanı karışıyor | v1.10 OpenGL derlendi / oyun testi bekliyor |
 | GPS-02 | Rota görünürlüğü, boşluklar ve anlamsız geri dönüşler | v1.11 OpenGL derlendi / oyun testi bekliyor |
 | MAP-01 | Çift ev ikonu | v1.10 OpenGL derlendi / oyun testi bekliyor |
-| MAP-02 | Hizmet ikonlarının keşfi, mesafesi ve hıza göre saydamlığı | v1.12 kaynak değişikliği / oyun testi bekliyor |
-| MAP-03 | Telefon ve diğer görev ikonları keşif filtresine takılıyor | v1.12 kaynak değişikliği / oyun testi bekliyor |
+| MAP-02 | Hizmet ikonlarının keşfi, mesafesi ve hıza göre saydamlığı | v1.12 OpenGL derlendi / oyun testi bekliyor |
+| MAP-03 | Telefon ve diğer görev ikonları keşif filtresine takılıyor | v1.12 OpenGL derlendi / oyun testi bekliyor |
 | MAP-04 | Sarı MAP şeridinin tamamı kaldırılmalı | v1.10 OpenGL derlendi / oyun testi bekliyor |
 | MAP-05 | Back dikey hiza ve Quit Game'e taşan tıklama | v1.11 OpenGL derlendi / oyun testi bekliyor |
-| MAP-06 | M ile haritayı açma ve doğrudan oyuna dönme | v1.12 kaynak değişikliği / oyun testi bekliyor |
+| MAP-06 | M ile haritayı açma ve doğrudan oyuna dönme | v1.12 OpenGL derlendi / oyun testi bekliyor |
 | INPUT-01 | OpenGL–D3D9 fare hassasiyeti farklı | Açık — kullanıcı bildirdi |
 | CAP-01 | OpenGL fullscreen/borderless yakalama | v1.9 Fullscreen ve Borderless için Discord/Ambilight kullanıcı onayı. Ana Fullscreen bağlantısı kaynakta hazır |
 | INPUT-02 | Borderless kayıtlıyken yeniden açılışta imleç sola kilitleniyor | v1.4 kaynak düzeltmesi derlendi, oyun içi doğrulama bekliyor |
@@ -277,6 +277,10 @@ duraklatma menüsüne dönüyor.
 Menu Map açıkken oyun sırasında M haritayı açar. Bu şekilde açılan
 harita M, Esc veya Back ile doğrudan oyuna döner. Duraklatma menüsünden
 açılan harita Back ve Esc ile duraklatma menüsüne döner.
+
+**Derleme:** v1.12 Windows OpenGL x64 ve mevcut CI birim testleri geçti.
+Oyun içinde tuş, görev ikonları ve hizmet saydamlığı denemesi bekliyor.
+[Derleme 44458523561](https://github.com/cnrgks/hezkore-re3-pdb-build/actions/runs/44458523561)
 
 ### INPUT-01 — iki backend arasında fare hızı
 
