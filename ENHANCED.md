@@ -1,4 +1,4 @@
-# re3 Enhanced v1.11
+# re3 Enhanced v1.12
 
 > Known v1.1 issues and the latest requested save/map behavior are tracked in
 > [docs/BUGS.md](docs/BUGS.md). Future features: [ROADMAP.md](ROADMAP.md).
@@ -19,12 +19,12 @@ Settings: Options > Enhanced Options, persisted under [Enhanced] in re3.ini.
 - Heal after manual save persists at least 100 health; failed save restores it.
 - Radar icons, traces and rotating player arrow share range-dependent scaling,
   including the native speed zoom. T smoothly targets 2.25x instead of 3x.
-- World icons are discovered as they enter the minimap and remembered by each
-  PC save. Active phones can appear on both maps. Ammu-Nation, 8-Ball/bomb
-  shops and Pay 'n' Spray appear on the minimap within its range. Mission
-  objectives follow their native blip rules.
+- Ammu-Nation, 8-Ball bomb shops and Pay 'n' Spray are discovered as they enter
+  the minimap and remembered by each PC save. Their minimap icons fade at
+  driving speed. Mission contacts and objectives follow native blip rules.
 - Map keeps its two crosshair lines, hides the cursor sprite, removes footer
   control instructions and aligns Back with the blue Rockstar logo's left edge.
+  M opens the map from gameplay. M, Esc or Back returns directly to gameplay.
 - Scrolling an option page moves its viewport by three rows, without cycling
   the focused option or changing its value. Keyboard navigation remains native.
 - Vehicle/Pedestrian Distance: 1x, 1.5x, 2x or 3x. Spawn/despawn thresholds and

@@ -1,4 +1,4 @@
-RE3 ENHANCED v1.11 - OPENGL x64
+RE3 ENHANCED v1.12 - OPENGL x64
 
 KURULUM
 Oyunu kapat ve mevcut re3.exe/re3.pdb ciftini yedekle. Paketin game
@@ -9,12 +9,12 @@ runtime kutuphaneleri dahildir.
 GPS VE HARITA
 Elle konan waypoint GPS rotasini acar. Enhanced Options altindaki
 Mission GPS ayari yalnizca otomatik gorev rotasini kontrol eder.
-Kesfedilen simgeler PC oyun kaydina eklenir. Eski kayitlar acilabilir.
-Etkin telefon hem menude hem minimapte gorunebilir. Ammu-Nation,
-8-Ball/bomba garaji ve Pay 'n' Spray minimap alanina girince cizilir.
-Gorev hedefleri kesif ve mesafe filtresinden muaftir.
-Back dikey ortalandi ve birakilan fare tiklamasiyla duraklatma
-menusune doner. Oyun ici deneme bekliyor.
+Ammu-Nation, 8-Ball bomba garaji ve Pay 'n' Spray minimap alanina
+girince kesfedilir. Kesif PC oyun kaydinda saklanir. Hiz arttikca
+bu hizmetlerin minimap simgeleri saydamlasir. Telefon gorevleri ve
+diger gorev simgeleri oyunun kendi gorunurluk kurallarini kullanir.
+Oyun icinde M haritayi acar. Bu sekilde acilan haritadan M, Esc
+veya Back ile dogrudan oyuna donulur. Oyun ici deneme bekliyor.
 
 CAP-01 - FULLSCREEN
 Graphics > Screen Format > Fullscreen, Windows OpenGL'de DXGI

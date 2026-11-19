@@ -23,6 +23,7 @@
 #include "GenericGameStorage.h"
 #include "Script.h"
 #include "Camera.h"
+#include "CutsceneMgr.h"
 #include "ControllerConfig.h"
 #include "Vehicle.h"
 #include "MBlur.h"
@@ -336,6 +337,8 @@ const char* MenuFilenames[][2] = {
 	CFont::SetFontStyle(FONT_LOCALE(FONT_HEADING));
 
 #ifdef MENU_MAP
+static bool mapOpenedFromGame = false;
+
 static CRect MapBackBounds()
 {
 	return CRect(SCREEN_STRETCH_X(19.0f), SCREEN_STRETCH_FROM_BOTTOM(93.0f),
@@ -4187,8 +4190,21 @@ CMenuManager::Process(void)
 	m_bWantToRestart = false;
 	InitialiseChangedLanguageSettings();
 
+	CPad *pad = CPad::GetPad(0);
+#ifdef MENU_MAP
+	const bool mapKey = pad->GetCharJustDown('M');
+	const bool openMapFromGame = mapKey && Enhanced::MenuMap && !m_bMenuActive &&
+		!m_bSaveMenuActive && !m_bGameNotLoaded && FindPlayerPed() &&
+		!CCutsceneMgr::IsCutsceneProcessing() && !TheCamera.m_WideScreenOn;
+	if (openMapFromGame)
+		RequestFrontEndStartUp();
+	else if (mapOpenedFromGame && m_nCurrScreen == MENUPAGE_MAP &&
+		(mapKey || pad->GetEscapeJustDown()))
+		RequestFrontEndShutDown();
+	else
+#endif
 	// Just a hack by R* to not make game continuously resume/pause. But we it seems we can live with it.
-	if (CPad::GetPad(0)->GetEscapeJustDown())
+	if (pad->GetEscapeJustDown())
 		RequestFrontEndStartUp();
 
 	SwitchMenuOnAndOff();
@@ -4198,6 +4214,14 @@ CMenuManager::Process(void)
 
 		// Load frontend textures.
 		LoadAllTextures();
+#ifdef MENU_MAP
+		if (openMapFromGame && !m_bRenderGameInMenu) {
+			mapOpenedFromGame = true;
+			fMapCenterX = fMapCenterY = 0.0f;
+			fMapSize = SCREEN_HEIGHT * 2.0f;
+			ChangeScreen(MENUPAGE_MAP, 0, true, true);
+		}
+#endif
 
 		// Set save/delete game pages.
 		if (m_nCurrScreen == MENUPAGE_DELETING) {
@@ -4402,7 +4426,10 @@ CMenuManager::ProcessButtonPresses(void)
 			m_nOptionMouseHovering = 0;
 			ResetHelperText();
 			DMAudio.PlayFrontEndSound(SOUND_FRONTEND_MENU_BACK, 0);
-			ChangeScreen(MENUPAGE_PAUSE_MENU, 0, true, true);
+			if (mapOpenedFromGame)
+				RequestFrontEndShutDown();
+			else
+				ChangeScreen(MENUPAGE_PAUSE_MENU, 0, true, true);
 		}
 		// PrintMap owns map navigation. Never pass its clicks to menu actions.
 		return;
@@ -5707,6 +5734,9 @@ CMenuManager::SetHelperText(int text)
 void
 CMenuManager::ShutdownJustMenu()
 {
+#ifdef MENU_MAP
+	mapOpenedFromGame = false;
+#endif
 	// In case we're windowed, keep mouse centered while in game. Done in main.cpp in other conditions.
 #if defined(RW_GL3) && defined(IMPROVED_VIDEOMODE)
 	glfwSetInputMode(PSGLOBAL(window), GLFW_CURSOR, GLFW_CURSOR_DISABLED);

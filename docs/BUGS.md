@@ -37,10 +37,11 @@ geri bildirimini kaydeder; burada listelenen maddeler henüz düzeltilmiş sayı
 | GPS-01 | Elle waypoint'te üst/alt yol katmanı karışıyor | v1.10 OpenGL derlendi / oyun testi bekliyor |
 | GPS-02 | Rota görünürlüğü, boşluklar ve anlamsız geri dönüşler | v1.11 OpenGL derlendi / oyun testi bekliyor |
 | MAP-01 | Çift ev ikonu | v1.10 OpenGL derlendi / oyun testi bekliyor |
-| MAP-02 | İkon keşfi, ada kilidi ve minimap mesafesi | v1.11 OpenGL derlendi / kayıt yükleme testi bekliyor |
-| MAP-03 | Mavi telefon menü haritasında var, minimapte yok | v1.11 OpenGL derlendi / oyun testi bekliyor |
+| MAP-02 | Hizmet ikonlarının keşfi, mesafesi ve hıza göre saydamlığı | v1.12 kaynak değişikliği / oyun testi bekliyor |
+| MAP-03 | Telefon ve diğer görev ikonları keşif filtresine takılıyor | v1.12 kaynak değişikliği / oyun testi bekliyor |
 | MAP-04 | Sarı MAP şeridinin tamamı kaldırılmalı | v1.10 OpenGL derlendi / oyun testi bekliyor |
 | MAP-05 | Back dikey hiza ve Quit Game'e taşan tıklama | v1.11 OpenGL derlendi / oyun testi bekliyor |
+| MAP-06 | M ile haritayı açma ve doğrudan oyuna dönme | v1.12 kaynak değişikliği / oyun testi bekliyor |
 | INPUT-01 | OpenGL–D3D9 fare hassasiyeti farklı | Açık — kullanıcı bildirdi |
 | CAP-01 | OpenGL fullscreen/borderless yakalama | v1.9 Fullscreen ve Borderless için Discord/Ambilight kullanıcı onayı. Ana Fullscreen bağlantısı kaynakta hazır |
 | INPUT-02 | Borderless kayıtlıyken yeniden açılışta imleç sola kilitleniyor | v1.4 kaynak düzeltmesi derlendi, oyun içi doğrulama bekliyor |
@@ -214,6 +215,12 @@ minimap alanına girdiğinde görünüyor. Görev hedefleri keşif ve mesafe
 filtresini atlıyor. Kullanıcı kaydında yazma ve yeniden yükleme denemesi
 bekliyor.
 
+**v1.12 kapsam düzeltmesi:** Keşif, minimap sınırı ve hıza göre saydamlık
+yalnızca Ammu-Nation, 8-Ball bomba garajı ve Pay ’n’ Spray hizmetlerine
+uygulanır. Hizmet minimap alanına girdiğinde keşfedilir. Önceki kayıtlardan
+yalnızca bu hizmetlerin keşif girişleri yüklenir. Görev için hizmet
+simgesiyle işaretlenmiş hedefler yerleşik davranışı kullanır.
+
 ### MAP-03 — görülen payphone kayboluyor
 
 **Gözlem:** Kullanıcı daha önce gördüğü mavi telefon simgesini harita
@@ -238,6 +245,12 @@ Yerleşik simge hâlâ etkinse çizim ona bırakılıyor.
 **v1.10 kullanıcı denemesi:** Mavi telefon keşfedildi ve menü haritasında
 göründü. Minimapte görünmedi. v1.11'de yedek çizim minimap içinde de çalışıyor.
 
+**v1.12 kapsam düzeltmesi:** Kullanıcı telefon görevlerinin Marty Chonks
+görevleri olduğunu ve yerleşik görev simgesi gibi uzaktan görünmesi
+gerektiğini bildirdi. Telefon ve diğer görev simgeleri keşif sisteminden
+çıkarıldı. Oyunun kendi görev simgesi ve yaşam döngüsü kullanılıyor.
+8-Ball görev kontağı da bomba garajı hizmetinden ayrı tutuluyor.
+
 ### MAP-04 / MAP-05 — alt şerit ve Back
 
 **Netleştirme:** İstenen yalnızca kontrol yazılarını kaldırmak değildi.
@@ -258,6 +271,12 @@ Quit Game'i de tetikliyordu. v1.11'de etiket kendi alanında dikey
 ortalanıyor. Harita girişi Back tıklamasını fare bırakıldığında tüketip
 duraklatma menüsüne dönüyor.
 [Kullanıcı görüntüsü](feedback/2026-11-19/v1.10-map-back.png)
+
+### MAP-06 — oyun içinden harita kısayolu
+
+Menu Map açıkken oyun sırasında M haritayı açar. Bu şekilde açılan
+harita M, Esc veya Back ile doğrudan oyuna döner. Duraklatma menüsünden
+açılan harita Back ve Esc ile duraklatma menüsüne döner.
 
 ### INPUT-01 — iki backend arasında fare hızı
 

@@ -154,12 +154,17 @@ void GetTextureCorners(int32 x, int32 y, CVector2D *out)
 	out[3].y = RADAR_TILE_SIZE * (y);
 }
 
-uint8 CRadar::CalculateBlipAlpha(float dist)
+uint8 CRadar::CalculateBlipAlpha(float dist, bool service)
 {
 #ifdef MENU_MAP
 	if (CMenuManager::bMenuMapActive)
 		return 255;
 #endif
+	if (service && FindPlayerVehicle()) {
+		const float speed = FindPlayerSpeed().Magnitude();
+		const float fade = Clamp((speed - RADAR_MIN_SPEED) / (RADAR_MAX_SPEED - RADAR_MIN_SPEED), 0.0f, 1.0f);
+		return uint8(255.0f - 95.0f * fade);
+	}
 	if (dist <= 1.0f)
 		return 255;
 
@@ -625,7 +630,8 @@ void CRadar::DrawBlips()
 							if (!Enhanced::ServiceBlipVisible(ms_RadarTrace[blipId], dist)) break;
 							TransformRadarPointToScreenSpace(out, in);
 							if (ms_RadarTrace[blipId].m_eRadarSprite != RADAR_SPRITE_NONE) {
-								DrawRadarSprite(ms_RadarTrace[blipId].m_eRadarSprite, out.x, out.y, CalculateBlipAlpha(dist));
+								DrawRadarSprite(ms_RadarTrace[blipId].m_eRadarSprite, out.x, out.y,
+									CalculateBlipAlpha(dist, Enhanced::IsServiceBlip(ms_RadarTrace[blipId])));
 							} else {
 #ifdef TRIANGULAR_BLIPS
 							    const CVector &pos = FindPlayerCentreOfWorld_NoSniperShift();

@@ -29,6 +29,7 @@ bool ProcessWindscreenShot(const CVector &source, const CVector &target, CEntity
 void AfterSuccessfulSave();
 void ResetServices();
 void DiscoverServices();
+bool IsServiceBlip(const sRadarTrace &trace);
 bool ServiceBlipVisible(const sRadarTrace &trace, float radarDistance);
 void SaveServiceDiscovery(uint8 *buffer, uint32 capacity);
 void LoadServiceDiscovery(const uint8 *buffer, uint32 size);
