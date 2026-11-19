@@ -793,7 +793,6 @@ DebugMenuInit(void)
 
 
 	menuInitialized = true;
-	return true;
 }
 
 void
