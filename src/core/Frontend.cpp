@@ -824,11 +824,17 @@ CMenuManager::CentreMousePointer()
 		ClientToScreen(PSGLOBAL(window), &Point);
 		SetCursorPos(Point.x, Point.y);
 #elif defined RW_GL3
-		glfwSetCursorPos(PSGLOBAL(window), SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+		int windowWidth,windowHeight;
+        glfwGetWindowSize(PSGLOBAL(window),&windowWidth,&windowHeight);
+        glfwSetCursorPos(PSGLOBAL(window),windowWidth*0.5,windowHeight*0.5);
+        PSGLOBAL(lastMousePos.x)=windowWidth*0.5;
+        PSGLOBAL(lastMousePos.y)=windowHeight*0.5;
 #endif
 
+#if defined RW_D3D9 || defined RWLIBS
 		PSGLOBAL(lastMousePos.x) = SCREEN_WIDTH / 2;
 		PSGLOBAL(lastMousePos.y) = SCREEN_HEIGHT / 2;
+#endif
 	}
 }
 

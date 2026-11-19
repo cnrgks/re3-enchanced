@@ -1,5 +1,6 @@
 #define WITHDINPUT
 #include "common.h"
+#include <cmath>
 #include "crossplatform.h"
 #include "platform.h"
 #ifdef XINPUT
@@ -590,12 +591,14 @@ void CPad::UpdateMouse()
 	else if ( state.lZ < 0 )
 		PCTempMouseControllerState.WHEELDN = 1;
 #else
-	if ( !PSGLOBAL(cursorIsInWindow) )
+	if (!glfwGetWindowAttrib(PSGLOBAL(window),GLFW_FOCUSED))
+		return;
+	if (!PSGLOBAL(cursorIsInWindow) && glfwGetInputMode(PSGLOBAL(window),GLFW_CURSOR)!=GLFW_CURSOR_DISABLED)
 		return;
 
 	double xpos = 1.0f, ypos;
 	glfwGetCursorPos(PSGLOBAL(window), &xpos, &ypos);
-	if ( xpos == 0.f )
+	if (!std::isfinite(xpos) || !std::isfinite(ypos))
 		return;
 
 	x = (float)(signX * (xpos - PSGLOBAL(lastMousePos.x)));

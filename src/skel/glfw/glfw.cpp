@@ -28,6 +28,7 @@ long _dwOperatingSystemVersion;
 
 #include "common.h"
 #include "Enhanced.h"
+#include "EnhancedMath.h"
 #if (defined(_MSC_VER))
 #include <tchar.h>
 #endif /* (defined(_MSC_VER)) */
@@ -949,6 +950,7 @@ void cursorCB(GLFWwindow* window, double xpos, double ypos);
 void cursorEnterCB(GLFWwindow* window, int entered);
 void windowFocusCB(GLFWwindow* window, int focused);
 void windowIconifyCB(GLFWwindow* window, int iconified);
+static void SynchroniseWindowInput(GLFWwindow *window, bool centre);
 void joysChangeCB(int jid, int event);
 
 bool IsThisJoystickBlacklisted(int i)
@@ -1142,6 +1144,20 @@ void psPostRWinit(void)
 		glfwSetWindowSize(PSGLOBAL(window), RsGlobal.maximumWidth, RsGlobal.maximumHeight);
 
     Enhanced::ApplyWindowMode(true);
+
+    // The first resize may have arrived before RwInitialised became true.
+    // Use the final drawable size on both cold startup and mode recreation.
+    int fw,fh;
+    glfwGetFramebufferSize(PSGLOBAL(window),&fw,&fh);
+    if (fw>0 && fh>0) {
+        RsGlobal.width=RsGlobal.maximumWidth=fw;
+        RsGlobal.height=RsGlobal.maximumHeight=fh;
+        RwRect finalSize={0,0,fw,fh};
+        RsEventHandler(rsCAMERASIZE,&finalSize);
+    }
+    const bool playing=gGameState==GS_PLAYING_GAME && !FrontEndMenuManager.m_bMenuActive;
+    glfwSetInputMode(PSGLOBAL(window),GLFW_CURSOR,playing ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_HIDDEN);
+    SynchroniseWindowInput(PSGLOBAL(window),!playing);
 
 	// Make sure all keys are released
 	CPad::GetPad(0)->Clear(true);
@@ -1911,9 +1927,27 @@ cursorCB(GLFWwindow* window, double xpos, double ypos) {
 		return;
 	
 	int winw, winh;
-	glfwGetWindowSize(PSGLOBAL(window), &winw, &winh);
-	FrontEndMenuManager.m_nMouseTempPosX = xpos * (RsGlobal.maximumWidth / winw);
-	FrontEndMenuManager.m_nMouseTempPosY = ypos * (RsGlobal.maximumHeight / winh);
+    glfwGetWindowSize(window, &winw, &winh);
+    FrontEndMenuManager.m_nMouseTempPosX = EnhancedMath::CursorCoordinate(xpos,winw,RsGlobal.maximumWidth);
+    FrontEndMenuManager.m_nMouseTempPosY = EnhancedMath::CursorCoordinate(ypos,winh,RsGlobal.maximumHeight);
+}
+
+static void SynchroniseWindowInput(GLFWwindow *window, bool centre)
+{
+    int ww,wh;
+    glfwGetWindowSize(window,&ww,&wh);
+    if (ww<=0 || wh<=0) return;
+    if (centre && glfwGetWindowAttrib(window,GLFW_FOCUSED))
+        glfwSetCursorPos(window,ww*0.5,wh*0.5);
+    double x,y;
+    glfwGetCursorPos(window,&x,&y);
+    PSGLOBAL(lastMousePos.x)=x;
+    PSGLOBAL(lastMousePos.y)=y;
+    PSGLOBAL(cursorIsInWindow)=glfwGetWindowAttrib(window,GLFW_HOVERED);
+    const int mx=EnhancedMath::CursorCoordinate(x,ww,RsGlobal.maximumWidth);
+    const int my=EnhancedMath::CursorCoordinate(y,wh,RsGlobal.maximumHeight);
+    FrontEndMenuManager.m_nMousePosX=FrontEndMenuManager.m_nMouseOldPosX=FrontEndMenuManager.m_nMouseTempPosX=mx;
+    FrontEndMenuManager.m_nMousePosY=FrontEndMenuManager.m_nMouseOldPosY=FrontEndMenuManager.m_nMouseTempPosY=my;
 }
 
 void
@@ -1924,6 +1958,7 @@ cursorEnterCB(GLFWwindow* window, int entered) {
 void
 windowFocusCB(GLFWwindow* window, int focused) {
 	WindowFocused = !!focused;
+    if (focused) SynchroniseWindowInput(window,false);
 }
 
 void

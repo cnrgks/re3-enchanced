@@ -8,6 +8,11 @@ void require(bool condition,const char *message)
 }
 int main()
 {
+    require(EnhancedMath::CursorCoordinate(960.5,1921,1920)==960,"+1 borderless midpoint does not collapse to zero");
+    require(EnhancedMath::CursorCoordinate(640,1280,1920)==960,"window/framebuffer DPI conversion");
+    require(EnhancedMath::CursorCoordinate(0,1921,1920)==0,"left edge is valid");
+    require(EnhancedMath::CursorCoordinate(1921,1921,1920)==1919,"right edge remains inside render area");
+    require(EnhancedMath::CursorCoordinate(10,0,1920)==0,"minimized window extent guard");
     require(EnhancedMath::ScrollFirstVisible(8,0,20,12)==0,"keyboard focus returns to view after independent wheel scrolling");
     require(EnhancedMath::ScrollFirstVisible(0,19,20,12)==8,"last focused row remains visible");
     require(EnhancedMath::ScrollFirstVisible(9,3,4,12)==0,"short menu has no scroll offset");

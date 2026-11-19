@@ -2,6 +2,14 @@
 #include <cmath>
 
 namespace EnhancedMath {
+inline double CursorCoordinate(double value, int windowExtent, int renderExtent)
+{
+    if (windowExtent<=0 || renderExtent<=0 || !std::isfinite(value)) return 0;
+    double result=value*double(renderExtent)/double(windowExtent);
+    if (result<0) result=0;
+    if (result>renderExtent-1) result=renderExtent-1;
+    return result;
+}
 inline int ScrollFirstVisible(int first, int selected, int count, int visible)
 {
     if (count<=visible || visible<=0) return 0;
