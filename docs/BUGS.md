@@ -475,3 +475,9 @@ Geçiş doğrulanınca Windows OpenGL'de DXGI sunumunu ana Fullscreen
 seçeneğine bağlama kararı değerlendirilecek. Bu denemede ayrı deney
 seçeneği, native OpenGL fallback'i ve `-safe-display` kurtarması duruyor.
 
+
+### v1.6 derleme sonucu
+
+Kaynak a7ab4d76, GitHub Actions run 44448899982. OpenGL x64
+derlemesi ve mevcut birim kontrolleri geçti. Açılış ve Alt-Tab görüntüsü,
+Discord yakalama regresyonu ve Ambilight oyun içinde doğrulanmayı bekliyor.
