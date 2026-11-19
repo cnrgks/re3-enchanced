@@ -5744,6 +5744,14 @@ CMenuManager::PauseAfterWindowFocusReturns()
 {
 	if (m_bMenuActive || m_bGameNotLoaded || m_bWantToRestart || m_bWantToLoad)
 		return;
+#ifndef PS2_MENU
+	if (JustLoadedDontFadeInYet || StillToFadeOut)
+		return;
+#endif
+	// Pausing stops the fade clock, while Process() rejects input during a
+	// fade. Opening Pause here would leave neither able to advance.
+	if (TheCamera.GetFading() || TheCamera.GetScreenFadeStatus() != FADE_0)
+		return;
 	RequestFrontEndStartUp();
 	SwitchMenuOnAndOff();
 	LoadAllTextures();

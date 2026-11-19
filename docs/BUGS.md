@@ -1111,3 +1111,14 @@ varsayılanı ve önceki ayarlar v1.23 ile aynı. Kaynak adayı derlenmedi.
 
 Kaynak 425e6d96, GitHub Actions run 44636586861. OpenGL x64 derlemesi
 ve üç CI birim kontrolü geçti. WIN-03 oyun içinde doğrulanmayı bekliyor.
+
+### WIN-03 — v1.25 tanı sonucu
+
+[Yükleme ve odak günlüğü](feedback/2026-11-20/v1.25-loading-focus.txt)
+yüklemenin t=8.357'de tamamlandığını, odak kaybının t=8.977'de
+algılandığını ve dönüşte Pause menüsü ile ilk sunumun tamamlandığını
+gösteriyor. Kayıt sonrası ekran geçişi senkron yükleme kapsamından daha
+uzun sürüyor. Pause açılınca fade'in oyun saati duruyor. Frontend Process
+fade bitene kadar menü girdisini reddediyor. Kaynakta otomatik Pause,
+kayıt sonrası bekleme veya kamera fade'i bitmeden açılmayacak şekilde
+korundu. Yeni aday derleme ve oyun içi doğrulama bekliyor.
