@@ -1122,3 +1122,9 @@ uzun sürüyor. Pause açılınca fade'in oyun saati duruyor. Frontend Process
 fade bitene kadar menü girdisini reddediyor. Kaynakta otomatik Pause,
 kayıt sonrası bekleme veya kamera fade'i bitmeden açılmayacak şekilde
 korundu. Yeni aday derleme ve oyun içi doğrulama bekliyor.
+
+### v1.26 OpenGL derleme sonucu
+
+Kaynak 75712e3f, GitHub Actions run 44637887040. OpenGL x64 derlemesi
+ve üç CI birim kontrolü geçti. WIN-03, kayıt sonrası ekran geçişi
+sırasında Alt+Tab ve normal Pause davranışı oyun içinde doğrulanmayı bekliyor.
