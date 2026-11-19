@@ -544,7 +544,7 @@ CCarCtrl::GenerateOneRandomCar()
 	}
 	CVisibilityPlugins::SetClumpAlpha(pVehicle->GetClump(), 0);
 	if (!pVehicle->GetIsOnScreen()){
-		if ((vecTargetPos - pVehicle->GetPosition()).Magnitude2D() > 50.0f) {
+		if ((vecTargetPos - pVehicle->GetPosition()).Magnitude2D() > 50.0f * Enhanced::VehicleRangeMultiplier()) {
 			/* Too far away cars that are not visible aren't needed. */
 			delete pVehicle;
 			return;
@@ -763,7 +763,7 @@ CCarCtrl::PossiblyRemoveVehicle(CVehicle* pVehicle)
 	if ((pVehicle->GetStatus() == STATUS_SIMPLE || pVehicle->GetStatus() == STATUS_PHYSICS && pVehicle->AutoPilot.m_nDrivingStyle == DRIVINGSTYLE_STOP_FOR_CARS) &&
 		CTimer::GetTimeInMilliseconds() - pVehicle->AutoPilot.m_nTimeToStartMission > 5000 &&
 		!pVehicle->GetIsOnScreen() &&
-		(pVehicle->GetPosition() - vecPlayerPos).Magnitude2D() > 25.0f &&
+		(pVehicle->GetPosition() - vecPlayerPos).Magnitude2D() > 25.0f * Enhanced::VehicleRangeMultiplier() &&
 		!IsThisVehicleInteresting(pVehicle) &&
 		!pVehicle->bIsLocked &&
 		pVehicle->CanBeDeleted() &&
