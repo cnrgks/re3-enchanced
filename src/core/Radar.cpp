@@ -22,6 +22,9 @@
 #include "Streaming.h"
 #include "SpecialFX.h"
 
+// Kept outside the native trace so compatible save records keep their layout.
+static int32 missionSpriteHandles[NUMRADARBLIPS];
+
 float CRadar::m_radarRange;
 sRadarTrace CRadar::ms_RadarTrace[NUMRADARBLIPS];
 CVector2D vec2DRadarOrigin;
@@ -505,6 +508,7 @@ void CRadar::DrawBlips()
 		RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDINVSRCALPHA);
 		RwRenderStateSet(rwRENDERSTATEFOGENABLE, (void*)FALSE);
 
+        Enhanced::DiscoverServices();
         Enhanced::DrawRoute();
         Enhanced::DrawServices(); // below every blip, including the player arrow
 		CVector2D out;
@@ -602,11 +606,6 @@ void CRadar::DrawBlips()
 					break;
 				case BLIP_COORD:
 				case BLIP_CONTACT_POINT:
-#ifdef MENU_MAP
-					if (CMenuManager::bMenuMapActive &&
-						!Enhanced::ServiceBlipVisibleOnMap(ms_RadarTrace[blipId].m_eRadarSprite, ms_RadarTrace[blipId].m_vecPos))
-						break;
-#endif
 					if ((ms_RadarTrace[blipId].m_eRadarSprite == RADAR_SPRITE_BOMB || ms_RadarTrace[blipId].m_eRadarSprite == RADAR_SPRITE_SAVE
 						|| ms_RadarTrace[blipId].m_eRadarSprite == RADAR_SPRITE_SPRAY || ms_RadarTrace[blipId].m_eRadarSprite == RADAR_SPRITE_WEAPON)
 						&& (ms_RadarTrace[blipId].m_eBlipType != BLIP_CONTACT_POINT || !CTheScripts::IsPlayerOnAMission())) {
@@ -623,6 +622,7 @@ void CRadar::DrawBlips()
 						if (ms_RadarTrace[blipId].m_eBlipDisplay == BLIP_DISPLAY_BOTH || ms_RadarTrace[blipId].m_eBlipDisplay == BLIP_DISPLAY_BLIP_ONLY) {
 							TransformRealWorldPointToRadarSpace(in, ms_RadarTrace[blipId].m_vec2DPos);
 							float dist = LimitRadarPoint(in);
+							if (!Enhanced::ServiceBlipVisible(ms_RadarTrace[blipId], dist)) break;
 							TransformRadarPointToScreenSpace(out, in);
 							if (ms_RadarTrace[blipId].m_eRadarSprite != RADAR_SPRITE_NONE) {
 								DrawRadarSprite(ms_RadarTrace[blipId].m_eRadarSprite, out.x, out.y, CalculateBlipAlpha(dist));
@@ -722,11 +722,6 @@ void CRadar::DrawBlips()
 			switch (ms_RadarTrace[blipId].m_eBlipType) {
 				case BLIP_COORD:
 				case BLIP_CONTACT_POINT:
-#ifdef MENU_MAP
-					if (CMenuManager::bMenuMapActive &&
-						!Enhanced::ServiceBlipVisibleOnMap(ms_RadarTrace[blipId].m_eRadarSprite, ms_RadarTrace[blipId].m_vecPos))
-						break;
-#endif
 					if (ms_RadarTrace[blipId].m_eRadarSprite != RADAR_SPRITE_BOMB && ms_RadarTrace[blipId].m_eRadarSprite != RADAR_SPRITE_SAVE
 						&& ms_RadarTrace[blipId].m_eRadarSprite != RADAR_SPRITE_SPRAY && ms_RadarTrace[blipId].m_eRadarSprite != RADAR_SPRITE_WEAPON
 						&& (ms_RadarTrace[blipId].m_eBlipType != BLIP_CONTACT_POINT || !CTheScripts::IsPlayerOnAMission())) {
@@ -743,6 +738,7 @@ void CRadar::DrawBlips()
 						if (ms_RadarTrace[blipId].m_eBlipDisplay == BLIP_DISPLAY_BOTH || ms_RadarTrace[blipId].m_eBlipDisplay == BLIP_DISPLAY_BLIP_ONLY) {
 							TransformRealWorldPointToRadarSpace(in, ms_RadarTrace[blipId].m_vec2DPos);
 							float dist = LimitRadarPoint(in);
+							if (!Enhanced::ServiceBlipVisible(ms_RadarTrace[blipId], dist)) break;
 							TransformRadarPointToScreenSpace(out, in);
 							if (ms_RadarTrace[blipId].m_eRadarSprite != RADAR_SPRITE_NONE)
 								DrawRadarSprite(ms_RadarTrace[blipId].m_eRadarSprite, out.x, out.y, CalculateBlipAlpha(dist));
@@ -963,6 +959,7 @@ int32 CRadar::GetActualBlipArrayIndex(int32 i)
 
 int32 CRadar::GetNewUniqueBlipIndex(int32 i)
 {
+	missionSpriteHandles[i] = 0;
 	if (ms_RadarTrace[i].m_BlipIndex >= UINT16_MAX - 1)
 		ms_RadarTrace[i].m_BlipIndex = 1;
 	else
@@ -1037,6 +1034,7 @@ const char* gRadarTexNames[] = {
 void
 CRadar::Initialise()
 {
+	memset(missionSpriteHandles, 0, sizeof(missionSpriteHandles));
 #ifdef MENU_MAP
 	TargetMarkerId = -1;
 #endif
@@ -1183,11 +1181,18 @@ INITSAVEBUF
 VALIDATESAVEBUF(*size);
 }
 
-void CRadar::SetBlipSprite(int32 i, int32 icon)
+bool CRadar::IsMissionSpriteBlip(const sRadarTrace &trace)
+{
+	const int index = &trace - ms_RadarTrace;
+	return uint32(missionSpriteHandles[index]) == (uint32(index) | (uint32(trace.m_BlipIndex) << 16));
+}
+
+void CRadar::SetBlipSprite(int32 i, int32 icon, bool missionObjective)
 {
 	int index = CRadar::GetActualBlipArrayIndex(i);
 	if (index != -1) {
 		ms_RadarTrace[index].m_eRadarSprite = icon;
+		if (missionObjective) missionSpriteHandles[index] = i;
 	}
 }
 
@@ -1546,10 +1551,8 @@ CRadar::ToggleTargetMarker(float x, float y)
 			if (!ms_RadarTrace[nextBlip].m_bInUse)
 				break;
 		}
-#ifdef FIX_BUGS
-		if (nextBlip == 0)
+		if (nextBlip < 0)
 			return;
-#endif
 		ms_RadarTrace[nextBlip].m_eBlipType = BLIP_COORD;
 		ms_RadarTrace[nextBlip].m_nColor = RADAR_TRACE_GRAY;
 		ms_RadarTrace[nextBlip].m_bDim = 0;

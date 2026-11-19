@@ -1407,7 +1407,7 @@ int8 CRunningScript::ProcessCommands600To699(int32 command)
 			pos.z = CWorld::FindGroundZForCoord(pos.x, pos.y);
 		CRadar::GetActualBlipArrayIndex(CollectNextParameterWithoutIncreasingPC(m_nIp));
 		int id = CRadar::SetCoordBlip(BLIP_CONTACT_POINT, pos, 2, BLIP_DISPLAY_BOTH);
-		CRadar::SetBlipSprite(id, ScriptParams[3]);
+		CRadar::SetBlipSprite(id, ScriptParams[3], m_bIsMissionScript);
 		ScriptParams[0] = id;
 		StoreParameters(&m_nIp, 1);
 		return 0;
@@ -1420,7 +1420,7 @@ int8 CRunningScript::ProcessCommands600To699(int32 command)
 			pos.z = CWorld::FindGroundZForCoord(pos.x, pos.y);
 		CRadar::GetActualBlipArrayIndex(CollectNextParameterWithoutIncreasingPC(m_nIp));
 		int id = CRadar::SetCoordBlip(BLIP_COORD, pos, 5, BLIP_DISPLAY_BOTH);
-		CRadar::SetBlipSprite(id, ScriptParams[3]);
+		CRadar::SetBlipSprite(id, ScriptParams[3], m_bIsMissionScript);
 		ScriptParams[0] = id;
 		StoreParameters(&m_nIp, 1);
 		return 0;

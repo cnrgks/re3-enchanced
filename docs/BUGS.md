@@ -35,12 +35,12 @@ geri bildirimini kaydeder; burada listelenen maddeler henüz düzeltilmiş sayı
 | DIST-01 | Vehicle Distance 1× üzerindeyken araç spawn akışı bozuluyor | Açık — çarpanlar ve araç adet sınırı incelenecek |
 | DIST-02 | Pedestrian Distance 1× üzerindeyken yaya spawn akışı bozuluyor | Açık — çarpanlar ve yaya adet sınırı incelenecek |
 | GPS-01 | Elle waypoint'te üst/alt yol katmanı karışıyor | v1.10 OpenGL derlendi / oyun testi bekliyor |
-| GPS-02 | Rota boşlukları ve anlamsız geri dönüşler | v1.10 OpenGL derlendi / oyun testi bekliyor |
+| GPS-02 | Rota görünürlüğü, boşluklar ve anlamsız geri dönüşler | v1.10 GPS=0 ile waypoint rotası görünmedi / v1.11 kaynak değişikliği |
 | MAP-01 | Çift ev ikonu | v1.10 OpenGL derlendi / oyun testi bekliyor |
-| MAP-02 | Keşfedilmemiş/açılmamış adadaki ikonlar | Kısmi değişiklik v1.10'da derlendi / keşif kalıcılığı açık |
-| MAP-03 | Daha önce görülen mavi payphone ikonu eksik | v1.10 OpenGL derlendi / oyun testi bekliyor |
+| MAP-02 | İkon keşfi, ada kilidi ve minimap mesafesi | v1.11 kaynak değişikliği / kayıt yükleme testi bekliyor |
+| MAP-03 | Mavi telefon menü haritasında var, minimapte yok | v1.10 kullanıcı bildirdi / v1.11 kaynak değişikliği |
 | MAP-04 | Sarı MAP şeridinin tamamı kaldırılmalı | v1.10 OpenGL derlendi / oyun testi bekliyor |
-| MAP-05 | Back kesiliyor / hizası bozuk | v1.10 OpenGL derlendi / oyun testi bekliyor |
+| MAP-05 | Back dikey hiza ve Quit Game'e taşan tıklama | v1.10 kullanıcı bildirdi / v1.11 kaynak değişikliği |
 | INPUT-01 | OpenGL–D3D9 fare hassasiyeti farklı | Açık — kullanıcı bildirdi |
 | CAP-01 | OpenGL fullscreen/borderless yakalama | v1.9 Fullscreen ve Borderless için Discord/Ambilight kullanıcı onayı. Ana Fullscreen bağlantısı kaynakta hazır |
 | INPUT-02 | Borderless kayıtlıyken yeniden açılışta imleç sola kilitleniyor | v1.4 kaynak düzeltmesi derlendi, oyun içi doğrulama bekliyor |
@@ -161,6 +161,12 @@ Oyuncu ve hedef aynı yönlü bağlantı üzerindeyse rota aradaki kısmı kulla
 Yol dışı son parça yalnızca yakın ve çarpışma verisiyle açık görülen bir
 bağlantıda çiziliyor. SS3 ve SS4 konumlarında oyun içi kontrol bekliyor.
 
+**v1.10 geri bildirimi:** Waypoint konduğunda rota görünmedi. Kurulu INI'de
+`GPS=0`; bu ayar v1.10'da elle konan waypoint'i de engelliyordu. v1.11'de
+elle waypoint konması rotayı doğrudan etkinleştiriyor. Ayar otomatik görev
+rotasına ait. Hedefin en yakın bağlantısı erişilemiyorsa arama yakındaki
+başka bağlantıları da deniyor.
+
 ### MAP-01 — çift ev ikonu
 
 **Kanıt:** SS1 ve SS3 aynı ev yakınında iki mor ikon gösteriyor.
@@ -197,6 +203,13 @@ kontrolü eklendi. Garajlar ve silah satış noktaları oyuncu yakınından geç
 oturum önbelleğine giriyor. Bu önbellek kayıt yüklemede ve yeni oyunda
 sıfırlanıyor. Kayıtlar arası keşif kalıcılığı henüz uygulanmadı.
 
+**v1.11 kaynak değişikliği:** Keşif, PC kayıt dolgusundaki sürümlü bir
+alana yazılıyor ve o kayıt yüklenirken geri alınıyor. Eski kayıtlar boş
+keşif verisiyle açılıyor. Ammu-Nation, 8-Ball/bomba garajı ve Pay 'n' Spray
+minimap alanına girdiğinde görünüyor. Görev hedefleri keşif ve mesafe
+filtresini atlıyor. Kullanıcı kaydında yazma ve yeniden yükleme denemesi
+bekliyor.
+
 ### MAP-03 — görülen payphone kayboluyor
 
 **Gözlem:** Kullanıcı daha önce gördüğü mavi telefon simgesini harita
@@ -218,6 +231,9 @@ yakınından geçtiğinde kendi SCM simgesiyle keşfedilebiliyor. Yedek çizim a
 açılma, aktif görev ve telefonun kullanılabilirlik durumunu kontrol ediyor.
 Yerleşik simge hâlâ etkinse çizim ona bırakılıyor.
 
+**v1.10 kullanıcı denemesi:** Mavi telefon keşfedildi ve menü haritasında
+göründü. Minimapte görünmedi. v1.11'de yedek çizim minimap içinde de çalışıyor.
+
 ### MAP-04 / MAP-05 — alt şerit ve Back
 
 **Netleştirme:** İstenen yalnızca kontrol yazılarını kaldırmak değildi.
@@ -232,6 +248,12 @@ geri gelmez; yatay/dikey crosshair korunur. Şerit kaldırılınca başlık veya
 **Kaynak değişikliği:** Şerit ve harita başlığı kaldırıldı. Back sola hizalı
 çiziliyor ve tıklama alanı aynı ekran koordinatlarından hesaplanıyor. 16:9 ve
 4:3 oyun içi kontrolü bekliyor.
+
+**v1.10 kullanıcı denemesi:** Back dikeyde hâlâ hizasızdı ve tıklama
+Quit Game'i de tetikliyordu. v1.11'de etiket kendi alanında dikey
+ortalanıyor. Harita girişi Back tıklamasını fare bırakıldığında tüketip
+duraklatma menüsüne dönüyor.
+[Kullanıcı görüntüsü](feedback/2026-11-19/v1.10-map-back.png)
 
 ### INPUT-01 — iki backend arasında fare hızı
 
@@ -586,7 +608,7 @@ Kaynak b8cd1c96, GitHub Actions run 44451935119. OpenGL x64
 derlemesi ve mevcut birim kontrolleri geçti. Çerçevesiz DXGI yolunda Alt-Tab,
 açılış görüntüsü ve yakalama oyun içinde doğrulanmayı bekliyor.
 
-### v1.9 kullanıcı onayı ve ana Fullscreen bağlantısı
+### v1.9 kullanıcı onayı ve ilk ana Fullscreen bağlantısı
 
 Kullanıcı Fullscreen ve Borderless denemelerinde Discord ve Ambilight
 sonuçlarını başarılı buldu ve Alt-Tab konusunda mevcut durumu kabul etti.
@@ -600,3 +622,21 @@ DXGI başarısız olursa pencere native OpenGL ile sunuluyor.
 `-safe-display` Borderless kurtarmasını, `-dxgi-exclusive-fullscreen`
 ise önceki exclusive DXGI yolunu seçiyor. Menü bağlantısı ve kaydedilmiş
 ayarlarla açılış kaynakta kontrol edildi. Derleme ve oyun içi doğrulama bekliyor.
+
+### Ana Fullscreen sonrası Alt-Tab ve imleç geri bildirimi
+
+Kullanıcı ana Fullscreen'de Alt-Tab sonrası pencerenin arkada kaldığını
+ve imlecin Borderless ile aynı gecikmeyi hissettirdiğini bildirdi.
+v1.9'da deney seçeneği açıkken parametresiz başlatma gerçek exclusive
+DXGI kullanıyordu. Deney seçeneği ana Fullscreen'e taşınırken varsayılan
+çerçevesiz DXGI olarak değişti. Bu yol monitörü kaplayan bir pencere
+kullanıyor ve exclusive odak geçişine girmiyor. Bu fark pencere
+davranışını açıklıyor. Gecikme üzerindeki etkisi henüz ölçülmedi.
+
+Ana Fullscreen'in varsayılanı kaynakta exclusive DXGI'ye döndürüldü.
+Ayrı menü seçeneği yok. `-dxgi-composed-fullscreen` ile çerçevesiz DXGI
+karşılaştırılabilir. Aynı framebuffer, FPS ve VSync ile exclusive
+(`active fullscreen=1`) ve çerçevesiz DXGI (`composed=1`) günlükleri ve
+imleç tepkisi karşılaştırılmalı. Exclusive yolun daha önce bildirilen
+Alt-Tab beklemesi ve Discord/Ambilight sonucu yeniden gözlenmeli.
+Bu kaynak değişikliği henüz derlenmedi.

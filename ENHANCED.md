@@ -1,4 +1,4 @@
-# re3 Enhanced v1.4 — cursor fix and experimental fullscreen presentation
+# re3 Enhanced v1.11
 
 > Known v1.1 issues and the latest requested save/map behavior are tracked in
 > [docs/BUGS.md](docs/BUGS.md). Future features: [ROADMAP.md](ROADMAP.md).
@@ -6,7 +6,7 @@
 > that every feature passes gameplay testing. Builds/tests now require the user's explicit request.
 
 Hezkore/hez-gta-re3, upstream 0145967e46f64c671aa22ed7406131cd3132f5b5.
-Native C++ features; no fixed EXE addresses or game class/save layout changes.
+Native C++ features, with discovery metadata in existing compatible PC save padding.
 Settings: Options > Enhanced Options, persisted under [Enhanced] in re3.ini.
 
 - F5 opens the native save-slot menu in safe free roam: on foot, idle, alive,
@@ -19,8 +19,10 @@ Settings: Options > Enhanced Options, persisted under [Enhanced] in re3.ini.
 - Heal after manual save persists at least 100 health; failed save restores it.
 - Radar icons, traces and rotating player arrow share range-dependent scaling,
   including the native speed zoom. T smoothly targets 2.25x instead of 3x.
-- Pause-map service icons come from typed SCM metadata, native garages, shop
-  weapon pickups and runtime blips, including services cleared by distance.
+- World icons are discovered as they enter the minimap and remembered by each
+  PC save. Active phones can appear on both maps. Ammu-Nation, 8-Ball/bomb
+  shops and Pay 'n' Spray appear on the minimap within its range. Mission
+  objectives follow their native blip rules.
 - Map keeps its two crosshair lines, hides the cursor sprite, removes footer
   control instructions and aligns Back with the blue Rockstar logo's left edge.
 - Scrolling an option page moves its viewport by three rows, without cycling
@@ -34,7 +36,8 @@ Settings: Options > Enhanced Options, persisted under [Enhanced] in re3.ini.
   panes still define the aperture. Seated driver/passenger hit models feed the
   ordinary weapon damage flow; bulletproof/script protections stay in effect.
   A custom car with glass merged into an unrelated body mesh is not inferred.
-- GPS retains v1.1's preceding GPS update: mission lines match actual blip RGBA,
+- Manual waypoints activate GPS directly. The Mission GPS setting controls
+  automatic routing to mission targets. Mission lines match actual blip RGBA,
   including dim colours; manual waypoints stay red. Disabled roads and native
   one-way lanes are respected; complete routes and alternate endpoints used.
   Mission target selection remains a nearest-visible-objective heuristic.
@@ -78,10 +81,10 @@ licensed GTA III installation.
 
 ## Windows OpenGL fullscreen
 
-Graphics → Screen Format → Fullscreen presents the OpenGL frame through DXGI
-in a borderless window that covers the monitor. If DXGI setup or presentation
-fails, the game continues with native OpenGL in the same window and records
-the failure in `re3-display.log`. Borderless uses the OpenGL presentation
-path and its existing width probe. To recover without opening the menu, launch
-with `-safe-display`. The previous exclusive DXGI path is available for
-diagnosis with `-dxgi-exclusive-fullscreen`.
+Graphics → Screen Format → Fullscreen presents the OpenGL frame through
+exclusive DXGI fullscreen. If DXGI setup or presentation fails, the game
+falls back to native OpenGL fullscreen and logs the failure in
+`re3-display.log`. Borderless uses the OpenGL presentation path and its
+existing width probe. To recover without opening the menu, launch with
+`-safe-display`. To compare with DXGI presentation in a monitor-sized
+borderless window, launch with `-dxgi-composed-fullscreen`.

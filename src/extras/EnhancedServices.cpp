@@ -12,12 +12,13 @@
 #include "Timer.h"
 #include "World.h"
 #include "Zones.h"
+#include <cmath>
 #include <vector>
 
 namespace Enhanced {
 namespace {
-struct Service { int sprite; CVector position; };
-Service services[128];
+struct Service { int sprite; CVector position; bool fallback = false; };
+Service services[256];
 int serviceCount;
 uint32 lastDiscovery;
 std::vector<CVector> scriptHomes;
@@ -52,15 +53,26 @@ bool OffersPhoneMission(const CPhone &phone)
         phone.m_nState == PHONE_STATE_REPEATED_MESSAGE_SHOWN_ONCE;
 }
 
-bool IsService(int sprite)
+bool IsLocalFacility(int sprite)
 {
     return sprite == RADAR_SPRITE_SPRAY || sprite == RADAR_SPRITE_WEAPON ||
-        sprite == RADAR_SPRITE_BOMB || sprite == RADAR_SPRITE_SAVE;
+        sprite == RADAR_SPRITE_BOMB || sprite == RADAR_SPRITE_EIGHT;
 }
 
-bool SamePosition(const CVector &a, const CVector &b)
+bool IsDiscoverable(int sprite)
 {
-    return (a-b).Magnitude2D() < 1.0f;
+    return sprite > RADAR_SPRITE_NONE && sprite <= RADAR_SPRITE_WEAPON &&
+        sprite != RADAR_SPRITE_CENTRE && sprite != RADAR_SPRITE_COPCAR && sprite != RADAR_SPRITE_NORTH;
+}
+
+bool SameService(const Service &service, int sprite, const CVector &position)
+{
+    if (service.sprite != sprite) return false;
+    // Shop pickups and their native blip describe the same storefront.
+    const float tolerance = sprite == RADAR_SPRITE_WEAPON ? 20.0f :
+        (sprite == RADAR_SPRITE_SPRAY || sprite == RADAR_SPRITE_BOMB) ? 10.0f :
+        IsPhoneSprite(sprite) ? 3.0f : 1.0f;
+    return (service.position-position).Magnitude2D() < tolerance;
 }
 
 bool IsUnlocked(const CVector &position)
@@ -112,59 +124,126 @@ void ResetServices()
     scanned = false;
 }
 
-bool ServiceBlipVisibleOnMap(int sprite, const CVector &position)
+static Service *FindDiscovered(int sprite, const CVector &position)
 {
-    return !(IsService(sprite) || IsPhoneSprite(sprite)) || IsUnlocked(position);
+    for (int i = 0; i < serviceCount; ++i)
+        if (SameService(services[i], sprite, position)) return &services[i];
+    return nil;
 }
 
-static void RememberService(int sprite, const CVector &position)
+static void RememberService(int sprite, const CVector &position, bool fallback)
 {
-    if (!IsService(sprite) && !IsPhoneSprite(sprite)) return;
-    for (int i=0;i<serviceCount;++i)
-        if (services[i].sprite == sprite && SamePosition(services[i].position, position))
-            return;
-    if (serviceCount < int(ARRAY_SIZE(services))) services[serviceCount++]={sprite,position};
+    Service *existing = FindDiscovered(sprite, position);
+    if (existing) {
+        if (fallback && !existing->fallback) *existing = {sprite, position, true};
+        return;
+    }
+    if (serviceCount < int(ARRAY_SIZE(services))) services[serviceCount++] = {sprite, position, fallback};
+}
+
+bool ServiceBlipVisible(const sRadarTrace &trace, float radarDistance)
+{
+#ifdef MENU_MAP
+    const int sprite = trace.m_eRadarSprite;
+    if (!IsDiscoverable(sprite) || CRadar::IsMissionSpriteBlip(trace)) return true;
+    if (!IsUnlocked(trace.m_vecPos)) return false;
+    const bool inMap = CMenuManager::bMenuMapActive;
+    if (!inMap && radarDistance <= 1.0f) RememberService(sprite, trace.m_vecPos, false);
+    if (!inMap && IsLocalFacility(sprite) && radarDistance > 1.0f) return false;
+    return FindDiscovered(sprite, trace.m_vecPos) != nil;
+#else
+    return true;
+#endif
+}
+
+// This optional versioned prefix lives in PC save padding. Native blocks and
+// their lengths are untouched, and the normal save checksum covers these bytes.
+static const uint8 discoveryMagic[] = {'R', '3', 'D', 'I', 'S', 'C', 1, 0};
+static const uint32 discoveryHeaderSize = sizeof(discoveryMagic) + sizeof(uint32);
+static const uint32 discoveryEntrySize = sizeof(uint32) + 3*sizeof(float);
+
+void SaveServiceDiscovery(uint8 *buffer, uint32 capacity)
+{
+    if (capacity < discoveryHeaderSize + uint32(serviceCount)*discoveryEntrySize) return;
+    const uint32 count = serviceCount;
+    memcpy(buffer, discoveryMagic, sizeof(discoveryMagic));
+    memcpy(buffer + sizeof(discoveryMagic), &count, sizeof(count));
+    buffer += discoveryHeaderSize;
+    for (uint32 i = 0; i < count; ++i) {
+        const Service &service = services[i];
+        const uint32 flags = uint32(service.sprite) | (service.fallback ? 0x100u : 0u);
+        const float position[] = {service.position.x, service.position.y, service.position.z};
+        memcpy(buffer, &flags, sizeof(flags));
+        memcpy(buffer + sizeof(flags), position, sizeof(position));
+        buffer += discoveryEntrySize;
+    }
+}
+
+void LoadServiceDiscovery(const uint8 *buffer, uint32 size)
+{
+    serviceCount = 0;
+    if (size < discoveryHeaderSize || memcmp(buffer, discoveryMagic, sizeof(discoveryMagic)) != 0) return;
+    uint32 count;
+    memcpy(&count, buffer + sizeof(discoveryMagic), sizeof(count));
+    if (count > ARRAY_SIZE(services) || count > (size-discoveryHeaderSize)/discoveryEntrySize) return;
+    buffer += discoveryHeaderSize;
+    for (uint32 i = 0; i < count; ++i, buffer += discoveryEntrySize) {
+        uint32 flags;
+        float position[3];
+        memcpy(&flags, buffer, sizeof(flags));
+        memcpy(position, buffer + sizeof(flags), sizeof(position));
+        const int sprite = int(flags & 0xffu);
+        if ((flags & ~0x1ffu) || !IsDiscoverable(sprite) ||
+            !std::isfinite(position[0]) || !std::isfinite(position[1]) || !std::isfinite(position[2]) ||
+            Abs(position[0]) > 2000.0f || Abs(position[1]) > 2000.0f || Abs(position[2]) > 2000.0f) continue;
+        const bool fallback = (flags & 0x100u) && (IsLocalFacility(sprite) || IsPhoneSprite(sprite));
+        RememberService(sprite, CVector(position[0], position[1], position[2]), fallback);
+    }
 }
 
 static void RememberPhoneBlips()
 {
     for (const sRadarTrace &trace : CRadar::ms_RadarTrace) {
         // Compatible saves retain the last coordinates of cleared contact blips.
-        if (trace.m_eBlipType != BLIP_CONTACT_POINT || !IsPhoneSprite(trace.m_eRadarSprite)) continue;
+        if (trace.m_eBlipType != BLIP_CONTACT_POINT || !IsPhoneSprite(trace.m_eRadarSprite) ||
+            CRadar::IsMissionSpriteBlip(trace)) continue;
         const CPhone *phone = FindScriptPhone(trace.m_vecPos);
         if (phone && OffersPhoneMission(*phone))
-            RememberService(trace.m_eRadarSprite, phone->m_vecPos);
+            RememberService(trace.m_eRadarSprite, phone->m_vecPos, true);
     }
 }
 
-void DiscoverServices(const CVector &player)
+void DiscoverServices()
 {
 #ifdef MENU_MAP
+    if (CMenuManager::bMenuMapActive) return;
     const uint32 now = CTimer::GetTimeInMilliseconds();
-    if (lastDiscovery && now-lastDiscovery < 500) return;
+    if (lastDiscovery && now-lastDiscovery < 100) return;
     lastDiscovery = now;
     const auto nearby = [&](const CVector &position) {
-        return (player-position).MagnitudeSqr() < 45.0f*45.0f && IsUnlocked(position);
+        CVector2D radar;
+        CRadar::TransformRealWorldPointToRadarSpace(radar, CVector2D(position));
+        return radar.MagnitudeSqr() <= 1.0f && IsUnlocked(position);
     };
     RememberPhoneBlips();
     ScanScriptLocations();
     for (const Service &marker : scriptPhones) {
         const CPhone *phone = FindScriptPhone(marker.position);
         if (phone && nearby(phone->m_vecPos) && OffersPhoneMission(*phone))
-            RememberService(marker.sprite, phone->m_vecPos);
+            RememberService(marker.sprite, phone->m_vecPos, true);
     }
     for (uint32 i=0;i<Min(CGarages::NumGarages,uint32(NUM_GARAGES));++i) {
         CGarage &garage=CGarages::aGarages[i];
         int sprite=garage.m_eGarageType==GARAGE_RESPRAY ? RADAR_SPRITE_SPRAY :
             (garage.m_eGarageType>=GARAGE_BOMBSHOP1 && garage.m_eGarageType<=GARAGE_BOMBSHOP3 ? RADAR_SPRITE_BOMB : 0);
         const CVector position(garage.GetGarageCenterX(),garage.GetGarageCenterY(),garage.m_fZ1);
-        if (sprite && nearby(position)) RememberService(sprite,position);
+        if (sprite && nearby(position)) RememberService(sprite,position,true);
     }
     for (int i=0;i<NUMPICKUPS;++i) {
         const CPickup &pickup=CPickups::aPickUps[i];
         if ((pickup.m_eType==PICKUP_IN_SHOP || pickup.m_eType==PICKUP_IN_SHOP_OUT_OF_STOCK) &&
             CPickups::WeaponForModel(pickup.m_eModelIndex)!=WEAPONTYPE_UNARMED && nearby(pickup.m_vecPos))
-            RememberService(RADAR_SPRITE_WEAPON,pickup.m_vecPos);
+            RememberService(RADAR_SPRITE_WEAPON,pickup.m_vecPos,true);
     }
 #endif
 }
@@ -172,17 +251,20 @@ void DiscoverServices(const CVector &player)
 void DrawServices()
 {
 #ifdef MENU_MAP
-    if (!CMenuManager::bMenuMapActive) return;
-    RememberPhoneBlips();
+    const bool inMap = CMenuManager::bMenuMapActive;
+    if (inMap) RememberPhoneBlips();
     const bool onMission = CTheScripts::IsPlayerOnAMission();
     for (int i=0;i<serviceCount;++i) {
         const Service &service = services[i];
-        if (!IsUnlocked(service.position)) continue;
+        if (!service.fallback || !IsUnlocked(service.position)) continue;
         const bool isPhone = IsPhoneSprite(service.sprite);
         if (isPhone) {
             const CPhone *phone = FindScriptPhone(service.position);
             if (onMission || !phone || !OffersPhoneMission(*phone)) continue;
         }
+        CVector2D radar, screen;
+        CRadar::TransformRealWorldPointToRadarSpace(radar,CVector2D(service.position));
+        if (!inMap && radar.MagnitudeSqr() > 1.0f) continue;
         bool hasRadarBlip = false;
         for (const sRadarTrace &trace : CRadar::ms_RadarTrace) {
             if (!trace.m_bInUse || trace.m_eRadarSprite != service.sprite ||
@@ -191,17 +273,18 @@ void DrawServices()
             if (!isPhone &&
                 ((trace.m_eBlipDisplay != BLIP_DISPLAY_BOTH && trace.m_eBlipDisplay != BLIP_DISPLAY_BLIP_ONLY) ||
                  (trace.m_eBlipType == BLIP_CONTACT_POINT && onMission))) continue;
-            const bool sameLocation = isPhone ?
-                FindScriptPhone(trace.m_vecPos) == FindScriptPhone(service.position) :
-                SamePosition(trace.m_vecPos, service.position);
+            const bool sameLocation = SameService(service, trace.m_eRadarSprite, trace.m_vecPos);
+            if (sameLocation && !inMap && !isPhone && !CRadar::IsMissionSpriteBlip(trace)) {
+                CVector2D nativeRadar;
+                CRadar::TransformRealWorldPointToRadarSpace(nativeRadar, trace.m_vec2DPos);
+                if (nativeRadar.MagnitudeSqr() > 1.0f) continue;
+            }
             if (sameLocation) {
                 hasRadarBlip = true;
                 break;
             }
         }
         if (hasRadarBlip) continue;
-        CVector2D radar, screen;
-        CRadar::TransformRealWorldPointToRadarSpace(radar,CVector2D(service.position));
         CRadar::TransformRadarPointToScreenSpace(screen,radar);
         CRadar::DrawRadarSprite(service.sprite,screen.x,screen.y,255);
     }

@@ -181,7 +181,8 @@ public:
 	static void LoadTextures();
 	static void RemoveRadarSections();
 	static void SaveAllRadarBlips(uint8*, uint32*);
-	static void SetBlipSprite(int32 i, int32 icon);
+	static void SetBlipSprite(int32 i, int32 icon, bool missionObjective = false);
+	static bool IsMissionSpriteBlip(const sRadarTrace &trace);
 	static int32 SetCoordBlip(eBlipType type, CVector pos, int32, eBlipDisplay);
 	static int32 SetEntityBlip(eBlipType type, int32, int32, eBlipDisplay);
 	static void SetRadarMarkerState(int32 i, bool flag);

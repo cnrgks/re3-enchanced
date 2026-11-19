@@ -13,7 +13,7 @@
 #include <GLFW/glfw3native.h>
 
 namespace Enhanced {
-bool DXGIComposedFullscreen=true;
+bool DXGIComposedFullscreen=false;
 
 namespace {
 typedef HANDLE (WINAPI *OpenInterop)(void *);

@@ -1,8 +1,9 @@
 #pragma once
 
-// Built-in features. These do not change any game's class layout or save format.
+// Built-in features. Discovery uses optional data inside existing PC save padding.
 class CEntity;
 class CColPoint;
+struct sRadarTrace;
 namespace Enhanced {
 extern int8 QuickSave, AutoSave, RadarZoom, GPS, MenuMap;
 extern int8 VehicleDistance, PedDistance, ScreenFormat;
@@ -27,8 +28,10 @@ void ApplyWindowMode(bool newWindow = false);
 bool ProcessWindscreenShot(const CVector &source, const CVector &target, CEntity *shooter, bool hit, CColPoint &point, CEntity *&entity, bool hitOccupants = true);
 void AfterSuccessfulSave();
 void ResetServices();
-void DiscoverServices(const CVector &player);
-bool ServiceBlipVisibleOnMap(int sprite, const CVector &position);
+void DiscoverServices();
+bool ServiceBlipVisible(const sRadarTrace &trace, float radarDistance);
+void SaveServiceDiscovery(uint8 *buffer, uint32 capacity);
+void LoadServiceDiscovery(const uint8 *buffer, uint32 size);
 void DrawServices();
 bool BeginHomeSave();
 void EndHomeSave();

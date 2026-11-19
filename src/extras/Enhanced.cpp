@@ -101,7 +101,7 @@ wchar *GetText(const char *key)
         { "EN_QSAV", "F5 SAVE MENU" },
         { "EN_AUTO", "SAVE MENU AFTER MISSION" },
         { "EN_RADR", "SMOOTH RADAR ZOOM (T)" },
-        { "EN_GPS", "GPS ROUTE" },
+        { "EN_GPS", "MISSION GPS" },
         { "EN_MAP", "PAUSE MAP" },
         { "EN_VLOD", "HIGH DETAIL VEHICLES" },
         { "EN_PLOD", "HIGH DETAIL PEDESTRIANS" },
@@ -313,14 +313,14 @@ static bool ClearRouteConnector(const CVector &a, const CVector &b)
 static void UpdateRoute()
 {
 #ifdef MENU_MAP
-    if (!GPS || !FindPlayerPed()) {
+    const bool manual = CRadar::TargetMarkerId != -1;
+    if ((!manual && !GPS) || !FindPlayerPed()) {
         routeCount = 0;
         routeLastUpdate = 0;
         return;
     }
     const CVector start = FindPlayerCoors();
     CVector target;
-    bool manual = CRadar::TargetMarkerId != -1;
     bool found = manual;
     routeColour = CRGBA(230,35,35,230);
     if (manual) target = CRadar::TargetMarkerPos;
@@ -412,19 +412,22 @@ static void UpdateRoute()
         return ignoreHeight ? delta.Magnitude2D() : delta.Magnitude();
     };
     const bool preferUpperRoad = manual && nearestTarget < 8.0f;
-    const float targetRadius = nearestTarget + (preferUpperRoad ? 2.0f : 8.0f);
+    const float targetRadius = nearestTarget + 18.0f;
     targetRoads.erase(std::remove_if(targetRoads.begin(), targetRoads.end(), [&](const auto &road) {
         return distanceToTarget(road) > targetRadius;
     }), targetRoads.end());
+    const auto nearClick = [&](const RouteGraph::RoadPoint &road) {
+        return preferUpperRoad && distanceToTarget(road) <= nearestTarget+2.0f;
+    };
     std::stable_sort(targetRoads.begin(), targetRoads.end(), [&](const auto &a, const auto &b) {
-        if (preferUpperRoad && a.position.z != b.position.z) return a.position.z > b.position.z;
+        if (nearClick(a) != nearClick(b)) return nearClick(a);
+        if (nearClick(a) && a.position.z != b.position.z) return a.position.z > b.position.z;
         return distanceToTarget(a) < distanceToTarget(b);
     });
     std::vector<int> nodes;
     std::vector<RouteGraph::RoadPoint> triedRoads;
     for (const auto &road : targetRoads) {
-        if (preferUpperRoad && targetRoads.front().position.z - road.position.z > 2.0f) break;
-        if (triedRoads.size() == 6) break;
+        if (triedRoads.size() == 10) break;
         if (std::any_of(triedRoads.begin(), triedRoads.end(), [&](const auto &tried) {
             return (road.from == tried.to && road.to == tried.from) ||
                 (road.from == tried.from && road.to == tried.to);
@@ -467,7 +470,6 @@ void Process()
     AutoSave = AutoSave != 0;
     RadarZoom = RadarZoom != 0;
     if (!GameReady()) return;
-    DiscoverServices(FindPlayerCoors());
     if (QuickSave && CPad::GetPad(0)->GetFJustDown(4)) {
         if (SafeToSave()) { homeSaveRequested=true; FrontEndMenuManager.m_bSaveMenuActive = true; }
         else CHud::SetHelpMessage(GetText("EN_SAFE"), false);
@@ -507,7 +509,7 @@ static bool ClipRadarSegment(CVector2D &a, CVector2D &b)
 void DrawRoute()
 {
 #ifdef MENU_MAP
-    if (!GPS || routeCount < 2) return;
+    if (routeCount < 2 || (!GPS && CRadar::TargetMarkerId == -1)) return;
     for (int i = 1; i < routeCount; ++i) {
         CVector2D a, b, sa, sb;
         const CVector aWorld = i == 1 && routeStartsAtPlayer ? FindPlayerCoors() : route[i-1];

@@ -335,6 +335,14 @@ const char* MenuFilenames[][2] = {
 	CFont::SetScale(MENU_X(MENUHEADER_WIDTH), MENU_Y(MENUHEADER_HEIGHT)); \
 	CFont::SetFontStyle(FONT_LOCALE(FONT_HEADING));
 
+#ifdef MENU_MAP
+static CRect MapBackBounds()
+{
+	return CRect(SCREEN_STRETCH_X(19.0f), SCREEN_STRETCH_FROM_BOTTOM(93.0f),
+		SCREEN_STRETCH_X(134.0f), SCREEN_STRETCH_FROM_BOTTOM(58.0f));
+}
+#endif
+
 #define RESET_FONT_FOR_NEW_PAGE \
 	CFont::SetBackgroundOff(); \
 	CFont::SetScale(MENU_X(MENUACTION_SCALE_MULT), MENU_Y(MENUACTION_SCALE_MULT)); \
@@ -1340,8 +1348,11 @@ CMenuManager::Draw()
 	if (m_nCurrScreen == MENUPAGE_MAP) {
 		wchar *backTx = TheText.Get("FEDS_TB");
 		// The blue Rockstar logo is part of the full-screen menu texture.
-		const float backX = SCREEN_STRETCH_X(19.0f);
-		const float backY = SCREEN_STRETCH_FROM_BOTTOM(94.0f);
+		const CRect back = MapBackBounds();
+		const float fontScaleY = SCREEN_STRETCH_Y(BIGTEXT_Y_SCALE);
+		const float backY = (back.top + back.bottom - 20.0f * fontScaleY) * 0.5f;
+		CFont::SetFontStyle(FONT_LOCALE(FONT_HEADING));
+		CFont::SetScale(MENU_X(BIGTEXT_X_SCALE), fontScaleY);
 		CFont::SetCentreOff();
 		CFont::SetRightJustifyOff();
 		CFont::SetJustifyOff();
@@ -1349,16 +1360,8 @@ CMenuManager::Draw()
 		CFont::SetColor(CRGBA(235, 170, 50, FadeIn(255)));
 		CFont::SetDropShadowPosition(1);
 		CFont::SetDropColor(CRGBA(0, 0, 0, FadeIn(255)));
-		CFont::PrintString(backX, backY, backTx);
+		CFont::PrintString(back.left, backY, backTx);
 		CFont::SetDropShadowPosition(0);
-		if (!CheckHover(backX, backX + CFont::GetStringWidth(backTx, true),
-			backY, backY + MENU_Y(lineHeight))) {
-			m_nHoverOption = HOVEROPTION_NOT_HOVERING;
-			m_nCurrOption = m_nOptionMouseHovering = 0;
-		} else {
-			m_nHoverOption = HOVEROPTION_RANDOM_ITEM;
-			m_nCurrOption = m_nOptionMouseHovering = 1;
-		}
 		return;
 	}
 #endif
@@ -4385,6 +4388,28 @@ CMenuManager::ProcessButtonPresses(void)
 	if (m_nMousePosY < 0) m_nMousePosY = 0;
 	if (m_nMousePosY > SCREEN_HEIGHT) m_nMousePosY = SCREEN_HEIGHT;
 
+#ifdef MENU_MAP
+	static bool mapBackPressed = false;
+	if (m_nCurrScreen == MENUPAGE_MAP) {
+		CPad *pad = CPad::GetPad(0);
+		const bool overBack = MapBackBounds().IsPointInside(CVector2D(m_nMousePosX, m_nMousePosY));
+		if (pad->GetLeftMouseJustDown()) mapBackPressed = overBack;
+		const bool clickedBack = mapBackPressed && overBack && pad->GetLeftMouseJustUp();
+		if (!pad->GetLeftMouse()) mapBackPressed = false;
+		if (clickedBack || pad->GetEscapeJustDown() || pad->GetBackJustDown()) {
+			mapBackPressed = false;
+			m_nHoverOption = HOVEROPTION_NOT_HOVERING;
+			m_nOptionMouseHovering = 0;
+			ResetHelperText();
+			DMAudio.PlayFrontEndSound(SOUND_FRONTEND_MENU_BACK, 0);
+			ChangeScreen(MENUPAGE_PAUSE_MENU, 0, true, true);
+		}
+		// PrintMap owns map navigation. Never pass its clicks to menu actions.
+		return;
+	}
+	mapBackPressed = false;
+#endif
+
 	if (hasNativeList(m_nCurrScreen)) {
 		// Not split to seperate function in III as in VC, but we need it for scrollable pages :)
 		ProcessList(goBack, optionSelected);
@@ -6506,14 +6531,24 @@ CMenuManager::PrintMap(void)
 				float diffX = fMapCenterX - fMapSize, diffY = fMapCenterY - fMapSize;
 				float x = ((mapCrosshair.x - diffX) / (fMapSize * 2)) * 4000.0f - 2000.0f;
 				float y = 2000.0f - ((mapCrosshair.y - diffY) / (fMapSize * 2)) * 4000.0f;
-				CRadar::ToggleTargetMarker(x, y);
-                Enhanced::WaypointChanged();
+				bool placeMarker = true;
+				if (CRadar::TargetMarkerId != -1) {
+					CVector2D radar, screen;
+					CRadar::TransformRealWorldPointToRadarSpace(radar, CVector2D(CRadar::TargetMarkerPos));
+					CRadar::TransformRadarPointToScreenSpace(screen, radar);
+					placeMarker = (mapCrosshair-screen).Magnitude() > MENU_X(12.0f);
+					CRadar::ToggleTargetMarker(x, y);
+				}
+				if (placeMarker)
+					CRadar::ToggleTargetMarker(x, y);
+				Enhanced::WaypointChanged();
 				DMAudio.PlayFrontEndSound(SOUND_FRONTEND_MENU_SETTING_CHANGE, 0);
 			}
 		}
 	}
 
-	if (CPad::GetPad(0)->GetLeftMouse()) {
+	if (CPad::GetPad(0)->GetLeftMouse() &&
+		!MapBackBounds().IsPointInside(CVector2D(m_nMousePosX, m_nMousePosY))) {
 		fMapCenterX += m_nMousePosX - m_nMouseOldPosX;
 		fMapCenterY += m_nMousePosY - m_nMouseOldPosY;
 	} else if (CPad::GetPad(0)->GetLeft() || CPad::GetPad(0)->GetDPadLeft()) {

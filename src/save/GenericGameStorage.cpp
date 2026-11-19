@@ -233,9 +233,11 @@ GenericSave(int file)
 		if (size > sizeof(work_buff))
 			size = sizeof(work_buff);
 		if (size > 4) {
+			if (i == 0) Enhanced::SaveServiceDiscovery(work_buff, size);
 			if (!PcSaveHelper.PcClassSaveRoutine(file, work_buff, size))
 				return false;
 			totalSize += size;
+			if (i == 0) memset(work_buff, 0, size);
 		}
 	}
 	
@@ -368,6 +370,14 @@ GenericLoad()
 	ReadDataFromBlock("Loading Streaming Stuff \n", CStreaming::MemoryCardLoad);
 	LoadSaveDataBlock();
 	ReadDataFromBlock("Loading PedType Stuff \n", CPedType::Load);
+
+	// Older saves can have zero padding or go straight to the checksum.
+	// Discovery is optional and cannot make a native save fail to load.
+	uint32 paddingSize = 0;
+	if (CFileMgr::Read(file, (const char*)&paddingSize, sizeof(paddingSize)) == sizeof(paddingSize) &&
+		paddingSize <= sizeof(work_buff) && paddingSize >= 12 &&
+		CFileMgr::Read(file, (const char*)work_buff, paddingSize) == paddingSize)
+		Enhanced::LoadServiceDiscovery(work_buff, paddingSize);
 
 	DMAudio.SetMusicMasterVolume(CMenuManager::m_PrefsMusicVolume);
 	DMAudio.SetEffectsMasterVolume(CMenuManager::m_PrefsSfxVolume);

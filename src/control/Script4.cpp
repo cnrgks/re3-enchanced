@@ -1977,7 +1977,7 @@ int8 CRunningScript::ProcessCommands900To999(int32 command)
 		CObject* pObject = CPickups::aPickUps[CPickups::GetActualPickupIndex(ScriptParams[0])].m_pObject;
 		CRadar::GetActualBlipArrayIndex(CollectNextParameterWithoutIncreasingPC(m_nIp));
 		int handle = CRadar::SetEntityBlip(BLIP_OBJECT, CPools::GetObjectPool()->GetIndex(pObject), 6, BLIP_DISPLAY_BOTH);
-		CRadar::SetBlipSprite(handle, ScriptParams[1]);
+		CRadar::SetBlipSprite(handle, ScriptParams[1], m_bIsMissionScript);
 		ScriptParams[0] = handle;
 		StoreParameters(&m_nIp, 1);
 		return 0;

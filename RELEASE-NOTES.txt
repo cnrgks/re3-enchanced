@@ -1,4 +1,4 @@
-RE3 ENHANCED v1.10 - OPENGL x64
+RE3 ENHANCED v1.11 - OPENGL x64
 
 KURULUM
 Oyunu kapat ve mevcut re3.exe/re3.pdb ciftini yedekle. Paketin game
@@ -7,25 +7,26 @@ degildir. Mevcut ini ve kayitlari koru. x64 ASI Loader, CLEO Redux ve
 runtime kutuphaneleri dahildir.
 
 GPS VE HARITA
-Elle isaretlenen hedef yakin ve ust uste gelen yollarda ust kati
-tercih eder. Gorev hedefinin bilinen yuksekligi korunur. Rota
-yol segmentleri uzerine oturur ve yol disi baglanti kontrol edilir.
-Ev simgesi etkin oyun kaydindan cizilir. Kilitli adalarda servisler
-gizlenir ve yakin servis kesfi oturum boyunca tutulur. Etkin mavi
-telefon, eski radar kaydi varsa veya yakindan gecilirse gosterilir.
-Sari MAP seridi kaldirildi ve Back konumu duzenlendi. Bu degisiklikler
-oyun ici deneme bekliyor.
+Elle konan waypoint GPS rotasini acar. Enhanced Options altindaki
+Mission GPS ayari yalnizca otomatik gorev rotasini kontrol eder.
+Kesfedilen simgeler PC oyun kaydina eklenir. Eski kayitlar acilabilir.
+Etkin telefon hem menude hem minimapte gorunebilir. Ammu-Nation,
+8-Ball/bomba garaji ve Pay 'n' Spray minimap alanina girince cizilir.
+Gorev hedefleri kesif ve mesafe filtresinden muaftir.
+Back dikey ortalandi ve birakilan fare tiklamasiyla duraklatma
+menusune doner. Oyun ici deneme bekliyor.
 
 CAP-01 - FULLSCREEN
-Graphics > Screen Format > Fullscreen, Windows OpenGL'de monitoru
-kaplayan cercevesiz pencerede DXGI sunumunu acar. re3-display.log
-icinde composed=1 beklenir. DXGI basarisiz olursa oyun ayni pencereyi
-OpenGL ile sunar. Borderless kendi OpenGL sunum yolunu kullanir.
+Graphics > Screen Format > Fullscreen, Windows OpenGL'de DXGI
+exclusive fullscreen'i acar. re3-display.log icinde
+active fullscreen=1 transfer=texture-copy beklenir. DXGI basarisiz
+olursa oyun native OpenGL Fullscreen'e doner. Borderless kendi OpenGL
+sunum yolunu kullanir.
 
 Menuye ulasilamiyorsa oyunu kapat ve re3.exe -safe-display ile baslat.
 Alternatif olarak re3.ini [VideoMode] bolumunde ScreenFormat=2 ayarla.
-Borderless +1 probu varsayilan olarak aciktir. Onceki exclusive DXGI
-yolu, tanilama icin -dxgi-exclusive-fullscreen ile secilebilir.
+Borderless +1 probu varsayilan olarak aciktir. Cercevesiz DXGI
+yolu, karsilastirma icin -dxgi-composed-fullscreen ile secilebilir.
 
 INPUT-03 - IMLEC
 -trace-display-timing, re3-display.log dosyasina kare ve sunum
