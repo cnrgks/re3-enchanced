@@ -1,6 +1,6 @@
 # CAP-01 — OpenGL ekran yakalama incelemesi
 
-Durum: **v1.2 başarısız; v1.3 +1 genişlik adayı derlendi, kullanıcı yakalama sonucu bekleniyor**.
+Durum: **v1.3 +1 borderless için kullanıcıdan şimdilik olumlu yakalama sonucu geldi; yeniden açılış imleç hatası INPUT-02 açık. Exclusive fullscreen çözülmedi.**
 Kesin kök neden veya çözülme iddiası yok. Son kullanıcı kararı: OpenGL ana yol.
 
 ## v1.2 sonrası sonuç ve sıradaki aday
@@ -122,3 +122,24 @@ Tek OpenGL işi başarıyla tamamlandı; mevcut birim kontrolleri geçti.
 D3D9 build başlatılmadı. Derlenen kaynak commit: c3b6c52e. Bu sonuç
 1 piksel geometrisinin gerçek çalışmasını veya Discord/Ambilight başarısını
 kanıtlamaz; pencere ölçü günlüğü ve kullanıcı denemesi bekleniyor.
+
+## Kullanıcı sonucu ve yeni blokaj
+
+Yakalama şu an olumlu görünüyor, fakat Borderless modunda kapat/aç sonrasında
+imleç sola kilitleniyor. Fullscreen → Borderless geçişi düzeltiyor. Kaynakta
+integer oran kusuru ve başlangıç/mod değiştirme sırası farkı bulundu.
+Bu yeni gözlemlerle tam inceleme: [DISPLAY-REPORT-v1.3.md](DISPLAY-REPORT-v1.3.md).
+Yeni build veya kod değişikliği bu raporla yapılmadı.
+
+## v1.4 deney tasarımı
+
+İmleç düzeltmesi ayrı commit 9553703c; fullscreen deneyi bağımsız ayarla
+kapatılabilir. Windows OpenGL son kareyi GPU üzerinde WGL_NV_DX_interop2
+ile DXGI backbuffer'a aktarır. DXGI fullscreen durumunu doğrular; hata halinde
+native OpenGL fullscreen'e döner. Renderer ve diğer platformlar değişmez.
+D3D11 sistem dizininden dinamik yüklenir. Aynı GPU/extension desteği gerekir.
+Varsayılan açık VideoMode/FullscreenDXGI; Enhanced Options'tan değiştirilebilir.
+VideoMode/FullscreenDXGIFlipY yön tanısı içindir. Deneme kapalıyken imleç
+fix'i ve +1 borderless korunur. Frame latency cihaz bazında 1 istenir;
+gecikme azalması veya yakalama başarısı ölçülmüş değildir. VSync oyun ayarıdır.
+Kullanıcı şimdi build istedi. Sonuçlar derleme ve runtime olarak ayrı tutulacak.

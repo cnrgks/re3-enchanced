@@ -1,0 +1,8 @@
+[VideoMode]
+Width=1920
+Height=1080
+Depth=32
+Subsystem=0
+Windowed=1
+ScreenFormat=2
+BorderlessCaptureProbe=1

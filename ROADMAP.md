@@ -19,6 +19,7 @@ Ayrıntılı belirtiler, ekran görüntüleri, beklenen davranış ve kabul öl�
 
 | Sıra | Kayıtlar | Hedef |
 | --- | --- | --- |
+| 0 | INPUT-02 / CAP-01 | Yakalama olumlu sonucunu koruyarak Borderless yeniden açılış imlecini düzeltme |
 | 1 | SAV-01, SAV-02, SAV-03 | F5 mevcut konum; görev sonrası doğru ev kayıt noktası; kayıt engelleri |
 | 2 | VEH-01 | Kırık ön camdan gerçek sürücü/yolcu isabeti |
 | 3 | MAP-01, MAP-02, MAP-03 | Tek ev ikonu, keşif/ilerleme, görülen payphone'un korunması |
@@ -162,3 +163,12 @@ uygulama-içi DXGI sunumu yalnızca sonraki tasarım seçeneği olarak kaydedild
 Kullanıcı +1 piksel denemesini istedi. Windows Borderless genişliği +1,
 uygulama içi karşılaştırma bayrağı ve başlangıç/mod değişimi ölçü günlüğü
 hazırlandı. Yalnızca OpenGL build/paket planlandı. Gerçek capture sonucu henüz yok.
+
+## v1.3 kullanıcı sonucu / INPUT-02
+
++1 Borderless yakalama şimdilik olumlu, fakat kayıtlı Borderless modunda yeniden
+açılışta imleç sola kilitleniyor; Fullscreen → Borderless geçişi düzeltiyor.
+Kaynakta tamsayı koordinat oranı ve başlangıç senkronizasyonu incelendi. Önce
+bu input blokajı, sonra kayıt hataları. Gerçek exclusive fullscreen yakalaması
+ayrı tasarım işi olarak açık. [Tam rapor](docs/DISPLAY-REPORT-v1.3.md).
+Bu adım yalnızca raporlama; yeni kod/build/test/push yapılmadı.

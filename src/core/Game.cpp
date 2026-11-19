@@ -1377,7 +1377,7 @@ void CGame::TidyUpMemory(bool moveTextures, bool flushDraw)
 #endif
 				RwCameraBeginUpdate(Scene.camera);
 				RwCameraEndUpdate(Scene.camera);
-				RwCameraShowRaster(Scene.camera, nil, 0);
+				psCameraShowRaster(Scene.camera);
 			}
 		}
 		int fontSlot = CTxdStore::FindTxdSlot("fonts");

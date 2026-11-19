@@ -946,6 +946,9 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
    // MENUPAGE_ENHANCED
    { "ENHANCE", MENUPAGE_OPTIONS, MENUPAGE_OPTIONS,
        new CCustomScreenLayout({MENUSPRITE_MAINMENU, 50, 0, 20, FONT_HEADING, FESCREEN_LEFT_ALIGN, true, MEDIUMTEXT_X_SCALE, MEDIUMTEXT_Y_SCALE}), nil,
+#if defined(_WIN32) && defined(RW_GL3) && !defined(LIBRW_SDL2)
+       MENUACTION_CFO_SELECT, "EN_FCAP", { new CCFOSelect(&Enhanced::FullscreenDXGI, "VideoMode", "FullscreenDXGI", off_on, 2, true, Enhanced::FullscreenPresenterChanged, true) },
+#endif
        MENUACTION_CFO_SELECT, "EN_QSAV", { new CCFOSelect(&Enhanced::QuickSave, "Enhanced", "QuickSave", off_on, 2, false) },
        MENUACTION_CFO_SELECT, "EN_AUTO", { new CCFOSelect(&Enhanced::AutoSave, "Enhanced", "AutoSave", off_on, 2, false) },
        MENUACTION_CFO_SELECT, "EN_RADR", { new CCFOSelect(&Enhanced::RadarZoom, "Enhanced", "RadarZoom", off_on, 2, false) },

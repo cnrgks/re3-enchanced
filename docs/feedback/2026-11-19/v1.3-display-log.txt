@@ -1,0 +1,7 @@
+v1.3 format=0 probe=1 monitorAttached=1 window=1920x1080 framebuffer=1920x1080 pos=0,0
+v1.3 format=2 probe=1 monitorAttached=0 window=1921x1080 framebuffer=1921x1080 pos=0,0
+v1.3 format=2 probe=1 monitorAttached=0 window=1921x1080 framebuffer=1921x1080 pos=0,0
+v1.3 format=0 probe=1 monitorAttached=1 window=1920x1080 framebuffer=1920x1080 pos=0,0
+v1.3 format=0 probe=1 monitorAttached=1 window=1920x1080 framebuffer=1920x1080 pos=0,0
+v1.3 format=2 probe=1 monitorAttached=0 window=1921x1080 framebuffer=1921x1080 pos=0,0
+v1.3 format=2 probe=1 monitorAttached=0 window=1921x1080 framebuffer=1921x1080 pos=0,0

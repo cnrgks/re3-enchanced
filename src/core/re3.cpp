@@ -550,6 +550,10 @@ bool LoadINISettings()
     Enhanced::ApplyScreenFormatSettings();
     ReadIniIfExists("VideoMode","BorderlessCaptureProbe",&Enhanced::BorderlessCaptureProbe);
     Enhanced::BorderlessCaptureProbe=Enhanced::BorderlessCaptureProbe!=0;
+    ReadIniIfExists("VideoMode","FullscreenDXGI",&Enhanced::FullscreenDXGI);
+    ReadIniIfExists("VideoMode","FullscreenDXGIFlipY",&Enhanced::FullscreenDXGIFlipY);
+    Enhanced::FullscreenDXGI=Enhanced::FullscreenDXGI!=0;
+    Enhanced::FullscreenDXGIFlipY=Enhanced::FullscreenDXGIFlipY!=0;
 #endif
 
 #ifdef CUSTOM_FRONTEND_OPTIONS
@@ -572,7 +576,7 @@ bool LoadINISettings()
 					ReadIniIfExists(option.m_CFO->saveCat, option.m_CFO->save, (int8*)option.m_CFO->value);
 
 				if (option.m_Action == MENUACTION_CFO_SELECT) {
-                    if ((option.m_CFO->saveCat && strcmp(option.m_CFO->saveCat,"Enhanced") == 0) || option.m_CFO->value == &Enhanced::ScreenFormat)
+                    if ((option.m_CFO->saveCat && strcmp(option.m_CFO->saveCat,"Enhanced") == 0) || option.m_CFO->value == &Enhanced::ScreenFormat || option.m_CFO->value == &Enhanced::FullscreenDXGI)
                         *(int8*)option.m_CFO->value = Clamp(*(int8*)option.m_CFO->value, int8(0), int8(option.m_CFOSelect->numRightTexts-1));
 					option.m_CFOSelect->lastSavedValue = option.m_CFOSelect->displayedValue = *(int8*)option.m_CFO->value;
 				}
@@ -598,6 +602,8 @@ void SaveINISettings()
 #if defined(RW_GL3) && !defined(LIBRW_SDL2) && defined(IMPROVED_VIDEOMODE)
     StoreIni("VideoMode","ScreenFormat",Enhanced::ScreenFormat);
     StoreIni("VideoMode","BorderlessCaptureProbe",Enhanced::BorderlessCaptureProbe);
+    StoreIni("VideoMode","FullscreenDXGI",Enhanced::FullscreenDXGI);
+    StoreIni("VideoMode","FullscreenDXGIFlipY",Enhanced::FullscreenDXGIFlipY);
     StoreIni("VideoMode","Windowed",FrontEndMenuManager.m_nPrefsWindowed);
     cfg["Enhanced"].remove("Borderless");
 #endif

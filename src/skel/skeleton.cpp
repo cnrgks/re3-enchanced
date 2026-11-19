@@ -1,4 +1,5 @@
 #include "common.h"
+#include "glfw/GLDXGIPresenter.h"
 
 
 #include <stdio.h>
@@ -288,6 +289,7 @@ RsEventHandler(RsEvent event, void *param)
 void
 RsRwTerminate(void)
 {
+    Enhanced::ShutdownFullscreenDXGI();
 	/* Close RenderWare */
 
 	RwEngineStop();

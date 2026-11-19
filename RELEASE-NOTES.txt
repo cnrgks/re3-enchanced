@@ -1,48 +1,49 @@
-RE3 ENHANCED v1.3 - OPENGL +1 PIKSEL DENEMESI
-
-Bu surum yalnizca OpenGL olarak derlendi. D3D9 build'i veya eski bir D3D9
-EXE/PDB cifti pakete eklenmedi. x64 ASI Loader ve CLEO Redux dahildir.
+RE3 ENHANCED v1.4 - OPENGL IMLEC + DENEYSEL FULLSCREEN
 
 KURULUM
-1. Oyunu kapat. Mevcut re3.exe ve re3.pdb dosyalarini birlikte yedekle.
-2. Paketin game klasorunun ICINDEKILERI GTA III kurulumuna kopyala.
-3. Oyunu ac; henuz save yuklemeden Options > Graphics > Screen Format'a git.
-4. Fullscreen / Windowed / Borderless seceneklerinden birini secip Enter ile uygula.
-   Native guvenlik nedeniyle ekran bicimi secimi oyun yukluyken kilitlidir.
+Oyunu kapat. Mevcut re3.exe ve re3.pdb ciftini yedekle. Paketin game
+klasorunun ICINDEKILERI GTA III kurulumuna kopyala. Oyun verileri dahil degil.
+Mevcut ini ve kayitlar pakette yoktur; kullanici dosyalarini silme.
+x64 ASI Loader/CLEO Redux ve runtime kutuphaneleri dahildir. x86 modlar
+otomatik uyumlu olmaz; ayni isi yapan eski modlari kapali tut.
 
-BU DENEMENIN KAPSAMI
-- Yalnizca Windows OpenGL Borderless modunda pencere, monitor genisliginden
-  1 piksel fazla acilir. 1920x1080 icin istenen boyut 1921x1080 olur.
-  Bir sutun sag kenarin disina tasar; coklu monitorde bu sutun gorunebilir.
-- Normal Windowed ve gercek Fullscreen boyutu bu degisiklikten etkilenmez.
-- Bu davranis varsayilan aciktir. Karsilastirma gerekirse oyunu kapatip
-  re3.ini [VideoMode] altinda BorderlessCaptureProbe=0 yaparak kapatilabilir;
-  1 yaparak ayni EXE ile tekrar acilabilir. Surucu ayari degildir.
-- re3-display.log baslangic/mod degisiminde gercek pencere/framebuffer olcusunu
-  kaydeder; her karede yazmaz. format=2, probe=1, monitorAttached=0 beklenir.
-- Borderless GL penceresi bastan windowed video moduyla olusturulur;
-  once exclusive acilip sonra borderless'a cevrilmez.
-- Borderless Screen Format'in ucuncu secenegidir; OpenGL'de Enhanced Options
-  altindaki eski ayri secenek kaldirildi.
-- Eski [Enhanced] Borderless ve [VideoMode] Windowed ayarlari, yeni anahtar
-  yoksa [VideoMode] ScreenFormat degerine aktarilir. 0=Fullscreen, 1=Windowed,
-  2=Borderless. Yeni deger varsa eskiler onu ezmez.
-- NVIDIA/Windows surucu ayarlari degistirilmez. Ek harici ayar gerektiren
-  bir cozum bu paketin parcasi degildir.
+IMLEC
+Borderless soguk acilista +1 genislik nedeniyle sifira dusen tamsayi oran
+ duzeltildi. Son framebuffer olcusu baslangicta eslenir; odak donusunde
+imlec konumu eslenir. Sol kenar x=0 gecerli girdidir. DPI koordinatlari
+ dogru oranda donusturulur. Bu duzeltmeler fullscreen deneyinden bagimsizdir.
 
-DENEYECEGIMIZ SEY
-Once Borderless secip Discord'da oncekiyle ayni tam ekran paylasimini dene.
-Ambilight'i de ayri kontrol et. Calismazsa re3-display.log, pencerenin gercekten
-1 piksel genisleyip genislemedigini anlamamiza yardimci olacak.
-Ozellikle Borderless seciminin gorunmesi, Alt-Tab, oyunu kapatip tekrar acinca
-secimin korunmasi ve normal pencereye geri donus kontrol edilecek.
+FULLSCREEN DENEYI - YALNIZCA WINDOWS OPENGL
+Save yuklemeden Enhanced Options > Fullscreen Capture (Experimental) ON,
+Graphics > Screen Format > Fullscreen secip Enter ile uygula.
+Oyun OpenGL ile cizer. Son kare WGL_NV_DX_interop2 ile GPU uzerinde DXGI /
+D3D11 sunum yuzeyine aktarilir; CPU frame okumasi veya D3D9 renderer yoktur.
+DXGI gercek fullscreen ister ve durumunu kontrol eder. Destek yoksa/hata
+olursa native OpenGL fullscreen'e doner ve re3-display.log'a sebep yazar.
+Her GPU/surucude desteklenmez. Discord/Ambilight sonucu ve gecikme henuz
+kullanici denemesini bekler; bu bir garanti veya tamamlanmis fix degildir.
+Kuyruk siniri cihaz bazinda 1 istenir. VSync oyunun mevcut ayarina uyar.
+Surucu profili, registry veya global sistem ayari degistirilmez.
 
-Ekran yakalama henuz oyun icinde dogrulanmadi; bu bir cozum adayi.
-Onceki notlardaki save/cati, camdan hasar, GPS, map ikonlari ve diger hatalar
-bu denemenin kapsaminda duzeltilmedi. docs/BUGS.md ve ROADMAP.md durumlari tutar.
-Mevcut re3.ini veya kullanici kayitlari bu paket tarafindan degistirilmez;
-oyun ayarlari kullanici secimiyle kendi ini dosyasina kaydedilir.
+DENEYI GERI ALMA - IMLEC DUZELTMESI KALIR
+Ana menuden Fullscreen Capture (Experimental) OFF yapip Enter ile uygula.
+Menuye ulasilamiyorsa oyunu kapat, re3.ini [VideoMode] altina
+FullscreenDXGI=0 yaz, yeniden ac. Ayni EXE/PDB kullanilir.
+Goruntu ters ise tani icin ayni bolumde FullscreenDXGIFlipY=0 denenebilir.
 
-Orijinal GTA III oyun verileri dahil degildir. Uyumsuz x86 ASI/CS modlari
-otomatik uyumlu hale gelmez. Ayni isi yapan eski referans modlarini kapali tut.
-EXE/PDB eslesmesi, kaynak commit'i ve SHA-256 listesi manifest.json icindedir.
+BORDERLESS
+Onceki +1 genislik davranisi korunur. ScreenFormat=2, varsayilan
+BorderlessCaptureProbe=1. Probe=0 +1'i kapatir; yeniden baslatmak gerekir.
+Tam pencere boyutu, yakalama ve gecikme her modda ayri degerlendirilmelidir.
+
+TEST
+Borderless seciliyken kapat/ac: fare menude ve oyunda normal mi?
+Fullscreen'de Discord tam ekran paylasimi ve Ambilight'i ayri dene.
+Alt-Tab, geri odaklanma ve diger ekran bicimlerine donusu dene.
+Logda 'dxgi: active fullscreen=1' yeni yolun acildigini gosterir;
+'returning to native OpenGL fullscreen' fallback'tir, yakalama fix'i degildir.
+Gecikme icin ayni FPS/VSync ayariyla karsilastir. Paket yalnizca OpenGL'dir.
+
+Kayit/cati, on camdan hasar, GPS ve harita backlog'u bu surumde degismedi.
+docs/BUGS.md, ROADMAP.md ve docs/DISPLAY-REPORT-v1.3.md ayrintilari tutar.
+EXE/PDB kaynak eslesmesi ve SHA-256 listesi manifest.json icindedir.

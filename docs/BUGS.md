@@ -42,7 +42,8 @@ geri bildirimini kaydeder; burada listelenen maddeler henüz düzeltilmiş sayı
 | MAP-04 | Sarı MAP şeridinin tamamı kaldırılmalı | Açık — önceki istek eksik uygulanmış |
 | MAP-05 | Back kesiliyor / hizası bozuk | Açık — SS3 |
 | INPUT-01 | OpenGL–D3D9 fare hassasiyeti farklı | Açık — kullanıcı bildirdi |
-| CAP-01 | OpenGL fullscreen/borderless yakalanmıyor; normal pencere yakalanıyor | Kullanıcıya göre v1.2 adayı çözmedi / açık |
+| CAP-01 | OpenGL fullscreen/borderless yakalama | v1.3 +1 borderless kullanıcıda şimdilik olumlu; exclusive fullscreen açık |
+| INPUT-02 | Borderless kayıtlıyken yeniden açılışta imleç sola kilitleniyor | Açık — kaynakta tamsayı bölme kusuru bulundu, henüz düzeltilmedi |
 | WIN-01 | Alt-Tab sırasında eski Windows çerçevesi/toolbar parlaması | Açık — kullanıcı bildirdi |
 | WIN-02 | Odak kaybında otomatik pause | İstenen davranış / eksik |
 | UI-01 | Borderless, Graphics ekran biçiminin üçüncü seçeneği olmalı | OpenGL derlendi / oyun testi bekleniyor |
@@ -285,3 +286,47 @@ diğer açık hatalar bu denemede değiştirilmedi. Build ve runtime sonuçları
 
 v1.3 için tek OpenGL derlemesi ve mevcut birim kontrolleri geçti. CAP-01
 yakalama sonucu henüz yok; hata kapanmadı. v1.2 başarısızlık kaydı korunur.
+
+## INPUT-02 — v1.3 Borderless açılış imleci
+
+Kullanıcı +1 borderless ile yakalamanın şimdilik düzeldiğini, ancak bu modda
+kapatıp yeniden açınca imlecin sola yapıştığını bildirdi. Fullscreen → Borderless
+geçişi geçici olarak düzeltiyor.
+
+Kaynakta `cursorCB` pencere/render oranını tamsayı bölüyor: 1920/1921=0.
+İlk açılışta `psPostRWinit`/resize, RwInitialised doğru olmadan; mod değiştirmede
+ise doğru olduktan sonra çalışabiliyor. Kesin kaynak kusuru ile runtime boyut
+eşitsizliği çıkarımı ayrı tutuldu. `xpos==0` erken dönüşü ve input başlangıcı
+da incelenecek. Kod değişmedi; yeni build/test yok.
+
+Gerçek günlük 1921×1080 borderless pencere/framebuffer ve monitorAttached=0
+gösteriyor; ini seçimi ScreenFormat=2. +1 tek başına nihai kusursuz çözüm
+sayılmayacak. Öncelik INPUT-02, sonra SAV-01/SAV-02.
+
+Tam rapor, kanıtlar, yöntem sınırları ve gerçek fullscreen seçenekleri:
+[DISPLAY-REPORT-v1.3.md](DISPLAY-REPORT-v1.3.md).
+
+### SAV-02 için ilk salt okunur script bulgusu
+
+Kurulu main.scm içinde ACTIVATE_SAVE_MENU öncesindeki
+IS_PLAYER_IN_AREA_ON_FOOT_3D koşulları okundu. Portland: (891.1875,-309.6875,7.6875)
+ile (899.25,-303.25,12.6875); Staunton: (105.6875,-486,15) ile (100.75,-483.375,18);
+Shoreside: (-670.5,3.875,18) ile (-660,12.6875,22). Bunlar gerçek native kayıt
+bölgeleridir, tek bir kesin spawn koordinatı değildir. Özellikle Shoreside
+harita ikonu (-665,-6.5) kayıt bölgesinin Y aralığında değil. Bu, ikon konumunu
+spawn noktası yerine kullanmanın da yanlış olabildiğini gösteriyor; yalnızca
+çatı Z hesabı değiştirilerek tam çözüm sağlandığı varsayılmamalı. Kod henüz değişmedi.
+
+## v1.4 — imleç düzeltmesi ve bağımsız fullscreen denemesi
+
+INPUT-02 kaynak düzeltmesi ayrı commit'te: 9553703c. Kesirli pencere/render
+oranı, son framebuffer ölçülerinin ilk açılışta eşlenmesi, odak dönüşü ve
+geçerli x=0 girdisi düzeltildi. Yeni birim regresyonları CI'da çalıştırılacak.
+
+CAP-01 için Windows OpenGL'e opsiyonel WGL_NV_DX_interop2 / DXGI fullscreen
+sunumu eklendi. Render OpenGL'dir. İki GPU blit MSAA çözümü ve Y yönünü
+ayırır, CPU readback yoktur. Sistem D3D11 dinamik yüklenir; extension/GPU
+uyuşmazlığı veya sunum hatasında native GLFW fullscreen'e dönülür ve log yazılır.
+Bu donanım bağımlı bir deneydir; capture ve gecikme doğrulanmadı.
+FullscreenDXGI=0 ile deneme kapatılır, imleç düzeltmesi korunur. Borderless
++1 yolu korunur. Açık diğer bug'ların durumu değişmedi. Kullanıcı build istedi.

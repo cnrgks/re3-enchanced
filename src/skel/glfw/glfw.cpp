@@ -29,6 +29,7 @@ long _dwOperatingSystemVersion;
 #include "common.h"
 #include "Enhanced.h"
 #include "EnhancedMath.h"
+#include "GLDXGIPresenter.h"
 #if (defined(_MSC_VER))
 #include <tchar.h>
 #endif /* (defined(_MSC_VER)) */
@@ -205,6 +206,7 @@ psCameraBeginUpdate(RwCamera *camera)
 void
 psCameraShowRaster(RwCamera *camera)
 {
+    if (Enhanced::PresentFullscreenDXGI(PSGLOBAL(window),CMenuManager::m_PrefsVsync!=0)) return;
 	if (CMenuManager::m_PrefsVsync)
 		RwCameraShowRaster(camera, PSGLOBAL(window), rwRASTERFLIPWAITVSYNC);
 	else
@@ -880,7 +882,7 @@ psSelectDevice()
 	// Borderless must start with a windowed GL context. Creating an exclusive
 	// window and changing it after RW initialization needlessly enters the
 	// driver's fullscreen presentation path before capture can attach.
-	if (FrontEndMenuManager.m_nPrefsWindowed || Enhanced::Borderless) {
+	if (FrontEndMenuManager.m_nPrefsWindowed || Enhanced::Borderless || Enhanced::DXGIFullscreenRequested()) {
 		if (bestWndMode < 0) return FALSE;
 		GcurSelVM = bestWndMode;
 	}
@@ -1033,6 +1035,41 @@ long _InputInitialiseMouse()
 	return 0;
 }
 
+#ifdef _WIN32
+bool Enhanced::SetPresentationResizeGuard(bool active)
+{
+    const bool previous=enhancedWindowResize;
+    enhancedWindowResize=active;
+    return previous;
+}
+void Enhanced::FallbackNativeFullscreen(void *handle)
+{
+    GLFWwindow *window=(GLFWwindow*)handle;
+    if (!window) return;
+    int x,y,w,h;
+    glfwGetWindowPos(window,&x,&y);
+    glfwGetWindowSize(window,&w,&h);
+    GLFWmonitor *monitor=glfwGetPrimaryMonitor();
+    int count;
+    GLFWmonitor **monitors=glfwGetMonitors(&count);
+    for (int i=0;i<count;++i) {
+        int mx,my;
+        glfwGetMonitorPos(monitors[i],&mx,&my);
+        const GLFWvidmode *mode=glfwGetVideoMode(monitors[i]);
+        if (x+w/2>=mx && x+w/2<mx+mode->width && y+h/2>=my && y+h/2<my+mode->height) {
+            monitor=monitors[i]; break;
+        }
+    }
+    if (!monitor) return;
+    const bool previous=SetPresentationResizeGuard(true);
+    PSGLOBAL(fullScreen)=TRUE;
+    glfwSetWindowMonitor(window,monitor,0,0,FrontEndMenuManager.m_nPrefsWidth,
+        FrontEndMenuManager.m_nPrefsHeight,GLFW_DONT_CARE);
+    SetPresentationResizeGuard(previous);
+    SynchroniseWindowInput(window,false);
+}
+#endif
+
 void Enhanced::ApplyWindowMode(bool newWindow)
 {
     GLFWwindow *window = PSGLOBAL(window);
@@ -1112,7 +1149,7 @@ void Enhanced::ApplyWindowMode(bool newWindow)
     glfwGetWindowPos(window,&wx,&wy);
     FILE *displayLog=fopen("re3-display.log","a");
     if (displayLog) {
-        fprintf(displayLog,"v1.3 format=%d probe=%d monitorAttached=%d window=%dx%d framebuffer=%dx%d pos=%d,%d\n",
+        fprintf(displayLog,"v1.4 format=%d probe=%d monitorAttached=%d window=%dx%d framebuffer=%dx%d pos=%d,%d\n",
             int(ScreenFormat),int(BorderlessCaptureProbe),glfwGetWindowMonitor(window)!=nil,ww,wh,fw,fh,wx,wy);
         fclose(displayLog);
     }

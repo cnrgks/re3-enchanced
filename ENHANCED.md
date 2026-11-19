@@ -1,4 +1,4 @@
-# re3 Enhanced v1.3 — OpenGL borderless width probe
+# re3 Enhanced v1.4 — cursor fix and experimental fullscreen presentation
 
 > Known v1.1 issues and the latest requested save/map behavior are tracked in
 > [docs/BUGS.md](docs/BUGS.md). Future features: [ROADMAP.md](ROADMAP.md).
@@ -75,3 +75,13 @@ commits, EXE/PDB GUID+age, x64 runtime files and SHA-256 manifest entries.
 Gameplay, save/load, screenshot layout, capture and vehicle-specific shots need
 in-game verification. The archive is a complete mod distribution, not a full
 licensed GTA III installation.
+
+## v1.4 implementation follow-up
+
+Cursor fixes are isolated in commit 9553703c. A separately switchable Windows
+fullscreen presenter keeps OpenGL rendering and copies the final frame on the
+GPU into a DXGI fullscreen swap chain through WGL_NV_DX_interop2. Unsupported
+or failed setup falls back to native OpenGL fullscreen with a log event.
+No driver settings change. The experiment is enabled by default on Windows;
+Enhanced Options / Fullscreen Capture or VideoMode/FullscreenDXGI=0 disables
+it without removing cursor fixes. Capture and latency require user validation.
