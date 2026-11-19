@@ -963,3 +963,9 @@ Skip Intros ve Distant and Crowded World oyun içinde doğrulanmayı bekliyor.
 
 Kanıt: [Silah adı taşması ve eski tuş satırı](feedback/2026-11-20/v1.18-weapon-wheel-overflow.png).
 Kaynak değişiklikleri derleme ve oyun içi doğrulama bekliyor.
+
+### v1.19 OpenGL derleme sonucu
+
+Kaynak 295ef910, GitHub Actions run 44616298965. OpenGL x64 derlemesi
+ve mevcut üç CI birim kontrolü geçti. INTRO-01, TRAINER-01 ve
+WHEEL-01–03 oyun içinde doğrulanmayı bekliyor.
