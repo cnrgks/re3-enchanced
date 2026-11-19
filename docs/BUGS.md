@@ -944,3 +944,9 @@ F5 yükleme, Alt+Tab ve Restore Defaults oyun içi doğrulama bekliyor.
 Kaynak 6e8320fc, GitHub Actions run 44478094493. OpenGL x64 derlemesi
 ve üç CI birim kontrolü geçti. Trafik üretimi, ayrı ped bütçesi, fiziksel
 havuz sınırları ve yeni tanı sayaçları oyun içi deneme bekliyor.
+
+### v1.18 OpenGL derleme sonucu
+
+Kaynak a0dd7340, GitHub Actions run 44610384118. OpenGL x64 derlemesi
+ve mevcut üç CI birim kontrolü geçti. Trainer, radyo ve silah çarkları,
+Skip Intros ve Distant and Crowded World oyun içinde doğrulanmayı bekliyor.
