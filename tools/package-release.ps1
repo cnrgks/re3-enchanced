@@ -8,7 +8,6 @@ if ($Version -notmatch '^\d+\.\d+(\.\d+)?$') { throw 'Invalid release version' }
 $sourceRoot=Split-Path $PSScriptRoot -Parent
 $primary=Join-Path $WorkspaceRoot "builds/v$Version/opengl"
 $fallback=Join-Path $WorkspaceRoot "builds/v$Version/d3d9"
-$runtime=Join-Path $WorkspaceRoot 'dependencies/runtime/x64'
 $publishRelease=Join-Path $WorkspaceRoot "releases/v$Version"
 $zipPath=Join-Path $WorkspaceRoot "releases/re3-enhanced-v$Version.zip"
 if ((Test-Path -LiteralPath $publishRelease) -or (Test-Path -LiteralPath $zipPath)) {
@@ -36,15 +35,11 @@ $alternative=Join-Path $release 'alternatives/Direct3D9'
 $docs=Join-Path $release 'docs'
 foreach($folder in @($game,$docs)) { $null=New-Item -ItemType Directory -Path $folder -Force }
 Get-ChildItem -LiteralPath $primary -Force | Copy-Item -Destination $game -Recurse -Force
-Get-ChildItem -LiteralPath $runtime -Force | Copy-Item -Destination $game -Recurse -Force
-$requiredGameFiles=@(
-    're3.exe', 're3.pdb', 'winmm.dll', 'winmm.ini', 'cleo_redux64.asi',
-    'OpenAL32.dll', 'libmpg123-0.dll',
-    'CLEO/CLEO_PLUGINS/dylib64.cleo', 'CLEO/CLEO_PLUGINS/Events64.cleo',
-    'CLEO/CLEO_PLUGINS/FxtLoader64.cleo', 'CLEO/CLEO_PLUGINS/IdeLoader64.cleo',
-    'CLEO/CLEO_PLUGINS/IniFiles64.cleo', 'CLEO/CLEO_PLUGINS/Input64.cleo',
-    'CLEO/CLEO_PLUGINS/TextLoader64.cleo'
-)
+$requiredGameFiles=@('re3.exe','re3.pdb','OpenAL32.dll','libmpg123-0.dll')
+$optionalModFiles=Get-ChildItem -LiteralPath $game -Recurse -File | Where-Object {
+    $_.Extension -in '.asi','.cleo' -or $_.Name -in 'winmm.dll','winmm.ini'
+}
+if ($optionalModFiles) { throw 'Remove optional ASI/CLEO files from the build input before packaging' }
 foreach ($name in $requiredGameFiles) {
     if (!(Test-Path -LiteralPath (Join-Path $game $name) -PathType Leaf)) {
         throw "Required game file missing: $name"
@@ -62,14 +57,8 @@ foreach($name in @('ENHANCED.md','ROADMAP.md')) {
 Get-ChildItem -LiteralPath (Join-Path $sourceRoot 'docs') -Force | Copy-Item -Destination $docs -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $sourceRoot 'VERSION') -Destination $release
 Copy-Item -LiteralPath (Join-Path $sourceRoot 'RELEASE-NOTES.txt') -Destination (Join-Path $release 'KURULUM.txt')
-@('scripts','plugins','CLEO/CLEO_TEXT') | ForEach-Object {
-    $folder=Join-Path $game $_
-    $null=New-Item -ItemType Directory -Path $folder -Force
-    'Place compatible x64 ASI mods or CLEO scripts/text files in the appropriate folder.' |
-        Set-Content -LiteralPath (Join-Path $folder 'README.txt') -Encoding UTF8
-}
-# Reject accidental x86 ASIs/plugins and mismatched executable backends.
-foreach($file in Get-ChildItem -LiteralPath $release -Recurse -File | Where-Object Extension -in '.exe','.dll','.asi','.cleo') {
+# Validate x64 binaries and the OpenGL backend.
+foreach($file in Get-ChildItem -LiteralPath $release -Recurse -File | Where-Object Extension -in '.exe','.dll') {
     $bytes=[IO.File]::ReadAllBytes($file.FullName)
     if ($bytes.Length -lt 64 -or [BitConverter]::ToUInt16($bytes,0) -ne 0x5A4D) { throw "Not a PE: $($file.Name)" }
     $pe=[BitConverter]::ToInt32($bytes,0x3C)
@@ -77,8 +66,8 @@ foreach($file in Get-ChildItem -LiteralPath $release -Recurse -File | Where-Obje
         [BitConverter]::ToUInt16($bytes,$pe+4) -ne 0x8664) { throw "Not x64: $($file.FullName)" }
 }
 $mainBytes=[Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes((Join-Path $game 're3.exe')))
-if (!$mainBytes.ToLowerInvariant().Contains('opengl32.dll') -or !$mainBytes.ToLowerInvariant().Contains('winmm.dll')) {
-    throw 'Main EXE must contain the OpenGL platform path and import WINMM for ASI loading'
+if (!$mainBytes.ToLowerInvariant().Contains('opengl32.dll')) {
+    throw 'Main EXE must contain the OpenGL platform path'
 }
 $files=@(Get-ChildItem -LiteralPath $release -Recurse -File | Sort-Object FullName | ForEach-Object {
     [ordered]@{path=$_.FullName.Substring($release.Length+1).Replace('\','/');bytes=$_.Length;sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash}

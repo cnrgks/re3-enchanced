@@ -77,7 +77,7 @@ Kullanıcı v1.27 ile bu kayıt davranışlarının beklentisine uyduğunu bildi
   sonraki paket için regresyon kontrolü.
 - ASI Loader günlüğünde x64 yüklemesini, CLEO Redux günlüğünde re3 sembol
   çözümlemesini ve küçük bir JS/TS betiğinin çalışmasını doğrula.
-- Eşleşen EXE/PDB, runtime ve mod yükleyicileriyle SHA-256 manifestli tek
+- Eşleşen EXE/PDB ve oyun runtime kitaplıklarıyla SHA-256 manifestli tek
   sürüm klasörü ve ZIP. Kurulum notları ve ASI/CLEO sınırları
   [ENHANCED.md](ENHANCED.md) içinde.
 

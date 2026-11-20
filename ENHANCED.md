@@ -6,7 +6,8 @@ The [README](README.md) lists features and installation steps. [v1.27](https://g
 
 The base package runs without ASI Loader or CLEO Redux. To add mods, get the
 x64 Ultimate ASI Loader and place its DLL beside `re3.exe` as `winmm.dll`.
-Use the default loader settings. Install the official CLEO Redux x64 portable package separately if a mod needs CLEO.
+Use the default loader settings. CLEO mods also require the official CLEO
+Redux x64 portable package.
 Keep the matching `re3.pdb` next to `re3.exe` for CLEO symbol lookup.
 
 Keep the `re3.exe` name when enabling CLEO Redux. Renaming the executable
@@ -27,9 +28,9 @@ folder. Package integrity confirms the binaries are present and match
 the architecture. Runtime initialization and script execution are
 covered by the separate release verification list in [ROADMAP.md](ROADMAP.md).
 
-[Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader#usage) ·
-[CLEO Redux re3 support](https://re.cleo.li/docs/en/troubleshooting.html) ·
-[CLEO Redux script formats](https://re.cleo.li/docs/en/scripts.html)
+[Ultimate ASI Loader downloads](https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases) ·
+[CLEO Redux downloads](https://github.com/cleolibrary/CLEO-Redux/releases) ·
+[CLEO Redux installation and re3 support](https://re.cleo.li/docs/en/installation.html)
 
 ## Windows OpenGL fullscreen
 

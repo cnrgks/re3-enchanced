@@ -59,7 +59,7 @@ sonraki düzeltmeleri ve doğrulama durumlarını kaydeder.
 | UI-01 | Borderless, Graphics ekran biçiminin üçüncü seçeneği olmalı | Kapalı — kullanıcı doğruladı |
 | WIN-03 | Yükleme ekranı ve sonrasındaki Alt+Tab kilitlenmesi | v1.26 — kullanıcı ilk denemesinde düzeldiğini bildirdi |
 | WIN-04 | Fullscreen’e geri dönüş gecikmesi | Ertelendi — kullanıcı mevcut davranışı kabul etti |
-| MOD-01 | Temiz kurulumda ASI Loader ve CLEO Redux başlatma/betik kontrolü | Paket içeriği doğrulandı — çalışma zamanı kontrolü bekliyor |
+| MOD-01 | Temiz kurulumda ASI Loader ve CLEO Redux başlatma/betik kontrolü | Resmî x64 yükleyicilerle temiz kurulum ve betik kontrolü bekliyor |
 
 ### SAV-01 — F5/quicksave konumu
 
