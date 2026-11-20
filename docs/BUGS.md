@@ -1194,4 +1194,4 @@ Radyo kapalıyken çarktan bir istasyon seçip açılış beklemesi içinde
 Radio Off seçilince önceki istek kuyruğundan açılıyordu. Çark artık
 araçtaki mevcut ayar seçildiğinde bekleyen geçişi iptal ediyor. Başka
 istasyona geçiş klasik zamanlayıcıyı ve geçiş sesini kullanıyor.
-Kaynakta düzeltildi. Derleme ve oyun içi doğrulama bekliyor.
+v1.28 OpenGL x64 derlemesi ve CI birim kontrolleri geçti (Actions 44655370822). Oyun içi doğrulama bekliyor.
