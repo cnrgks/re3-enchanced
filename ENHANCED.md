@@ -1,6 +1,6 @@
 # re3 Enhanced guide
 
-The [README](README.md) lists features and installation steps. [v1.27](https://github.com/cnrgks/re3-enchanced/releases/tag/v1.27) is the Windows x64 OpenGL package. See the [roadmap](ROADMAP.md) for checks that still need in-game testing.
+The [README](README.md) lists features and installation steps. [v1.31](https://github.com/cnrgks/re3-enchanced/releases/tag/v1.31) is the Windows x64 OpenGL package. See the [roadmap](ROADMAP.md) for checks that still need in-game testing.
 
 ## Mod support
 

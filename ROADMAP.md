@@ -1,7 +1,6 @@
 # re3 Enhanced — roadmap
 
-Güncelleme 20 Kasım 2026. Son paket **v1.27 OpenGL**. Son kullanıcı
-geri bildirimlerine ait değişiklikleri kullanıcı v1.27 ile oyun içinde onayladı.
+Güncelleme 20 Kasım 2026. Son paket **v1.31 OpenGL**. Dürbün ve uzak gölge değişiklikleri derlendi. Oyun içi doğrulama bekliyor.
 
 ## Paketteki özellikler ve kalan doğrulamalar
 

@@ -2,7 +2,7 @@
 
 ## Intro
 
-re3 Enhanced is a GTA III fork of [Hezkore's re3](https://github.com/Hezkore/hez-gta-re3), itself based on the original re3 project. This fork adds gameplay and quality-of-life options. The current release is **v1.27 for Windows x64 with OpenGL**.
+re3 Enhanced is a GTA III fork of [Hezkore's re3](https://github.com/Hezkore/hez-gta-re3), itself based on the original re3 project. This fork adds gameplay and quality-of-life options. The current release is **v1.31 for Windows x64 with OpenGL**.
 
 ## Hezkore's changes
 
@@ -24,7 +24,7 @@ re3 Enhanced is a GTA III fork of [Hezkore's re3](https://github.com/Hezkore/hez
 
 ## Installation
 
-1. Start with an existing GTA III installation and download [re3 Enhanced v1.27 ZIP](https://github.com/cnrgks/re3-enchanced/releases/download/v1.27/re3-enhanced-v1.27.zip).
+1. Start with an existing GTA III installation and download [re3 Enhanced v1.31 ZIP](https://github.com/cnrgks/re3-enchanced/releases/download/v1.31/re3-enhanced-v1.31.zip).
 2. Back up your saves, settings and any existing re3 installation. Extract the ZIP directly into the GTA III directory.
 3. Run `re3.exe` and keep the matching `re3.pdb` beside it. The archive includes the runtime libraries.
 
