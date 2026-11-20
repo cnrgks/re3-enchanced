@@ -350,6 +350,9 @@ void CHud::SetPriorityHelpMessage(wchar *message)
 
 void CHud::SuppressScriptHelpAfterLoad()
 {
+	// A loaded game starts with an empty HUD notification queue.
+	SetHelpMessage(nil, false);
+	priorityHelpTime = 0.0f;
 	scriptHelpSuppressionStart = CTimer::GetTimeInMilliseconds();
 	suppressScriptHelp = true;
 }

@@ -2020,12 +2020,17 @@ int8 CRunningScript::ProcessCommands900To999(int32 command)
 			m_nIp += KEY_LENGTH_IN_SCRIPT;
 			return 0;
 		}
+		if (IsRestoredHelpSuppressed()) {
+			m_nIp += KEY_LENGTH_IN_SCRIPT;
+			return 0;
+		}
 		wchar* text = CTheScripts::GetTextByKeyFromScript(&m_nIp);
 		CHud::SetScriptHelpMessage(text);
 		return 0;
 	}
 	case COMMAND_CLEAR_HELP:
-		CHud::SetHelpMessage(nil, false);
+		if (!IsRestoredHelpSuppressed())
+			CHud::SetHelpMessage(nil, false);
 		return 0;
 	case COMMAND_FLASH_HUD_OBJECT:
 		CollectParameters(&m_nIp, 1);

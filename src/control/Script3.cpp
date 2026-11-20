@@ -1862,7 +1862,7 @@ int8 CRunningScript::ProcessCommands700To799(int32 command)
 		CollectParameters(&m_nIp, 1);
 		CPed* pPed = CWorld::Players[ScriptParams[0]].m_pPed;
 		script_assert(pPed);
-		UpdateCompareFlag(pPed->bInVehicle && pPed->m_pMyVehicle->IsTaxi());
+		UpdatePlayerHelpTrigger(pPed->bInVehicle && pPed->m_pMyVehicle->IsTaxi());
 		return 0;
 	}
 	case COMMAND_IS_PLAYER_SHOOTING:
@@ -1870,7 +1870,7 @@ int8 CRunningScript::ProcessCommands700To799(int32 command)
 		CollectParameters(&m_nIp, 1);
 		CPed* pPed = CWorld::Players[ScriptParams[0]].m_pPed;
 		script_assert(pPed);
-		UpdateCompareFlag(pPed->bIsShooting);
+		UpdatePlayerHelpTrigger(pPed->bIsShooting);
 		return 0;
 	}
 	case COMMAND_IS_CHAR_SHOOTING:

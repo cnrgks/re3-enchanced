@@ -63,6 +63,7 @@ static CVector homeSavePosition;
 static float radarZoom = 1.0f;
 static uint32 radarTime;
 static bool missionSavePending;
+static bool quickSaveMenu;
 bool TraceTraffic = false;
 TrafficSpawnStats VehicleSpawnStats, PedSpawnStats;
 VehicleTrafficDiagnostics VehicleTrafficStats;
@@ -119,6 +120,8 @@ wchar *GetText(const char *key)
         { "EN_QSAV", "F5 QUICKSAVE" },
         { "EN_AUTO", "MISSION AUTOSAVE" },
         { "EN_ASOK", "Autosaved." },
+        { "EN_ASHD", "Autosave" },
+        { "EN_ASEM", "No autosave" },
         { "EN_ASER", "Autosave failed." },
         { "EN_GPS", "MISSION GPS" },
         { "EN_HEAL", "HEAL AFTER SAVING" },
@@ -498,8 +501,19 @@ static bool CanQuickSave()
         (!p->m_pWanted || p->m_pWanted->GetWantedLevel() == 0);
 }
 
+bool IsQuickSaveMenu()
+{
+    return quickSaveMenu;
+}
+
+void ResetQuickSaveMenu()
+{
+    quickSaveMenu = false;
+}
+
 void Reset()
 {
+    ResetQuickSaveMenu();
     CloseSelectionWheel();
     missionSavePending = false;
     homeSaveActive = false;
@@ -1043,6 +1057,7 @@ void Process()
     if (!AutoSave) missionSavePending = false;
     if (QuickSave && CPad::GetPad(0)->GetFJustDown(4)) {
         if (CanQuickSave()) {
+            quickSaveMenu = true;
             FrontEndMenuManager.m_bSaveMenuActive = true;
             return;
         }
@@ -1052,7 +1067,7 @@ void Process()
         FindHomePosition(FindPlayerCoors(), homeSavePosition)) {
         missionSavePending = false;
         homeSaveActive = true;
-        const bool saved = PcSaveHelper.SaveSlot(SLOT_COUNT - 1, true);
+        const bool saved = PcSaveHelper.SaveSlot(AUTOSAVE_SLOT, true);
         homeSaveActive = false;
         CHud::SetPriorityHelpMessage(GetText(saved ? "EN_ASOK" : "EN_ASER"));
     }

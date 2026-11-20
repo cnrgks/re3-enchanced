@@ -1413,16 +1413,31 @@ CMenuManager::Draw()
 			wchar *rightText = nil;
 			wchar *leftText;
 
-			if (aScreens[m_nCurrScreen].m_aEntries[i].m_SaveSlot >= SAVESLOT_1 && aScreens[m_nCurrScreen].m_aEntries[i].m_SaveSlot <= SAVESLOT_8) {
+			const int saveEntry = aScreens[m_nCurrScreen].m_aEntries[i].m_SaveSlot;
+			const bool autosaveEntry = m_nCurrScreen == MENUPAGE_CHOOSE_LOAD_SLOT &&
+			    saveEntry == SAVESLOT_AUTOSAVE;
+			if ((saveEntry >= SAVESLOT_1 && saveEntry <= SAVESLOT_8) || autosaveEntry) {
+				const int slot = saveEntry - SAVESLOT_1;
 				CFont::SetRightJustifyOff();
-				leftText = GetNameOfSavedGame(i - 1);
+				leftText = GetNameOfSavedGame(slot);
 
-				if (Slots[i] != SLOT_EMPTY)
-					rightText = GetSavedGameDateAndTime(i - 1);
+				if (Slots[slot + 1] != SLOT_EMPTY)
+					rightText = GetSavedGameDateAndTime(slot);
 
 				if (leftText[0] == '\0') {
-					sprintf(gString, "FEM_SL%d", i);
-					leftText = TheText.Get(gString);
+					if (autosaveEntry) {
+						leftText = TheText.Get("EN_ASEM");
+					} else {
+						sprintf(gString, "FEM_SL%d", slot + 1);
+						leftText = TheText.Get(gString);
+					}
+				}
+				if (autosaveEntry) {
+					nextYToUse += lineHeight;
+					CFont::SetColor(CRGBA(MENUOPTION_COLOR.r, MENUOPTION_COLOR.g, MENUOPTION_COLOR.b, FadeIn(255)));
+					CFont::PrintString(MENU_X_LEFT_ALIGNED(columnWidth), MENU_Y(headerHeight + nextYToUse),
+						TheText.Get("EN_ASHD"));
+					nextYToUse += lineHeight;
 				}
 			} else {
 				leftText = TheText.Get(aScreens[m_nCurrScreen].m_aEntries[i].m_EntryName);
@@ -1723,6 +1738,11 @@ CMenuManager::Draw()
 						strcmp(aScreens[m_nCurrScreen].m_aEntries[rowToCheck].m_EntryName, "FEDS_TB") == 0)
 						break;
 #endif
+
+					if (m_nCurrScreen == MENUPAGE_CHOOSE_LOAD_SLOT &&
+					    aScreens[m_nCurrScreen].m_aEntries[rowToCheck].m_SaveSlot == SAVESLOT_AUTOSAVE &&
+					    rowToCheck != i)
+						nextYToCheck += 2 * lineHeight;
 
 					int extraOffset = 0;
 					if (aScreens[m_nCurrScreen].m_aEntries[rowToCheck].m_Action == MENUACTION_RADIO)
@@ -4254,7 +4274,7 @@ CMenuManager::Process(void)
 				SaveLoadFileError_SetUpErrorScreen();
 		}
 		if (m_nCurrScreen == MENUPAGE_SAVING_IN_PROGRESS) {
-			int8 SaveSlot = PcSaveHelper.SaveSlot(m_nCurrSaveSlot);
+			int8 SaveSlot = PcSaveHelper.SaveSlot(m_nCurrSaveSlot, false, Enhanced::IsQuickSaveMenu());
 			PcSaveHelper.PopulateSlotInfo();
 			if (SaveSlot && PcSaveHelper.nErrorCode == SAVESTATUS_SUCCESSFUL) {
 				ChangeScreen(MENUPAGE_SAVE_SUCCESSFUL, 0, true, false);
@@ -4265,7 +4285,7 @@ CMenuManager::Process(void)
 #ifdef MISSION_REPLAY
 			if (doingMissionRetry) {
 				RetryMission(MISSION_RETRY_TYPE_BEGIN_RESTARTING);
-				m_nCurrSaveSlot = SLOT_COUNT;
+				m_nCurrSaveSlot = PAUSE_SAVE_SLOT;
 				doingMissionRetry = false;
 			}
 #endif
@@ -5068,8 +5088,9 @@ CMenuManager::ProcessButtonPresses(void)
 				{
 					int saveSlot = aScreens[m_nCurrScreen].m_aEntries[m_nCurrOption].m_SaveSlot;
 
-					if (saveSlot >= 2 && saveSlot <= 9) {
-						m_nCurrSaveSlot = saveSlot - 2;
+					if ((saveSlot >= SAVESLOT_1 && saveSlot <= SAVESLOT_8) ||
+					    (saveSlot == SAVESLOT_AUTOSAVE && m_nCurrScreen == MENUPAGE_CHOOSE_LOAD_SLOT)) {
+						m_nCurrSaveSlot = saveSlot - SAVESLOT_1;
 						if (m_nCurrScreen == MENUPAGE_CHOOSE_LOAD_SLOT && Slots[m_nCurrSaveSlot + 1] == SLOT_CORRUPTED) {
 							PcSaveHelper.nErrorCode = SAVESTATUS_ERR_DATA_INVALID;
 							SaveLoadFileError_SetUpErrorScreen();
@@ -5800,6 +5821,7 @@ CMenuManager::SetHelperText(int text)
 void
 CMenuManager::ShutdownJustMenu()
 {
+	Enhanced::ResetQuickSaveMenu();
 #ifdef MENU_MAP
 	mapOpenedFromGame = false;
 #endif

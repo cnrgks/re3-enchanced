@@ -1154,3 +1154,32 @@ yolu kullanıcıda imleç gecikmesini artırdı. Windowed flip-model ayrı
 opt-in prototip olarak değerlendirilebilir; varsayılan değişmeden önce
 Fullscreen ve Borderless Discord/Ambilight ile menü imleci ve kamera
 tepkisi doğrulanmalı. Bu adım analiz ve kayıt; kaynak davranışı değişmedi.
+
+### Yeni autosave geri bildirimi
+
+Kullanıcı önceki hata kuyruğundaki işleri başka sohbetlerde tamamladığını
+bildirdi. Yukarıdaki eski kayıtlar tarihçe olarak korunuyor.
+
+- **SAV-07** · Autosave veya yeni F5 kaydı yüklenince geri gelen betiklerin sol üst
+  yardım mesajları bastırılıyor. Zamanlayıcı dolması, evden uzaklaşma ve
+  eski betiğin arka planda başka bir betik başlatması bu kuralı kaldırmıyor.
+  Yeni görev betikleri ve oyunun doğrudan ürettiği bildirimler normal.
+  Geri gelen bir betik, araç/taksiye binme, tuş, ateş veya korna gibi
+  yeni bir oyuncu etkileşimini kendisi doğruladığında yardım metni tekrar
+  üretebiliyor. Filtre yalnızca autosave veya işaretli F5 kaydı yüklenince
+  kuruluyor. F5 işareti mevcut kayıt dolgusuna yazılıyor. Önceki F5 kayıtları
+  normal ev kayıtlarıyla aynı biçimde olduğundan kendiliğinden ayırt edilemiyor.
+  Kaydetme anı ve canlı görev sonu bildirimleri korunuyor.
+  Evden hemen ayrılma, gecikmeli ipucu ve yeni görev/araç ipucu ayrı denenmeli.
+- **SAV-08** · Ev çıkışı doğru, karakter yönü yanlış. Kurulu SCM'de
+  Portland 90°, Staunton 0°, Shoreside 180° ve üçünde de karakterin
+  önüne kamera kurulumu var. Otomatik kayıt bu yönleri yüklemede kullanıyor.
+  [Autosave görüntüsü](feedback/2026-11-20/autosave-existing-facing.png) ·
+  [Normal kayıt referansı](feedback/2026-11-20/safehouse-native-facing.png)
+- **SAV-09** · Yeni autosave `GTA3sfAutosave.b` dosyasına yazılıyor.
+  Load Game ekranında 8. slottan sonra boş satır, Autosave başlığı ve
+  otomatik kayıt var. Save ve Delete ekranlarında sekiz manuel slot
+  bulunuyor. Eski 8. slot dosyası olduğu yerde ve yüklenebilir durumda.
+  [Mevcut Load Game yerleşimi](feedback/2026-11-20/load-game-eight-slots.png)
+
+Kaynak değişiklikleri derleme ve oyun içi doğrulamayı bekliyor.

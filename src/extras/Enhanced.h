@@ -31,6 +31,8 @@ extern int8 HealAfterSave, Borderless;
 
 wchar *GetText(const char *key);
 void Process();
+bool IsQuickSaveMenu();
+void ResetQuickSaveMenu();
 void Reset();
 void ProcessSelectionWheel();
 void CancelSelectionWheelIfUnavailable();
@@ -60,6 +62,7 @@ void DrawServices();
 void DrawPhoneBlips();
 bool IsSavingAtHome();
 bool GetLegacyAutosaveExit(const CVector &position, CVector &exit);
+bool GetAutosaveExitHeading(const CVector &position, float &heading);
 CVector SavePosition(const CVector &original);
 float VehicleRangeMultiplier();
 float PedRangeMultiplier();

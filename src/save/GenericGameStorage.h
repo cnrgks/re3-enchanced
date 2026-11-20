@@ -4,8 +4,13 @@
 #include "PCSave.h"
 
 #define SLOT_COUNT (8)
+constexpr int AUTOSAVE_SLOT = SLOT_COUNT;
+constexpr int LOAD_SLOT_COUNT = SLOT_COUNT + 1;
+#ifdef MISSION_REPLAY
+constexpr int PAUSE_SAVE_SLOT = LOAD_SLOT_COUNT;
+#endif
 
-bool GenericSave(int file);
+bool GenericSave(int file, bool quickSave);
 bool GenericLoad();
 void TracePcSaveLoad(const char *stage);
 bool ReadInSizeofSaveFileBuffer(int32 &file, uint32 &size);
@@ -16,6 +21,7 @@ bool CheckSlotDataValid(int32 slot);
 void MakeSpaceForSizeInBufferPointer(uint8 *&presize, uint8 *&buf, uint8 *&postsize);
 void CopySizeAndPreparePointer(uint8 *&buf, uint8 *&postbuf, uint8 *&postbuf2, uint32 &unused, uint32 &size);
 void DoGameSpecificStuffBeforeSave();
+bool FormatPcSaveName(char *name, size_t capacity, int32 slot);
 void MakeValidSaveName(int32 slot);
 wchar *GetSavedGameDateAndTime(int32 slot);
 wchar *GetNameOfSavedGame(int32 slot);
@@ -34,11 +40,11 @@ extern class CDate CompileDateAndTime;
 extern char DefaultPCSaveFileName[260];
 extern char ValidSaveName[260];
 extern char LoadFileName[260];
-extern wchar SlotFileName[SLOT_COUNT][260];
-extern wchar SlotSaveDate[SLOT_COUNT][70];
+extern wchar SlotFileName[LOAD_SLOT_COUNT][260];
+extern wchar SlotSaveDate[LOAD_SLOT_COUNT][70];
 extern int CheckSum;
 extern enum eLevelName m_LevelToLoad;
-extern int Slots[SLOT_COUNT+1];
+extern int Slots[LOAD_SLOT_COUNT+1];
 
 extern bool b_FoundRecentSavedGameWantToLoad;
 extern bool JustLoadedDontFadeInYet;

@@ -28,6 +28,8 @@ C_PcSave::SetSaveDirectory(const char *path)
 bool
 C_PcSave::DeleteSlot(int32 slot)
 {
+	if (slot < 0 || slot >= SLOT_COUNT)
+		return false;
 #ifdef FIX_BUGS
 	char FileName[MAX_PATH];
 #else
@@ -42,20 +44,33 @@ C_PcSave::DeleteSlot(int32 slot)
 }
 
 bool
-C_PcSave::SaveSlot(int32 slot, bool autosave)
+C_PcSave::SaveSlot(int32 slot, bool autosave, bool quickSave)
 {
+	bool validSlot = autosave ? slot == AUTOSAVE_SLOT : slot >= 0 && slot < SLOT_COUNT;
+#ifdef MISSION_REPLAY
+	validSlot = validSlot || (!autosave && slot == PAUSE_SAVE_SLOT && IsQuickSave);
+#endif
+	if (!validSlot || (quickSave && (autosave || slot >= SLOT_COUNT))) {
+		nErrorCode = SAVESTATUS_ERR_SAVE_CREATE;
+		return false;
+	}
     CPlayerPed *player = FindPlayerPed();
     const float previousHealth = player ? player->m_fHealth : 0.0f;
-    bool heal = Enhanced::HealAfterSave && player && slot >= 0 && slot < SLOT_COUNT;
+    bool heal = Enhanced::HealAfterSave && player && (autosave || slot < SLOT_COUNT);
 #ifdef MISSION_REPLAY
     heal = heal && !IsQuickSave;
 #endif
 	MakeValidSaveName(slot);
+	if (!ValidSaveName[0]) {
+		nErrorCode = SAVESTATUS_ERR_SAVE_CREATE;
+		return false;
+	}
 	PcSaveHelper.nErrorCode = SAVESTATUS_SUCCESSFUL;
 	_psGetUserFilesFolder();
 	char temporaryName[sizeof(ValidSaveName) + sizeof(".tmp")];
 	snprintf(temporaryName, sizeof(temporaryName), "%s.tmp", ValidSaveName);
-	const int file = CFileMgr::OpenFile(autosave ? temporaryName : ValidSaveName, "wb");
+	const bool atomicSave = autosave || quickSave;
+	const int file = CFileMgr::OpenFile(atomicSave ? temporaryName : ValidSaveName, "wb");
 	if (file == 0) {
 		nErrorCode = SAVESTATUS_ERR_SAVE_CREATE;
 		return false;
@@ -68,16 +83,16 @@ C_PcSave::SaveSlot(int32 slot, bool autosave)
 	)
 		DoGameSpecificStuffBeforeSave();
 	if (heal) player->m_fHealth = Max(previousHealth, 100.0f);
-	bool saved = GenericSave(file);
+	bool saved = GenericSave(file, quickSave);
 	if (CFileMgr::CloseFile(file) != 0) {
 		nErrorCode = SAVESTATUS_ERR_SAVE_CLOSE;
 		saved = false;
 	}
-	if (autosave && saved && !ValidateSaveFile(temporaryName)) {
+	if (atomicSave && saved && !ValidateSaveFile(temporaryName)) {
 		nErrorCode = SAVESTATUS_ERR_SAVE_WRITE;
 		saved = false;
 	}
-	if (autosave && saved) {
+	if (atomicSave && saved) {
 		// Preserve the old slot until the replacement is fully written and closed.
 #ifdef _WIN32
 		saved = MoveFileExA(temporaryName, ValidSaveName, MOVEFILE_REPLACE_EXISTING) != 0;
@@ -92,7 +107,7 @@ C_PcSave::SaveSlot(int32 slot, bool autosave)
 			nErrorCode = SAVESTATUS_ERR_SAVE_WRITE;
 	}
 	if (!saved) {
-		if (autosave) {
+		if (atomicSave) {
 #ifdef _WIN32
 			DeleteFile(temporaryName);
 #else
@@ -136,12 +151,12 @@ C_PcSave::PcClassSaveRoutine(int32 file, uint8 *data, uint32 size)
 void
 C_PcSave::PopulateSlotInfo()
 {
-	for (int i = 0; i < SLOT_COUNT; i++) {
+	for (int i = 0; i < LOAD_SLOT_COUNT; i++) {
 		Slots[i + 1] = SLOT_EMPTY;
 		SlotFileName[i][0] = '\0';
 		SlotSaveDate[i][0] = '\0';
 	}
-	for (int i = 0; i < SLOT_COUNT; i++) {
+	for (int i = 0; i < LOAD_SLOT_COUNT; i++) {
 #ifdef FIX_BUGS
 		char savename[MAX_PATH];
 #else
@@ -152,7 +167,8 @@ C_PcSave::PopulateSlotInfo()
 			wchar FileName[24];
 			SYSTEMTIME SaveDateTime;
 		} header;
-		sprintf(savename, "%s%i%s", DefaultPCSaveFileName, i + 1, ".b");
+		if (!FormatPcSaveName(savename, sizeof(savename), i))
+			continue;
 		int file = CFileMgr::OpenFile(savename, "rb");
 		if (file != 0) {
 			const size_t headerSize = CFileMgr::Read(file, (char*)&header, sizeof(header));
@@ -170,7 +186,7 @@ C_PcSave::PopulateSlotInfo()
 		if (Slots[i + 1] == SLOT_OK) {
 			if (CheckDataNotCorrupt(i, savename)) {
 #ifdef FIX_INCOMPATIBLE_SAVES
-				if (!FixSave(i, GetSaveType(savename))) {
+				if (i != AUTOSAVE_SLOT && !FixSave(i, GetSaveType(savename))) {
 					CMessages::InsertNumberInString(TheText.Get("FEC_SLC"), i + 1, -1, -1, -1, -1, -1, SlotFileName[i]);
 					Slots[i + 1] = SLOT_CORRUPTED;
 					continue;

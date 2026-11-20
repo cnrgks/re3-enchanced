@@ -1,10 +1,20 @@
-RE3 ENHANCED v1.26 - OPENGL x64
+RE3 ENHANCED v1.27 - OPENGL x64
 
 KURULUM
 Oyunu kapat ve mevcut re3.exe/re3.pdb ciftini yedekle. Paketin game
 klasorunun icerigini GTA III kurulumuna kopyala. Oyun verileri dahil
 degildir. Mevcut ini ve kayitlari koru. x64 ASI Loader, CLEO Redux ve
 runtime kutuphaneleri dahildir.
+
+v1.27 DENEMELERI
+Gorev sonunda Autosaved. sonrasi canli HUD yazilarini kontrol et.
+Load Game'de sekiz manuel slottan sonraki Autosave kaydini yukle.
+Ev cikisi konumu, karakter ve kamera yonu orijinal ev kaydiyla eslesmeli.
+Yukledikten sonra evde bekle ve bir sonraki denemede hemen uzaklas.
+Eski gecikmeli ipuclari atlanmali, yeni oyun uyari ve ipuclari gorunmeli.
+Ayni mesaj kontrolunu bu surumde F5 ile yeni kaydettigin dosyada yap.
+Save ve Delete ekranlarinda sekiz manuel slot bulunur. Eski 8. slot korunur.
+
 
 v1.26 DENEMELERI
 Fullscreen'de kayit yuklenirken ve yukleme ekrani solarken Alt+Tab yap.
@@ -49,7 +59,7 @@ ayni kayit ve rota uzerinden karsilastir.
 
 KAYIT, TRAFIK VE ODAK
 F5 mevcut konumu kaydeder. Mission Autosave aciksa gorevden sonra
-oyun guvenli anda ilgili adanin ev konumunu 8. slota kaydeder.
+oyun guvenli anda ilgili adanin ev konumunu ayri Autosave dosyasina kaydeder.
 Basarili yazimdan sonra Autosaved. mesaji gorunur. Heal After Saving
 iki kayit turune de uygulanir. Alt-Tab donusunde oyun Pause menusunde
 kalir. Restore Defaults secenekleri onay ister.

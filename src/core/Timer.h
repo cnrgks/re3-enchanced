@@ -83,7 +83,7 @@ public:
 	static void EndUserPause(void);
 
 	friend bool GenericLoad(void);
-	friend bool GenericSave(int file);
+	friend bool GenericSave(int file, bool quickSave);
 	friend class CMemoryCard;
 
 	static float GetDefaultTimeStep(void) { return 50.0f / LOGICAL_FRAME_RATE; }

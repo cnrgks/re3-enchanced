@@ -325,6 +325,9 @@ public:
 	int8 ProcessOneCommand();
 	void DoDeatharrestCheck();
 	void UpdateCompareFlag(bool);
+	void UpdatePlayerHelpTrigger(bool activated);
+	bool IsRestoredHelpSuppressed() const;
+	void SetRestoredHelpSuppressed(bool suppressed);
 	int16 GetPadState(uint16, uint16);
 
 	int8 ProcessCommands0To99(int32);
@@ -535,6 +538,7 @@ public:
 		return Read4BytesFromScript(&tmp);
 	}
 
+	static void SuppressRestoredScriptHelp();
 	static CRunningScript* StartNewScript(uint32);
 
 	static void CleanUpThisVehicle(CVehicle*);

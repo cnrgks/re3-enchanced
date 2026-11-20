@@ -55,22 +55,20 @@ normal oyun akışını izler. Windows dışı OpenGL açılışında video oyna
 Doğrulama: temiz INI ile açılış, ON/OFF seçiminin yeniden açılışta
 uygulanması, video bulunamaması ve farklı ekran biçimlerinde açılış.
 
-## Hata ve doğrulama kuyruğu
+## Açık autosave işleri
 
-- **SAV-01–06** · F5 konumu ve kısıtları, üç ada ev noktası, görev sonrası
-  autosave/yükleme ve HUD bildirimi.
-- **DIST-01/02** · Trafik ve yaya üretimi, yeni dünya ayarı, park edilmiş araçlar
-  ve fiziksel havuz sınırları.
-- **INPUT-04/05, WIN-02** · Tek basışta araca giriş, Alt+Tab imleci ve odak
-  dönüşünde Pause menüsü. WIN-03 için v1.26’da olumlu sonuç bildirildi.
-  WIN-04 Alt+Tab dönüş süresi çalışması kullanıcı isteğiyle durduruldu.
-- **MAP-01–07, GPS-04, UI-03** · Harita, rota ve Restore Defaults kapsamındaki
-  açık doğrulamalar.
-- **Options** · Yeni menü sırası ve Gameplay/Graphics/Display düzeni.
+Kullanıcı önceki hata kuyruğunu diğer sohbetlerde tamamladığını bildirdi.
+Geçmiş kayıtlar [BUGS.md](docs/BUGS.md) içinde.
 
-Kayıt bazındaki durumlar, kabul ölçütleri ve geçmiş sonuçlar [BUGS.md](docs/BUGS.md)
-içinde. OpenGL ana geliştirme yolu, D3D9 alternatif. Bu karar
-[mimari notlarında](docs/ARCHITECTURE.md) kayıtlı.
+- **SAV-07** · Autosave veya F5 yüklemesinde devam eden eski betiklerin sol üstteki
+  yardım mesajları, evden ayrıldıktan sonra da tekrarlanmamalı. Yeni
+  oynanışın bildirimleri ve canlı görev sonu akışı korunmalı.
+- **SAV-08** · Ev çıkışındaki karakter ve kamera, özgün ev kaydı yönünü
+  kullanmalı.
+- **SAV-09** · Autosave yalnızca Load Game ekranında, sekiz manuel slottan
+  sonra ayrı bölümde yer almalı.
+
+Üç değişiklik kaynakta hazır. Derleme ve oyun içi doğrulama bekliyor.
 
 ## Sonraki paket öncesi
 

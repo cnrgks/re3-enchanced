@@ -48,21 +48,21 @@
 #define SIZE_OF_SIMPLEVARS 0xBC
 
 const uint32 SIZE_OF_ONE_GAME_IN_BYTES = 201729;
+static constexpr uint8 QuickSaveMarker[] = {'R', '3', 'F', '5', 'S', 'A', 'V', 'E', 1, 0, 0, 0};
 
 #ifdef MISSION_REPLAY
 int8 IsQuickSave;
-const int PAUSE_SAVE_SLOT = SLOT_COUNT;
 #endif
 
 char DefaultPCSaveFileName[260];
 char ValidSaveName[260];
 char LoadFileName[sizeof(ValidSaveName)];
-wchar SlotFileName[SLOT_COUNT][260];
-wchar SlotSaveDate[SLOT_COUNT][70];
+wchar SlotFileName[LOAD_SLOT_COUNT][260];
+wchar SlotSaveDate[LOAD_SLOT_COUNT][70];
 int CheckSum;
 eLevelName m_LevelToLoad;
 char SaveFileNameJustSaved[260];
-int Slots[SLOT_COUNT+1];
+int Slots[LOAD_SLOT_COUNT+1];
 CDate CompileDateAndTime;
 
 bool b_FoundRecentSavedGameWantToLoad;
@@ -164,7 +164,7 @@ do {\
 } while (0)
 
 bool
-GenericSave(int file)
+GenericSave(int file, bool quickSave)
 {
 	uint8 *buf, *presize, *postsize;
 	uint32 size;
@@ -297,8 +297,17 @@ GenericSave(int file)
 		size = align4bytes(SIZE_OF_ONE_GAME_IN_BYTES - totalSize - 4);
 		if (size > sizeof(work_buff))
 			size = sizeof(work_buff);
+		if (i == 0 && quickSave && size < sizeof(QuickSaveMarker)) {
+			PcSaveHelper.nErrorCode = SAVESTATUS_ERR_SAVE_WRITE;
+			return false;
+		}
 		if (size > 4) {
-			if (i == 0) Enhanced::SaveServiceDiscovery(work_buff, size);
+			if (i == 0) {
+				const uint32 markerSize = quickSave ? sizeof(QuickSaveMarker) : 0;
+				Enhanced::SaveServiceDiscovery(work_buff, size - markerSize);
+				if (quickSave)
+					memcpy(work_buff + size - markerSize, QuickSaveMarker, markerSize);
+			}
 			if (!PcSaveHelper.PcClassSaveRoutine(file, work_buff, size))
 				return false;
 			totalSize += size;
@@ -311,7 +320,7 @@ GenericSave(int file)
 	if (CFileMgr::GetErrorReadWrite(file)) {
 		PcSaveHelper.nErrorCode = SAVESTATUS_ERR_SAVE_WRITE;
         // GenericSave never owns the handle. All callers close it exactly once,
-        // including failed writes (important for atomic Enhanced autosaves).
+        // including failed writes (important for atomic Enhanced saves).
 		return false;
 	}
 	
@@ -446,10 +455,14 @@ GenericLoad()
 	// Older saves can have zero padding or go straight to the checksum.
 	// Discovery is optional and cannot make a native save fail to load.
 	uint32 paddingSize = 0;
+	bool quickSave = false;
 	if (CFileMgr::Read(file, (const char*)&paddingSize, sizeof(paddingSize)) == sizeof(paddingSize) &&
 		paddingSize <= sizeof(work_buff) && paddingSize >= 12 &&
-		CFileMgr::Read(file, (const char*)work_buff, paddingSize) == paddingSize)
-		Enhanced::LoadServiceDiscovery(work_buff, paddingSize);
+		CFileMgr::Read(file, (const char*)work_buff, paddingSize) == paddingSize) {
+		quickSave = paddingSize >= sizeof(QuickSaveMarker) &&
+		    memcmp(work_buff + paddingSize - sizeof(QuickSaveMarker), QuickSaveMarker, sizeof(QuickSaveMarker)) == 0;
+		Enhanced::LoadServiceDiscovery(work_buff, paddingSize - (quickSave ? sizeof(QuickSaveMarker) : 0));
+	}
 
 	DMAudio.SetMusicMasterVolume(CMenuManager::m_PrefsMusicVolume);
 	DMAudio.SetEffectsMasterVolume(CMenuManager::m_PrefsSfxVolume);
@@ -458,23 +471,38 @@ GenericLoad()
 		return false;
 	}
 
-	// Older mission autosaves wrote identical player and camera positions inside a save trigger.
 	CPlayerPed *player = FindPlayerPed();
-	const CVector &cameraPosition = TheCamera.GetPosition();
-	if (FrontEndMenuManager.m_nCurrSaveSlot == SLOT_COUNT - 1 && player) {
-		const CVector &position = player->GetPosition();
-		CVector exit;
-		if (position.x == cameraPosition.x && position.y == cameraPosition.y && position.z == cameraPosition.z &&
-			Enhanced::GetLegacyAutosaveExit(position, exit)) {
-			TracePcSaveLoad("Moving legacy autosave outside the save trigger");
-			player->Teleport(exit);
-			TheCamera.GetMatrix().GetPosition() = exit;
+	const int slot = FrontEndMenuManager.m_nCurrSaveSlot;
+	bool autosave = slot == AUTOSAVE_SLOT;
+	float heading = 0.0f;
+	bool atSafehouse = false;
+	if (player && (autosave || slot == SLOT_COUNT - 1)) {
+		const CVector position = player->GetPosition();
+		const CVector cameraPosition = TheCamera.GetPosition();
+		if (autosave || (position - cameraPosition).MagnitudeSqr() < 0.0001f) {
+			CVector exit;
+			if (Enhanced::GetLegacyAutosaveExit(position, exit)) {
+				TracePcSaveLoad("Moving legacy autosave outside the save trigger");
+				player->Teleport(exit);
+				TheCamera.GetMatrix().GetPosition() = exit;
+			}
+			atSafehouse = Enhanced::GetAutosaveExitHeading(player->GetPosition(), heading);
+			autosave = autosave || atSafehouse;
 		}
 	}
 
 	TracePcSaveLoad("Resuming saved scripts");
 	CHud::SuppressScriptHelpAfterLoad();
+	if (autosave || quickSave)
+		CTheScripts::SuppressRestoredScriptHelp();
 	DoGameSpecificStuffAfterSucessLoad();
+	player = FindPlayerPed();
+	if (atSafehouse && player && Enhanced::GetAutosaveExitHeading(player->GetPosition(), heading)) {
+		player->m_fRotationCur = player->m_fRotationDest = heading;
+		player->SetHeading(heading);
+		TheCamera.RestoreWithJumpCut();
+		TheCamera.SetCameraDirectlyInFrontForFollowPed_CamOnAString();
+	}
 	TracePcSaveLoad("Save data loaded");
 	debug("Game successfully loaded \n");
 	return true;
@@ -567,12 +595,28 @@ DoGameSpecificStuffBeforeSave()
 }
 
 
+bool
+FormatPcSaveName(char *name, size_t capacity, int32 slot)
+{
+	int length;
+	if (slot == AUTOSAVE_SLOT)
+		length = snprintf(name, capacity, "%sAutosave.b", DefaultPCSaveFileName);
+#ifdef MISSION_REPLAY
+	else if (slot == PAUSE_SAVE_SLOT)
+		length = snprintf(name, capacity, "%s%d.b", DefaultPCSaveFileName, SLOT_COUNT + 1);
+#endif
+	else if (slot >= 0 && slot < SLOT_COUNT)
+		length = snprintf(name, capacity, "%s%d.b", DefaultPCSaveFileName, slot + 1);
+	else
+		return false;
+	return length >= 0 && size_t(length) < capacity;
+}
+
 void
 MakeValidSaveName(int32 slot)
 {
-	ValidSaveName[0] = '\0';
-	sprintf(ValidSaveName, "%s%i", DefaultPCSaveFileName, slot + 1);
-	strncat(ValidSaveName, ".b", 5);
+	if (!FormatPcSaveName(ValidSaveName, sizeof(ValidSaveName), slot))
+		ValidSaveName[0] = '\0';
 }
 
 wchar *
@@ -661,8 +705,7 @@ bool
 CheckDataNotCorrupt(int32 slot, char *name)
 {
 	char filename[sizeof(ValidSaveName)];
-	const int length = snprintf(filename, sizeof(filename), "%s%i.b", DefaultPCSaveFileName, slot + 1);
-	if (length < 0 || size_t(length) >= sizeof(filename) || !ValidateSaveFile(filename))
+	if (!FormatPcSaveName(filename, sizeof(filename), slot) || !ValidateSaveFile(filename))
 		return false;
 	strcpy(name, filename);
 	return true;

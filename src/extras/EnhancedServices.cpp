@@ -274,14 +274,15 @@ struct SaveHouse {
     eLevelName island;
     CVector legacyCentre;
     CVector exit;
+    float headingDegrees;
     bool useGround;
 };
 
-// The exits come from SET_PLAYER_COORDINATES in the three native save scripts.
+// The exits and headings come from the three native save scripts.
 const SaveHouse saveHouses[] = {
-    { LEVEL_INDUSTRIAL, CVector(895.21875f, -306.46875f, 10.1875f), CVector(888.5625f, -308.375f, 10.1875f), true },
-    { LEVEL_COMMERCIAL, CVector(103.21875f, -484.6875f, 16.5f), CVector(103.0f, -478.5f, 14.875f), false },
-    { LEVEL_SUBURBAN, CVector(-665.25f, 8.28125f, 20.0f), CVector(-666.75f, -1.75f, 20.0f), true },
+    { LEVEL_INDUSTRIAL, CVector(895.21875f, -306.46875f, 10.1875f), CVector(888.5625f, -308.375f, 10.1875f), 90.0f, true },
+    { LEVEL_COMMERCIAL, CVector(103.21875f, -484.6875f, 16.5f), CVector(103.0f, -478.5f, 14.875f), 0.0f, false },
+    { LEVEL_SUBURBAN, CVector(-665.25f, 8.28125f, 20.0f), CVector(-666.75f, -1.75f, 20.0f), 180.0f, true },
 };
 
 CVector SaveHouseExit(const SaveHouse &house, float fallbackZ)
@@ -317,6 +318,17 @@ bool GetLegacyAutosaveExit(const CVector &position, CVector &exit)
     for (const SaveHouse &house : saveHouses) {
         if (position.x == house.legacyCentre.x && position.y == house.legacyCentre.y) {
             exit = SaveHouseExit(house, position.z);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool GetAutosaveExitHeading(const CVector &position, float &heading)
+{
+    for (const SaveHouse &house : saveHouses) {
+        if (position.x == house.exit.x && position.y == house.exit.y) {
+            heading = DEGTORAD(house.headingDegrees);
             return true;
         }
     }

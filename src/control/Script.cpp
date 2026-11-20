@@ -58,6 +58,7 @@ int32 CTheScripts::StoreVehicleIndex;
 bool CTheScripts::StoreVehicleWasRandom;
 CRunningScript *CTheScripts::pIdleScripts;
 CRunningScript *CTheScripts::pActiveScripts;
+static bool restoredScriptHelpSuppressed[MAX_NUM_SCRIPTS];
 int32 CTheScripts::NextFreeCollectiveIndex;
 int32 CTheScripts::LastRandomPedId;
 uint16 CTheScripts::NumberOfUsedObjects;
@@ -517,6 +518,7 @@ void CTheScripts::Init()
 	for (int i = 0; i < SIZE_SCRIPT_SPACE; i++)
 		ScriptSpace[i] = 0;
 	pActiveScripts = pIdleScripts = nil;
+	memset(restoredScriptHelpSuppressed, 0, sizeof(restoredScriptHelpSuppressed));
 	for (int i = 0; i < MAX_NUM_SCRIPTS; i++){
 		ScriptsArray[i].Init();
 		ScriptsArray[i].AddScriptToList(&pIdleScripts);
@@ -624,12 +626,39 @@ void CRunningScript::AddScriptToList(CRunningScript** ppScript)
 	*ppScript = this;
 }
 
+bool CRunningScript::IsRestoredHelpSuppressed() const
+{
+	return restoredScriptHelpSuppressed[this - CTheScripts::ScriptsArray];
+}
+
+void CRunningScript::SetRestoredHelpSuppressed(bool suppressed)
+{
+	restoredScriptHelpSuppressed[this - CTheScripts::ScriptsArray] = suppressed;
+}
+
+void CRunningScript::UpdatePlayerHelpTrigger(bool activated)
+{
+	// A real player trigger is evidence of a new interaction for this thread.
+	// Timer wakeups and movement into free roam do not release other threads.
+	if (activated && !m_bNotFlag && IsRestoredHelpSuppressed() &&
+	    !CTimer::GetIsPaused() && TheCamera.GetScreenFadeStatus() == FADE_0 && !TheCamera.GetFading())
+		SetRestoredHelpSuppressed(false);
+	UpdateCompareFlag(activated);
+}
+
+void CTheScripts::SuppressRestoredScriptHelp()
+{
+	for (CRunningScript *script = pActiveScripts; script; script = script->GetNext())
+		script->SetRestoredHelpSuppressed(true);
+}
+
 CRunningScript* CTheScripts::StartNewScript(uint32 ip)
 {
 	CRunningScript* pNew = pIdleScripts;
 	script_assert(pNew);
 	pNew->RemoveScriptFromList(&pIdleScripts);
 	pNew->Init();
+	pNew->SetRestoredHelpSuppressed(false);
 	pNew->SetIP(ip);
 	pNew->AddScriptToList(&pActiveScripts);
 	return pNew;
@@ -1316,6 +1345,7 @@ int8 CRunningScript::ProcessCommands0To99(int32 command)
 		CollectParameters(&m_nIp, 1);
 		script_assert(ScriptParams[0] >= 0);
 		CRunningScript* pNew = CTheScripts::StartNewScript(ScriptParams[0]);
+		pNew->SetRestoredHelpSuppressed(IsRestoredHelpSuppressed());
 		int8 type = CTheScripts::Read1ByteFromScript(&m_nIp);
 		float tmp;
 		for (int i = 0; type != ARGUMENT_END; type = CTheScripts::Read1ByteFromScript(&m_nIp), i++) {
@@ -2560,7 +2590,7 @@ int8 CRunningScript::ProcessCommands200To299(int32 command)
 		CollectParameters(&m_nIp, 2);
 		CVehicle* pCheckedVehicle = CPools::GetVehiclePool()->GetAt(ScriptParams[1]);
 		CPed* pPed = CWorld::Players[ScriptParams[0]].m_pPed;
-		UpdateCompareFlag(pPed->bInVehicle && pPed->m_pMyVehicle == pCheckedVehicle);
+		UpdatePlayerHelpTrigger(pPed->bInVehicle && pPed->m_pMyVehicle == pCheckedVehicle);
 		return 0;
 	}
 	case COMMAND_IS_CHAR_IN_MODEL:
@@ -2575,7 +2605,7 @@ int8 CRunningScript::ProcessCommands200To299(int32 command)
 	{
 		CollectParameters(&m_nIp, 2);
 		CPed* pPed = CWorld::Players[ScriptParams[0]].m_pPed;
-		UpdateCompareFlag(pPed->bInVehicle && pPed->m_pMyVehicle->GetModelIndex() == ScriptParams[1]);
+		UpdatePlayerHelpTrigger(pPed->bInVehicle && pPed->m_pMyVehicle->GetModelIndex() == ScriptParams[1]);
 		return 0;
 	}
 	case COMMAND_IS_CHAR_IN_ANY_CAR:
@@ -2589,7 +2619,7 @@ int8 CRunningScript::ProcessCommands200To299(int32 command)
 	{
 		CollectParameters(&m_nIp, 1);
 		CPed* pPed = CWorld::Players[ScriptParams[0]].m_pPed;
-		UpdateCompareFlag(pPed->bInVehicle);
+		UpdatePlayerHelpTrigger(pPed->bInVehicle);
 		return 0;
 	}
 	case COMMAND_IS_BUTTON_PRESSED:
@@ -2602,7 +2632,7 @@ int8 CRunningScript::ProcessCommands200To299(int32 command)
 				CPad::GetPad(0)->GetCharJustDown(' '))
 				value = true;
 		}
-		UpdateCompareFlag(value);
+		UpdatePlayerHelpTrigger(value);
 		return 0;
 	}
 	case COMMAND_GET_PAD_STATE:
@@ -2822,7 +2852,7 @@ int8 CRunningScript::ProcessCommands200To299(int32 command)
 	}
 	case COMMAND_IS_PLAYER_PRESSING_HORN:
 		CollectParameters(&m_nIp, 1);
-		UpdateCompareFlag(CWorld::Players[ScriptParams[0]].m_pPed->GetPedState() == PED_DRIVING &&
+		UpdatePlayerHelpTrigger(CWorld::Players[ScriptParams[0]].m_pPed->GetPedState() == PED_DRIVING &&
 			CPad::GetPad(ScriptParams[0])->GetHorn());
 		/* Is it correct that same parameter is used both as index of Players */
 		/* and as ID of pad? Pratically this parameter is always 0 anyway of course. */
