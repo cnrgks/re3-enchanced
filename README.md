@@ -24,9 +24,9 @@ re3 Enhanced is a GTA III fork of [Hezkore's re3](https://github.com/Hezkore/hez
 
 ## Installation
 
-1. Start with an existing GTA III installation and download [re3 Enhanced v1.27](https://github.com/cnrgks/hez-gta-re3/releases/tag/v1.27).
-2. Back up your saves, settings and any existing re3 installation. Copy the contents of the archive's `game/` folder into the GTA III directory.
-3. Run `re3.exe` and keep the matching `re3.pdb` beside it. The archive includes runtime libraries, the mod loaders and Turkish installation notes in `KURULUM.txt`.
+1. Start with an existing GTA III installation and download [re3 Enhanced v1.27 game ZIP](https://github.com/cnrgks/re3-enchanced/releases/download/v1.27/re3-enhanced-v1.27-game.zip).
+2. Back up your saves, settings and any existing re3 installation. Extract the ZIP directly into the GTA III directory.
+3. Run `re3.exe` and keep the matching `re3.pdb` beside it. The archive includes the runtime libraries and mod loaders.
 
 ## Modding
 
@@ -38,7 +38,7 @@ The [roadmap](ROADMAP.md) and [bug tracker](docs/BUGS.md) cover current work and
 
 When using premake, you may want to point GTA_III_RE_DIR environment variable to GTA3 root folder if you want the executable to be moved there via post-build script.
 
-Clone the repository with `git clone --recursive https://github.com/cnrgks/hez-gta-re3.git`. Then `cd hez-gta-re3` into the cloned repository.
+Clone the repository with `git clone --recursive https://github.com/cnrgks/re3-enchanced.git`. Then `cd re3-enchanced` into the cloned repository.
 
 <details><summary>Linux Premake</summary>
 
