@@ -24,7 +24,7 @@ re3 Enhanced is a GTA III fork of [Hezkore's re3](https://github.com/Hezkore/hez
 
 ## Installation
 
-1. Start with an existing GTA III installation and download [re3 Enhanced v1.27 compact ZIP](https://github.com/cnrgks/re3-enchanced/releases/download/v1.27/re3-enhanced-v1.27-compact.zip).
+1. Start with an existing GTA III installation and download [re3 Enhanced v1.27 ZIP](https://github.com/cnrgks/re3-enchanced/releases/download/v1.27/re3-enhanced-v1.27.zip).
 2. Back up your saves, settings and any existing re3 installation. Extract the ZIP directly into the GTA III directory.
 3. Run `re3.exe` and keep the matching `re3.pdb` beside it. The archive includes the runtime libraries and mod loaders.
 
