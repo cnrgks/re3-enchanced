@@ -6,8 +6,7 @@ The [README](README.md) lists features and installation steps. [v1.27](https://g
 
 The base package runs without ASI Loader or CLEO Redux. To add mods, get the
 x64 Ultimate ASI Loader and place its DLL beside `re3.exe` as `winmm.dll`.
-The v1.27 release has an optional `winmm.ini` configuration ZIP. Install the
-official CLEO Redux x64 portable package separately if a mod needs CLEO.
+Use the default loader settings. Install the official CLEO Redux x64 portable package separately if a mod needs CLEO.
 Keep the matching `re3.pdb` next to `re3.exe` for CLEO symbol lookup.
 
 Keep the `re3.exe` name when enabling CLEO Redux. Renaming the executable
