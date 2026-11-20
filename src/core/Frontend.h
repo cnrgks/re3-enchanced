@@ -440,7 +440,7 @@ enum eCheckHover
 
 enum
 {
-	NUM_MENUROWS = 18,
+	NUM_MENUROWS = 19,
 };
 
 enum eControlMethod

@@ -1811,7 +1811,20 @@ CMenuManager::Draw()
 
 				float itemY = MENU_Y(textLayer + nextItemY);
 				float itemX = MENU_X_LEFT_ALIGNED(textLayer + columnWidth);
+				const float scaleX = CFont::Details.scaleX;
+				const float scaleY = CFont::Details.scaleY;
+				const bool fitShadowLabel = rightText &&
+					strcmp(aScreens[m_nCurrScreen].m_aEntries[i].m_EntryName, "EN_DSH") == 0;
+				if (fitShadowLabel) {
+					const float rightX = MENU_X_RIGHT_ALIGNED(columnWidth - textLayer);
+					const float available = rightX - itemX - CFont::GetStringWidth(rightText, true) - MENU_X(8.0f);
+					const float width = CFont::GetStringWidth(leftText, true);
+					if (available > 0.0f && width > available)
+						CFont::SetScale(scaleX * available / width, scaleY);
+				}
 				CFont::PrintString(itemX, itemY, leftText);
+				if (fitShadowLabel)
+					CFont::SetScale(scaleX, scaleY);
 				if (rightText) {
 					if (!CFont::Details.centre)
 						CFont::SetRightJustifyOn();

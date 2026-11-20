@@ -51,7 +51,7 @@ int8 Borderless = 1;
 #else
 int8 Borderless = 0;
 #endif
-int8 ScreenFormat = 0, DistantCrowdedWorld = 0;
+int8 ScreenFormat = 0, DistantCrowdedWorld = 0, DistantVehiclePedShadows = 0;
 #ifdef _WIN32
 int8 BorderlessCaptureProbe = 1, FullscreenDXGIFlipY = 1;
 #else
@@ -132,6 +132,7 @@ wchar *GetText(const char *key)
         { "EN_BORD", "BORDERLESS FULLSCREEN" },
         { "EN_BRDL", "BORDERLESS" },
         { "EN_DCW", "DISTANT AND CROWDED WORLD" },
+        { "EN_DSH", "DISTANT VEHICLE AND PEDESTRIAN SHADOWS" },
         { "EN_SAFE", "To save, stand still on foot with no active mission and no wanted level." },
     };
     for (unsigned i = 0; i < ARRAY_SIZE(strings); ++i) {
@@ -184,8 +185,13 @@ static bool CanSelectRadio()
 
 static bool CanSelectWeapon(CPlayerPed *player)
 {
+    const auto weaponMode = TheCamera.PlayerWeaponMode.Mode;
+    const auto cameraMode = TheCamera.Cams[TheCamera.ActiveCam].Mode;
     return WeaponWheel && !player->bInVehicle && !CWorld::Players[CWorld::PlayerInFocus].m_bInRemoteMode &&
         player->IsPedInControl() && !CDarkel::FrenzyOnGoing() &&
+        weaponMode != CCam::MODE_SNIPER && weaponMode != CCam::MODE_SNIPER_RUNABOUT &&
+        cameraMode != CCam::MODE_SNIPER && cameraMode != CCam::MODE_SNIPER_RUNABOUT &&
+        !(player->m_nPedState == PED_SNIPER_MODE && player->GetWeapon()->m_eWeaponType == WEAPONTYPE_SNIPERRIFLE) &&
         player->m_nPedState != PED_ATTACK && player->m_nPedState != PED_FIGHT &&
         player->m_nPedState != PED_AIM_GUN;
 }
@@ -261,7 +267,7 @@ void ProcessSelectionWheel()
         wheelPointer = CVector2D(0.0f, 0.0f);
         if (pad->GetCharJustDown('R') && CanSelectRadio()) {
             selectionWheel = SelectionWheel::Radio;
-            wheelSelection = MusicManager.GetRadioInCar();
+            wheelSelection = MusicManager.GetRadioWheelStation();
         } else if (pad->GetTabJustDown() && CanSelectWeapon(player)) {
             selectionWheel = SelectionWheel::Weapon;
             wheelSelection = player->GetWeapon()->m_eWeaponType;

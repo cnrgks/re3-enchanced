@@ -6,7 +6,7 @@ class CColPoint;
 struct sRadarTrace;
 namespace Enhanced {
 extern int8 QuickSave, AutoSave, GPS, ScreenFormat;
-extern int8 DistantCrowdedWorld;
+extern int8 DistantCrowdedWorld, DistantVehiclePedShadows;
 extern int8 BorderlessCaptureProbe, FullscreenDXGIFlipY;
 extern bool TraceVehicleEntry;
 extern bool TraceTraffic;

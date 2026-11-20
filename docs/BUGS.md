@@ -1202,3 +1202,18 @@ seçim tıkı gelmedi ve açık istasyona geri dönünce ses anında yükseldi.
 sıfır olsa da seçim tıkı ve ses kısma süresi devam ediyor. Süre bitince
 aynı istasyon için kanal açma veya kapatma tıkı üretilmiyor. Kaynak
 değişikliği derleme ve oyun içi doğrulama bekliyor.
+
+Geçiş sırasında R yeniden açıldığında çark artık bekleyen istasyonu
+veya Radio Off hedefini seçili gösteriyor. Aynı hedefle bırakmak bekleme
+süresini baştan başlatmıyor. Başka bir seçim bekleyen hedefin yerini
+alıyor. Kaynakta düzeltildi. Derleme ve oyun içi doğrulama bekliyor.
+
+### Dürbün açıkken silah çarkı
+
+Sniper dürbünü açıkken Tab silah çarkını açabiliyordu. Çark artık
+sniper kamera modu etkinken veya devreye girerken açılmıyor. Dürbünden
+çıkınca Tab tekrar kullanılabiliyor. Derleme ve oyun içi doğrulama bekliyor.
+
+Sniper ateş ve kurma sırasında dürbün kontrol durumunda kalır. Silah
+çarkı bu durumu da kontrol ediyor. Dürbünde varsayılan olarak scroll
+yukarı yakınlaştırıyor, aşağı uzaklaştırıyor. Mevcut zoom tuşları korunuyor.

@@ -62,6 +62,7 @@ public:
 	void PlayPreloadedCutSceneMusic(void);
 	void StopCutSceneMusic(void);
 	uint8 GetRadioInCar(void);
+	uint8 GetRadioWheelStation();
 	void SetRadioInCar(uint32);
 	void SelectCarStation(uint8 station);
 	void SetRadioChannelByScript(uint8, int32);

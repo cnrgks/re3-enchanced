@@ -119,6 +119,7 @@ void RestoreDefGraphics(int8 action) {
 		return;
 
 	Enhanced::DistantCrowdedWorld = 0;
+	Enhanced::DistantVehiclePedShadows = 0;
 
 	#ifdef PS2_ALPHA_TEST
 		gPS2alphaTest = false;
@@ -484,6 +485,7 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
 		MENUACTION_CFO_SELECT, "EN_BORD", { new CCFOSelect(&Enhanced::Borderless, "Enhanced", "Borderless", off_on, 2, true, Enhanced::WindowModeChanged, true) },
 #endif
 		MENUACTION_CFO_SELECT, "EN_DCW", { new CCFOSelect(&Enhanced::DistantCrowdedWorld, "Graphics", "DistantCrowdedWorld", off_on, 2, false) },
+		MENUACTION_CFO_SELECT, "EN_DSH", { new CCFOSelect(&Enhanced::DistantVehiclePedShadows, "Graphics", "DistantVehiclePedShadows", off_on, 2, false) },
 		MULTISAMPLING_SELECTOR
 		ISLAND_LOADING_SELECTOR
 		DUALPASS_SELECTOR
@@ -929,6 +931,7 @@ CMenuScreenCustom aScreens[MENUPAGES] = {
 		MENUACTION_CFO_SELECT, "EN_BORD", { new CCFOSelect(&Enhanced::Borderless, "Enhanced", "Borderless", off_on, 2, true, Enhanced::WindowModeChanged, true) },
 #endif
 		MENUACTION_CFO_SELECT, "EN_DCW", { new CCFOSelect(&Enhanced::DistantCrowdedWorld, "Graphics", "DistantCrowdedWorld", off_on, 2, false) },
+		MENUACTION_CFO_SELECT, "EN_DSH", { new CCFOSelect(&Enhanced::DistantVehiclePedShadows, "Graphics", "DistantVehiclePedShadows", off_on, 2, false) },
 		MENUACTION_FRAMESYNC,	"FEM_VSC", { nil, SAVESLOT_NONE, MENUPAGE_DISPLAY_SETTINGS },
 		MENUACTION_CFO_SELECT,	"FEM_FRM", { new CCFOSelect((int8*)&CMenuManager::m_PrefsFrameLimiter, "Graphics", "FrameLimiter", frameLimitTexts, numFrameLimits, false) },
 		MENUACTION_CFO_SELECT,	"FEM_SMA", { new CCFOSelect(&CMenuManager::m_PrefsSmoothAnims, "Graphics", "SmoothAnimations", off_on, 2, false) },

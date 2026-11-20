@@ -1,4 +1,4 @@
-RE3 ENHANCED v1.29 - OPENGL x64
+RE3 ENHANCED v1.30 - OPENGL x64
 
 KURULUM
 Oyunu kapat ve mevcut re3.exe/re3.pdb ciftini yedekle. Paketin game
@@ -6,6 +6,14 @@ klasorunun icerigini GTA III kurulumuna kopyala. Oyun verileri dahil
 degildir. Mevcut ini ve kayitlari koru. Gerekli runtime kutuphaneleri
 pakete dahildir. ASI Loader ve CLEO Redux istege baglidir. Resmi indirme
 baglantilari ve kurulum adimlari ENHANCED.md icinde.
+
+v1.30 DENEMELERI
+Durbun acikken scroll yukari yakinlastirir, asagi uzaklastirir.
+Ates ve kurma sirasinda Tab silah carkini acmamali.
+Radyo gecisinde R carki bekleyen istasyonu veya Radio Off hedefini
+secmeli. Secim degismezse gecis suresi bastan baslamamali.
+Graphics altinda Distant and Crowded World ve Distant Vehicle and
+Pedestrian Shadows acikken uzak arac ve yaya golgelerini kontrol et.
 
 v1.29 RADYO CARKI
 Radyo kapaliyken R ile bir istasyon sec ve acilmadan Radio Off sec.

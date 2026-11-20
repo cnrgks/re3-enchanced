@@ -1,6 +1,7 @@
 #pragma once
 
 #define MAX_STOREDSHADOWS    48
+constexpr int MAX_EXTENDED_STORED_SHADOWS = MAX_STOREDSHADOWS + NUMVEHICLES + NUMPEDS;
 #define MAX_POLYBUNCHES      300
 #define MAX_STATICSHADOWS    64
 #define MAX_PERMAMENTSHADOWS 48
@@ -129,7 +130,7 @@ class CShadows
 {
 public:
 	static int16            ShadowsStoredToBeRendered;
-	static CStoredShadow    asShadowsStored  [MAX_STOREDSHADOWS];
+	static CStoredShadow    asShadowsStored  [MAX_EXTENDED_STORED_SHADOWS];
 	static CPolyBunch       aPolyBunches     [MAX_POLYBUNCHES];
 	static CStaticShadow    aStaticShadows   [MAX_STATICSHADOWS];
 	static CPolyBunch      *pEmptyBunchList;

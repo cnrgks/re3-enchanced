@@ -32,6 +32,12 @@ static void QueueRadioRetune(int32 steps)
 	AudioManager.PlayOneShot(AudioManager.m_nFrontEndEntity, SOUND_FRONTEND_RADIO_CHANGE, 1.0f);
 }
 
+static int GetRadioRetuneIndex(int currentIndex, int stationCount, int32 steps)
+{
+	const int cycleSize = stationCount + 1;
+	return (currentIndex + steps % cycleSize + cycleSize) % cycleSize;
+}
+
 cMusicManager::cMusicManager()
 {
 	m_bIsInitialised = FALSE;
@@ -379,6 +385,19 @@ cMusicManager::GetRadioInCar(void)
 	return m_nRadioInCar;
 }
 
+uint8
+cMusicManager::GetRadioWheelStation()
+{
+	const uint8 current = GetCarTuning();
+	if (gRetuneCounter == 0)
+		return current;
+
+	const int stationCount = SampleManager.IsMP3RadioChannelAvailable() ? USERTRACK + 1 : USERTRACK;
+	const int currentIndex = current < stationCount ? current : stationCount;
+	const int pendingIndex = GetRadioRetuneIndex(currentIndex, stationCount, gNumRetunePresses);
+	return pendingIndex == stationCount ? uint8(RADIO_OFF) : uint8(pendingIndex);
+}
+
 void
 cMusicManager::SetRadioInCar(uint32 station)
 {
@@ -413,12 +432,15 @@ cMusicManager::SelectCarStation(uint8 station)
 	const int stationCount = SampleManager.IsMP3RadioChannelAvailable() ? USERTRACK + 1 : USERTRACK;
 	const int currentIndex = current < stationCount ? current : stationCount;
 	const int targetIndex = station == RADIO_OFF ? stationCount : station;
-	const int cycleSize = stationCount + 1;
-	const int steps = (targetIndex - currentIndex + cycleSize) % cycleSize;
+	const int pendingIndex = GetRadioRetuneIndex(currentIndex, stationCount,
+	                                             gRetuneCounter != 0 ? gNumRetunePresses : 0);
+	if (targetIndex == pendingIndex)
+		return;
+
+	const int steps = GetRadioRetuneIndex(0, stationCount, targetIndex - currentIndex);
 	// Replace pending steps through the same queue as scrolling. A net-zero
 	// retune still plays the selection click and keeps the normal audio timing.
-	if (steps != 0 || gRetuneCounter != 0)
-		QueueRadioRetune(steps - gNumRetunePresses);
+	QueueRadioRetune(steps - gNumRetunePresses);
 }
 
 void

@@ -2807,6 +2807,24 @@ CCam::Process_1stPerson(const CVector &CameraTarget, float TargetOrientation, fl
 
 static CVector vecHeadCamOffset(0.06f, 0.05f, 0.0f);
 
+static int SniperWheelZoom(CPad *pad)
+{
+	if (pad->ArePlayerControlsDisabled() || pad->GetMouseWheelUp() == pad->GetMouseWheelDown())
+		return 0;
+
+	const int wheel = pad->GetMouseWheelUp() ? rsMOUSEWHEELUPBUTTON : rsMOUSEWHEELDOWNBUTTON;
+	const int zoomIn = ControlsManager.GetMouseButtonAssociatedWithAction(PED_SNIPER_ZOOM_IN);
+	const int zoomOut = ControlsManager.GetMouseButtonAssociatedWithAction(PED_SNIPER_ZOOM_OUT);
+	if (wheel == zoomIn)
+		return -1;
+	if (wheel == zoomOut)
+		return 1;
+	if (zoomIn == rsMOUSEWHEELUPBUTTON || zoomIn == rsMOUSEWHEELDOWNBUTTON ||
+	    zoomOut == rsMOUSEWHEELUPBUTTON || zoomOut == rsMOUSEWHEELDOWNBUTTON)
+		return 0;
+	return wheel == rsMOUSEWHEELUPBUTTON ? -1 : 1;
+}
+
 void
 CCam::Process_1rstPersonPedOnPC(const CVector&, float TargetOrientation, float, float)
 {
@@ -2921,8 +2939,10 @@ CCam::Process_1rstPersonPedOnPC(const CVector&, float TargetOrientation, float, 
 		TheCamera.pTargetEntity->GetMatrix().UpdateRW();
 
 		if(Mode == MODE_SNIPER_RUNABOUT){
-			// no mouse wheel FOV buffering here like in normal sniper mode
-			if(CPad::GetPad(0)->SniperZoomIn() || CPad::GetPad(0)->SniperZoomOut()){
+			const int wheelZoom = SniperWheelZoom(CPad::GetPad(0));
+			if(wheelZoom != 0)
+				FOV += 10.0f * wheelZoom;
+			else if(CPad::GetPad(0)->SniperZoomIn() || CPad::GetPad(0)->SniperZoomOut()){
 				if(CPad::GetPad(0)->SniperZoomOut())
 					FOV *= (255.0f*CTimer::GetTimeStep() + 10000.0f) / 10000.0f;
 				else
@@ -3005,22 +3025,10 @@ CCam::Process_Sniper(const CVector &CameraTarget, float TargetOrientation, float
 	TargetCoors.y = 3.0f * Cos(Alpha) * Sin(Beta) + Source.y;
 	TargetCoors.z = 3.0f * Sin(Alpha) + Source.z;
 
-	UseMouse = false;
-	int ZoomInButton = ControlsManager.GetMouseButtonAssociatedWithAction(PED_SNIPER_ZOOM_IN);
-	int ZoomOutButton = ControlsManager.GetMouseButtonAssociatedWithAction(PED_SNIPER_ZOOM_OUT);
-	if(ZoomInButton == rsMOUSEWHEELUPBUTTON || ZoomInButton == rsMOUSEWHEELDOWNBUTTON || ZoomOutButton == rsMOUSEWHEELUPBUTTON || ZoomOutButton == rsMOUSEWHEELDOWNBUTTON){
-		if(CPad::GetPad(0)->GetMouseWheelUp() || CPad::GetPad(0)->GetMouseWheelDown()){
-			if(CPad::GetPad(0)->SniperZoomIn()){
-				TargetFOV = FOV - 10.0f;
-				UseMouse = true;
-			}
-			if(CPad::GetPad(0)->SniperZoomOut()){
-				TargetFOV = FOV + 10.0f;
-				UseMouse = true;
-			}
-		}
-	}
-	if((CPad::GetPad(0)->SniperZoomIn() || CPad::GetPad(0)->SniperZoomOut()) && !UseMouse){
+	const int wheelZoom = SniperWheelZoom(CPad::GetPad(0));
+	if(wheelZoom != 0)
+		TargetFOV = Clamp(TargetFOV + 10.0f * wheelZoom, 15.0f, DefaultFOV);
+	if(wheelZoom == 0 && (CPad::GetPad(0)->SniperZoomIn() || CPad::GetPad(0)->SniperZoomOut())){
 		if(CPad::GetPad(0)->SniperZoomOut()){
 			FOV *= (255.0f*CTimer::GetTimeStep() + 10000.0f) / 10000.0f;
 			TargetFOV = FOV;

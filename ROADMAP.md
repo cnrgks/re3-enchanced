@@ -5,6 +5,14 @@ geri bildirimlerine ait değişiklikleri kullanıcı v1.27 ile oyun içinde onay
 
 ## Paketteki özellikler ve kalan doğrulamalar
 
+### Uzak araç ve yaya gölgeleri
+
+Graphics menüsünde **Distant Vehicle and Pedestrian Shadows**, **Distant
+and Crowded World** seçeneğinin altında ve varsayılan olarak kapalı.
+İkisi de açıkken araç ve yaya gölgeleri mevcut görünürlük sınırlarına kadar
+çizilir. Menüde yerleşim, gölge mesafesi ve yoğun trafikte performans için
+derleme ve oyun içi doğrulama bekliyor.
+
 ### RM-01 — Liberty City Trainer
 
 Mevcut trainer komutları ve ayarları **F8** ile açılan tek liste panelinde.

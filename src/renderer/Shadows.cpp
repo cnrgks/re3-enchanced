@@ -19,6 +19,8 @@
 #include "PointLights.h"
 #include "SpecialFX.h"
 #include "Shadows.h"
+#include "Enhanced.h"
+#include "VisibilityPlugins.h"
 
 #ifdef DEBUGMENU
 //SETTWEAKPATH("Shadows");
@@ -44,7 +46,13 @@ RwTexture *gpPostShadowTex;
 RwTexture *gpGoalTex;
 
 int16            CShadows::ShadowsStoredToBeRendered;
-CStoredShadow    CShadows::asShadowsStored  [MAX_STOREDSHADOWS];
+CStoredShadow    CShadows::asShadowsStored  [MAX_EXTENDED_STORED_SHADOWS];
+
+static bool UseDistantTrafficShadows()
+{
+	return Enhanced::DistantCrowdedWorld && Enhanced::DistantVehiclePedShadows &&
+	       !CCutsceneMgr::IsRunning();
+}
 CPolyBunch       CShadows::aPolyBunches     [MAX_POLYBUNCHES];
 CStaticShadow    CShadows::aStaticShadows   [MAX_STATICSHADOWS];
 CPolyBunch      *CShadows::pEmptyBunchList;
@@ -429,7 +437,8 @@ CShadows::StoreShadowToBeRendered(uint8 ShadowType, RwTexture *pTexture, CVector
 	ASSERT(pTexture != NULL);
 	ASSERT(pPosn != NULL);
 
-	if ( ShadowsStoredToBeRendered < MAX_STOREDSHADOWS )
+	const int limit = UseDistantTrafficShadows() ? MAX_EXTENDED_STORED_SHADOWS : MAX_STOREDSHADOWS;
+	if ( ShadowsStoredToBeRendered < limit )
 	{
 		asShadowsStored[ShadowsStoredToBeRendered].m_ShadowType          = ShadowType;
 		asShadowsStored[ShadowsStoredToBeRendered].m_pTexture            = pTexture;
@@ -458,12 +467,14 @@ CShadows::StoreShadowForCar(CAutomobile *pCar)
 	if ( CTimeCycle::GetShadowStrength() != 0 )
 	{
 		CVector CarPos = pCar->GetPosition();
-		float fDistToCamSqr = (CarPos - TheCamera.GetPosition()).MagnitudeSqr2D();
+		const bool distant = UseDistantTrafficShadows();
+		const CVector cameraOffset = CarPos - TheCamera.GetPosition();
+		float fDistToCamSqr = distant ? cameraOffset.MagnitudeSqr() : cameraOffset.MagnitudeSqr2D();
 
 		if ( CCutsceneMgr::IsRunning() )
 			fDistToCamSqr /= SQR(TheCamera.LODDistMultiplier) * 4.0f;
 
-		float fDrawDistance = 18.0f;
+		const float fDrawDistance = distant ? Sqrt(CVisibilityPlugins::ms_vehicleLod1Dist) : 18.0f;
 
 		if ( fDistToCamSqr < SQR(fDrawDistance) )
 		{
@@ -587,9 +598,10 @@ CShadows::StoreShadowForPedObject(CEntity *pPedObject, float fDisplacementX, flo
 
 	CVector PedPos = pPedObject->GetPosition();
 
-	float fDistToCamSqr = (PedPos - TheCamera.GetPosition()).MagnitudeSqr2D();
-
-	float fDrawDistance = 26.0f;
+	const bool distant = pPedObject->IsPed() && UseDistantTrafficShadows();
+	const CVector cameraOffset = PedPos - TheCamera.GetPosition();
+	const float fDistToCamSqr = distant ? cameraOffset.MagnitudeSqr() : cameraOffset.MagnitudeSqr2D();
+	const float fDrawDistance = distant ? 2.0f * Sqrt(CVisibilityPlugins::ms_pedLod1Dist) : 26.0f;
 
 	if ( fDistToCamSqr < SQR(fDrawDistance*0.5f)/*?*/ )
 	{
