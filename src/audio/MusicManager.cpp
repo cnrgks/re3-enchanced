@@ -415,14 +415,10 @@ cMusicManager::SelectCarStation(uint8 station)
 	const int targetIndex = station == RADIO_OFF ? stationCount : station;
 	const int cycleSize = stationCount + 1;
 	const int steps = (targetIndex - currentIndex + cycleSize) % cycleSize;
-	// The wheel replaces a pending retune even when it selects the current station.
-	gNumRetunePresses = 0;
-	if (steps == 0) {
-		gRetuneCounter = 0;
-		m_bSetNextStation = FALSE;
-		return;
-	}
-	QueueRadioRetune(steps);
+	// Replace pending steps through the same queue as scrolling. A net-zero
+	// retune still plays the selection click and keeps the normal audio timing.
+	if (steps != 0 || gRetuneCounter != 0)
+		QueueRadioRetune(steps - gNumRetunePresses);
 }
 
 void
@@ -617,21 +613,19 @@ cMusicManager::ServiceGameMode()
 			gNumRetunePresses = 0;
 			m_bSetNextStation = FALSE;
 		}
-		// Because when you switch radio back and forth, gNumRetunePresses will be 0 but gRetuneCounter won't.
+		// A net-zero retune still runs the timer, but has no station change to commit.
 #ifdef RADIO_SCROLL_TO_PREV_STATION
 		if (gRetuneCounter != 0) {
 			if (gRetuneCounter > 1) gRetuneCounter--;
 			else if (gRetuneCounter == 1) gRetuneCounter = -1;
 			else if (gRetuneCounter == -1) {
-				m_bSetNextStation = TRUE;
+				m_bSetNextStation = gNumRetunePresses != 0;
 				gRetuneCounter = 0;
 			}
 		}
 #else
-		if (gNumRetunePresses) {
-			if (gRetuneCounter != 0) gRetuneCounter--;
-			else m_bSetNextStation = TRUE;
-		}
+		if (gRetuneCounter != 0) gRetuneCounter--;
+		else if (gNumRetunePresses) m_bSetNextStation = TRUE;
 #endif
 		if (gRetuneCounter)
 			AudioManager.DoPoliceRadioCrackle();

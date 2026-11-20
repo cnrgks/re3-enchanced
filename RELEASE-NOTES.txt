@@ -1,4 +1,4 @@
-RE3 ENHANCED v1.28 - OPENGL x64
+RE3 ENHANCED v1.29 - OPENGL x64
 
 KURULUM
 Oyunu kapat ve mevcut re3.exe/re3.pdb ciftini yedekle. Paketin game
@@ -6,6 +6,12 @@ klasorunun icerigini GTA III kurulumuna kopyala. Oyun verileri dahil
 degildir. Mevcut ini ve kayitlari koru. Gerekli runtime kutuphaneleri
 pakete dahildir. ASI Loader ve CLEO Redux istege baglidir. Resmi indirme
 baglantilari ve kurulum adimlari ENHANCED.md icinde.
+
+v1.29 RADYO CARKI
+Radyo kapaliyken R ile bir istasyon sec ve acilmadan Radio Off sec.
+Secim tiki gelmeli ve istasyon acilmamali. Radyo acikken bekleyen
+gecisi iptal et ve sesin geri gelisini scroll ile karsilastir.
+Acik iki istasyon arasinda yalnizca secim tiki duyulmali.
 
 v1.28 RADYO CARKI
 Radyo kapaliyken R ile bir kanal sec. Kanal acilmadan R ile tekrar

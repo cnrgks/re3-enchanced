@@ -1195,3 +1195,10 @@ Radio Off seçilince önceki istek kuyruğundan açılıyordu. Çark artık
 araçtaki mevcut ayar seçildiğinde bekleyen geçişi iptal ediyor. Başka
 istasyona geçiş klasik zamanlayıcıyı ve geçiş sesini kullanıyor.
 v1.28 OpenGL x64 derlemesi ve CI birim kontrolleri geçti (Actions 44655370822). Oyun içi doğrulama bekliyor.
+
+v1.28 oyun içi geri bildiriminde bekleyen geçiş iptal oldu, ancak Radio Off
+seçim tıkı gelmedi ve açık istasyona geri dönünce ses anında yükseldi.
+Çark seçimi artık scroll ile aynı geçiş kuyruğunu kullanıyor. Net değişim
+sıfır olsa da seçim tıkı ve ses kısma süresi devam ediyor. Süre bitince
+aynı istasyon için kanal açma veya kapatma tıkı üretilmiyor. Kaynak
+değişikliği derleme ve oyun içi doğrulama bekliyor.
