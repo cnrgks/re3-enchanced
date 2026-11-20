@@ -1,6 +1,6 @@
 # re3 Enhanced — roadmap
 
-Güncelleme 20 Kasım 2026. Son paket **v1.26 OpenGL**. Son kullanıcı
+Güncelleme 20 Kasım 2026. Son paket **v1.27 OpenGL**. Son kullanıcı
 geri bildirimlerine ait değişiklikler derlendi. Oyun içi doğrulama bekliyor.
 
 ## Paketteki özellikler ve kalan doğrulamalar
@@ -68,7 +68,7 @@ Geçmiş kayıtlar [BUGS.md](docs/BUGS.md) içinde.
 - **SAV-09** · Autosave yalnızca Load Game ekranında, sekiz manuel slottan
   sonra ayrı bölümde yer almalı.
 
-Üç değişiklik kaynakta hazır. Derleme ve oyun içi doğrulama bekliyor.
+Üç değişiklik v1.27'de derlendi. Oyun içi doğrulama bekliyor.
 
 ## Sonraki paket öncesi
 
