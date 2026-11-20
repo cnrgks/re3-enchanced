@@ -1,7 +1,7 @@
 # re3 Enhanced — roadmap
 
 Güncelleme 20 Kasım 2026. Son paket **v1.27 OpenGL**. Son kullanıcı
-geri bildirimlerine ait değişiklikler derlendi. Oyun içi doğrulama bekliyor.
+geri bildirimlerine ait değişiklikleri kullanıcı v1.27 ile oyun içinde onayladı.
 
 ## Paketteki özellikler ve kalan doğrulamalar
 
@@ -55,7 +55,7 @@ normal oyun akışını izler. Windows dışı OpenGL açılışında video oyna
 Doğrulama: temiz INI ile açılış, ON/OFF seçiminin yeniden açılışta
 uygulanması, video bulunamaması ve farklı ekran biçimlerinde açılış.
 
-## Açık autosave işleri
+## v1.27 ile doğrulanan kayıt değişiklikleri
 
 Kullanıcı önceki hata kuyruğunu diğer sohbetlerde tamamladığını bildirdi.
 Geçmiş kayıtlar [BUGS.md](docs/BUGS.md) içinde.
@@ -68,7 +68,7 @@ Geçmiş kayıtlar [BUGS.md](docs/BUGS.md) içinde.
 - **SAV-09** · Autosave yalnızca Load Game ekranında, sekiz manuel slottan
   sonra ayrı bölümde yer almalı.
 
-Üç değişiklik v1.27'de derlendi. Oyun içi doğrulama bekliyor.
+Kullanıcı v1.27 ile bu kayıt davranışlarının beklentisine uyduğunu bildirdi.
 
 ## Sonraki paket öncesi
 

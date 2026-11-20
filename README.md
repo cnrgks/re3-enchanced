@@ -1,108 +1,44 @@
-<img src="https://github.com/hezkore/hez-gta-re3/blob/master/res/images/logo_1024.png?raw=true" alt="re3 logo" width="200">
+<img src="res/images/logo_1024.png" alt="re3 logo" width="200">
 
 ## Intro
 
-The original re3 is no longer up, its repository was taken down and GitHub answers with a legal notice now.\
-This is my fork of the last version of it I had, with my own fixes on top.
+re3 Enhanced is a GTA III fork of [Hezkore's re3](https://github.com/Hezkore/hez-gta-re3), itself based on the original re3 project. This fork adds gameplay and quality-of-life options. The current release is **v1.27 for Windows x64 with OpenGL**.
 
-In here you'll find the fully reversed source code for GTA III ([master](https://github.com/hezkore/hez-gta-re3/tree/master/) branch) and GTA VC ([miami](https://github.com/hezkore/hez-gta-re3/tree/miami/) branch).
+## Hezkore's changes
 
-It builds and runs on Windows, Linux, MacOS and FreeBSD, on x86, amd64, arm and arm64.\
-Rendering is handled either by original RenderWare (D3D8)
-or the reimplementation [librw](https://github.com/aap/librw) (D3D9, OpenGL 2.1 or above, OpenGL ES 2.0 or above).\
-Audio is done with MSS (using dlls from original GTA) or OpenAL.
+* The game updates at 30 FPS and interpolates rendered frames. Animation smoothing also covers cutscenes and can be turned off.
+* Motion blur is framerate independent and has Off, Faint and Strong settings. Limit FPS offers a list of framerates.
+* Menus draw at the full framerate and avoid flashing the previous page during transitions.
+* Mouse sensitivity has a finer range and uses consistent horizontal and vertical camera speeds.
+* Wayland startup and left-click firing are supported.
+* Visual defaults enable rim lights, lightmaps, road gloss, high map memory usage, maximum draw distance and VSync.
+* Ultrawide displays keep the HUD, subtitles and loading screens within 16:9. Extend HUD moves the HUD to the screen edges.
 
-## My fixes
+## Enhanced changes
 
-* The game runs at 30 FPS internally, like on the PS2, but draws in between those frames, so it is as smooth as your monitor allows.
-* Animations are smoothed the same way, cutscenes included. SMOOTH ANIMATIONS turns it off.
-* Motion blur works the same at any framerate, with OFF, FAINT and STRONG.
-* LIMIT FPS is a list of framerates.
-* Menus run at the full framerate and no longer flash the old page while fading to a new one.
-* The camera turns as fast up and down as sideways, and the mouse is slower, so the sensitivity slider has a finer range.
-* The left mouse button fires on a Wayland desktop.
-* The defaults are the best the game can look: map memory usage high, rim lights, lightmaps and road gloss on, draw distance at max, VSync on, no FPS limit.
-* On screens wider than 16:9 the HUD, subtitles and loading screens stay in a 16:9 box, and cutscenes are not zoomed in. EXTEND HUD under Display puts the HUD at the screen edges.
-* The game starts on a Wayland desktop instead of quitting with `GLFW Error: X11: Platform not initialized`.
+* **Saving.** F5 opens the manual save menu during safe free roam and saves your current location. Optional Mission Autosave uses the current island's safehouse exit and the original exit orientation. Its separate slot appears below the eight manual slots in Load Game. Loading an autosave or a new F5 save skips stale script help from the saved session while allowing new gameplay prompts.
+* **Map and GPS.** Press M to open the map. Manual waypoints show a route, with optional routing to mission objectives. Shop discovery is remembered in the save and radar icons scale with zoom.
+* **Weapon and radio wheels.** Enable these in Gameplay Setup. Hold Tab on foot or R in a vehicle, then release to select. Scrolling in a vehicle retains the classic radio display and station cycling. The radio wheel uses the game's station icons and normal retune delay and sounds.
+* **Trainer.** F8 opens a keyboard-driven menu for vehicle spawning and other tools while the game continues.
+* **Gameplay and graphics.** Optional intro skipping and expanded traffic and pedestrian draw distance and density. Screen Format offers Fullscreen, Windowed and Borderless. The Windows OpenGL path includes capture compatibility changes and a fix for losing input when switching away during loading.
 
 ## Installation
 
-- You **must** own the games. re3 needs [a copy of GTA III](https://store.steampowered.com/app/12100/Grand_Theft_Auto_III/), reVC needs [a copy of GTA Vice City](https://store.steampowered.com/app/12110/Grand_Theft_Auto_Vice_City/).
-- Build it yourself, or grab the newest [nightly](https://github.com/hezkore/hez-gta-re3/releases). Each nightly has one zip per game:
-  - `re3-windows-amd64.zip` and `re3-linux-amd64.zip` for GTA III
-  - `reVC-windows-amd64.zip` and `reVC-linux-amd64.zip` for GTA Vice City
-- Extract the zip over the game directory and run the binary in it. The zip has the binary, updated and additional gamefiles and the dlls OpenAL needs.
-
-A nightly is built at midnight UTC, but only when a branch has moved since the last one. The ten newest are kept.
-
-## Screenshots
-
-![re3 2021-02-11 22-57-03-23](https://user-images.githubusercontent.com/1521437/107704085-fbdabd00-6cbc-11eb-8406-8951a80ccb16.png)
-![re3 2021-02-11 22-43-44-98](https://user-images.githubusercontent.com/1521437/107703339-cbdeea00-6cbb-11eb-8f0b-07daa105d470.png)
-![re3 2021-02-11 22-46-33-76](https://user-images.githubusercontent.com/1521437/107703343-cd101700-6cbb-11eb-9ccd-012cb90524b7.png)
-![re3 2021-02-11 22-50-29-54](https://user-images.githubusercontent.com/1521437/107703348-d00b0780-6cbb-11eb-8afd-054249c2b95e.png)
-
-## Improvements
-
-We have implemented a number of changes and improvements to the original game.
-They can be configured in `core/config.h`.
-Some of them can be toggled at runtime, some cannot.
-
-* Fixed a lot of smaller and bigger bugs
-* User files (saves and settings) stored in GTA root directory
-* Settings stored in re3.ini file instead of gta3.set
-* Debug menu to do and change various things (Ctrl-M to open)
-* Debug camera (Ctrl-B to toggle)
-* Rotatable camera
-* XInput controller support (Windows)
-* No loading screens between islands ("map memory usage" in menu)
-* Skinned ped support (models from Xbox or Mobile)
-* Rendering
-  * Widescreen support (properly scaled HUD, Menu and FOV)
-  * PS2 MatFX (vehicle reflections)
-  * PS2 alpha test (better rendering of transparency)
-  * PS2 particles
-  * Xbox vehicle rendering
-  * Xbox world lightmap rendering (needs Xbox map)
-  * Xbox ped rim light
-  * Xbox screen rain droplets
-  * More customizable colourfilter
-* Menu
-  * Map
-  * More options
-  * Controller configuration menu
-  * ...
-* Can load DFFs and TXDs from other platforms, possibly with a performance penalty
-* ...
-
-## To-Do
-
-The following things would be nice to have/do:
-
-* Improve performance on lower end devices, especially the OpenGL layer on the Raspberry Pi (if you have experience with this, please get in touch)
-* Compare code with PS2 code (tedious, no good decompiler)
-* PS2 port
-* Xbox port (not quite as important)
-* reverse remaining unused/debug functions
-* compare CodeWarrior build with original binary for more accurate code (very tedious)
+1. Start with an existing GTA III installation and download [re3 Enhanced v1.27](https://github.com/cnrgks/hez-gta-re3/releases/tag/v1.27).
+2. Back up your saves, settings and any existing re3 installation. Copy the contents of the archive's `game/` folder into the GTA III directory.
+3. Run `re3.exe` and keep the matching `re3.pdb` beside it. The archive includes runtime libraries, the mod loaders and Turkish installation notes in `KURULUM.txt`.
 
 ## Modding
 
-Asset modifications (models, texture, handling, script, ...) should work the same way as with original GTA for the most part.
+The Windows package includes x64 Ultimate ASI Loader and CLEO Redux. ASI plugins must target the re3 x64 executable and ABI. Classic x86 `gta3.exe` plugins require a port. CLEO compatibility depends on the script's target and opcodes. See [mod setup and display troubleshooting](ENHANCED.md).
 
-CLEO scripts work with [CLEO Redux](https://github.com/cleolibrary/CLEO-Redux).
-
-Mods that make changes to the code (dll/asi, limit adjusters) will *not* work.
-Some things these mods do are already implemented in re3 (much of SkyGFX, GInput, SilentPatch, Widescreen fix),
-others can easily be achieved (increasing limis, see `config.h`),
-others will simply have to be rewritten and integrated into the code directly.
-Sorry for the inconvenience.
+The [roadmap](ROADMAP.md) and [bug tracker](docs/BUGS.md) cover current work and gameplay verification.
 
 ## Building from Source  
 
 When using premake, you may want to point GTA_III_RE_DIR environment variable to GTA3 root folder if you want the executable to be moved there via post-build script.
 
-Clone the repository with `git clone --recursive https://github.com/hezkore/hez-gta-re3.git`. Then `cd hez-gta-re3` into the cloned repository.
+Clone the repository with `git clone --recursive https://github.com/cnrgks/hez-gta-re3.git`. Then `cd hez-gta-re3` into the cloned repository.
 
 <details><summary>Linux Premake</summary>
 
@@ -167,24 +103,8 @@ Microsoft recently discontinued its downloads of the DX9 SDK. You can download a
 If you feel the need, you can also use CodeWarrior 7 to compile re3 using the supplied codewarrior/re3.mcp project - this requires the original RW33 libraries, and the DX8 SDK. The build is unstable compared to the MSVC builds though, and is mostly meant to serve as a reference.
 
 ## Contributing
-As long as it's not linux/cross-platform skeleton/compatibility layer, all of the code on the repo that's not behind a preprocessor condition(like FIX_BUGS) are **completely** reversed code from original binaries.  
 
-We **don't** accept custom codes, as long as it's not wrapped via preprocessor conditions, or it's linux/cross-platform skeleton/compatibility layer.
-
-We accept only these kinds of PRs;
-
-- A new feature that exists in at least one of the GTAs (if it wasn't in III/VC then it doesn't have to be decompilation)  
-- Game, UI or UX bug fixes (if it's a fix to original code, it should be behind FIX_BUGS)
-- Platform-specific and/or unused code that's not been reversed yet
-- Makes reversed code more understandable/accurate, as in "which code would produce this assembly".
-- A new cross-platform skeleton/compatibility layer, or improvements to them
-- Translation fixes, for languages original game supported
-- Code that increase maintainability  
-
-We have a [Coding Style](CODING_STYLE.md) document that isn't followed or enforced very well.
-
-Do not use features from C++11 or later.
-
+See the [coding style](CODING_STYLE.md), [roadmap](ROADMAP.md) and [bug tracker](docs/BUGS.md). Report the release version, display mode and steps to reproduce when filing a bug.
 
 ## History
 

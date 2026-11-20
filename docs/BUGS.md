@@ -1182,9 +1182,8 @@ bildirdi. Yukarıdaki eski kayıtlar tarihçe olarak korunuyor.
   bulunuyor. Eski 8. slot dosyası olduğu yerde ve yüklenebilir durumda.
   [Mevcut Load Game yerleşimi](feedback/2026-11-20/load-game-eight-slots.png)
 
-Kaynak değişiklikleri derleme ve oyun içi doğrulamayı bekliyor.
-
 ### v1.27 OpenGL derleme sonucu
 
 Kaynak df6563a5, GitHub Actions run 44645465226. OpenGL x64 derlemesi
-ve üç CI birim kontrolü geçti. SAV-07/08/09 için oyun içi doğrulama bekliyor.
+ve üç CI birim kontrolü geçti. Kullanıcı, v1.27 ile SAV-07/08/09
+kapsamındaki kayıt davranışlarının beklentisine uyduğunu bildirdi.
