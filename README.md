@@ -26,11 +26,11 @@ re3 Enhanced is a GTA III fork of [Hezkore's re3](https://github.com/Hezkore/hez
 
 1. Start with an existing GTA III installation and download [re3 Enhanced v1.27 ZIP](https://github.com/cnrgks/re3-enchanced/releases/download/v1.27/re3-enhanced-v1.27.zip).
 2. Back up your saves, settings and any existing re3 installation. Extract the ZIP directly into the GTA III directory.
-3. Run `re3.exe` and keep the matching `re3.pdb` beside it. The archive includes the runtime libraries and mod loaders.
+3. Run `re3.exe` and keep the matching `re3.pdb` beside it. The archive includes the runtime libraries.
 
 ## Modding
 
-The Windows package includes x64 Ultimate ASI Loader and CLEO Redux. ASI plugins must target the re3 x64 executable and ABI. Classic x86 `gta3.exe` plugins require a port. CLEO compatibility depends on the script's target and opcodes. See [mod setup and display troubleshooting](ENHANCED.md).
+Ultimate ASI Loader and CLEO Redux are optional. The base ZIP contains the game build and its runtime libraries. ASI plugins must target the re3 x64 executable and ABI. Classic x86 `gta3.exe` plugins require a port. CLEO compatibility depends on the script's target and opcodes. See [mod setup and display troubleshooting](ENHANCED.md).
 
 The [roadmap](ROADMAP.md) and [bug tracker](docs/BUGS.md) cover current work and gameplay verification.
 

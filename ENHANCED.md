@@ -4,11 +4,20 @@ The [README](README.md) lists features and installation steps. [v1.27](https://g
 
 ## Mod support
 
-The OpenGL x64 package ships Ultimate ASI Loader 10.0.3 as `winmm.dll`
-with its configuration, and CLEO Redux 1.5.1 as `cleo_redux64.asi` with
-seven x64 CLEO plugins. Keep the matching `re3.pdb` next to `re3.exe` so
-CLEO Redux can find re3 symbols. Put compatible ASIs in `scripts/` or
-`plugins/`, JS/TS in `CLEO/` and FXT in `CLEO/CLEO_TEXT/`.
+The base package runs without ASI Loader or CLEO Redux. To add mods, get the
+x64 Ultimate ASI Loader and place its DLL beside `re3.exe` as `winmm.dll`.
+The v1.27 release has an optional `winmm.ini` configuration ZIP. Install the
+official CLEO Redux x64 portable package separately if a mod needs CLEO.
+Keep the matching `re3.pdb` next to `re3.exe` for CLEO symbol lookup.
+
+Keep the `re3.exe` name when enabling CLEO Redux. Renaming the executable
+to `gta3.exe` can select the classic GTA III host and cause an early crash
+in `Events64.cleo`. If you use `gta3.exe` for the Steam entry, keep CLEO
+disabled. Overwriting an existing installation with the base ZIP leaves
+previously installed mod loaders in place.
+
+Put compatible ASIs in `scripts/` or `plugins/`, JS/TS in `CLEO/` and FXT
+in `CLEO/CLEO_TEXT/`.
 
 ASI plugins must target x64 and the re3 executable and ABI. Old GTA III
 x86 ASIs and plugins using fixed `gta3.exe` addresses require porting.
