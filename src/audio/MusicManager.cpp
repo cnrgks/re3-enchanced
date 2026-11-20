@@ -403,7 +403,7 @@ cMusicManager::SelectCarStation(uint8 station)
 	    m_bAnnouncementInProgress || !PlayerInCar())
 		return;
 	CVehicle *vehicle = FindPlayerVehicle();
-	if (!vehicle || UsesPoliceRadio(vehicle) || vehicle->m_nRadioStation == station)
+	if (!vehicle || UsesPoliceRadio(vehicle))
 		return;
 	if ((station > USERTRACK && station != RADIO_OFF) ||
 	    (station == USERTRACK && !SampleManager.IsMP3RadioChannelAvailable()))
@@ -415,11 +415,14 @@ cMusicManager::SelectCarStation(uint8 station)
 	const int targetIndex = station == RADIO_OFF ? stationCount : station;
 	const int cycleSize = stationCount + 1;
 	const int steps = (targetIndex - currentIndex + cycleSize) % cycleSize;
-	if (steps != 0) {
-		// Replace any pending scroll steps with the station chosen on the wheel.
-		gNumRetunePresses = 0;
-		QueueRadioRetune(steps);
+	// The wheel replaces a pending retune even when it selects the current station.
+	gNumRetunePresses = 0;
+	if (steps == 0) {
+		gRetuneCounter = 0;
+		m_bSetNextStation = FALSE;
+		return;
 	}
+	QueueRadioRetune(steps);
 }
 
 void

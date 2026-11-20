@@ -1187,3 +1187,11 @@ bildirdi. Yukarıdaki eski kayıtlar tarihçe olarak korunuyor.
 Kaynak df6563a5, GitHub Actions run 44645465226. OpenGL x64 derlemesi
 ve üç CI birim kontrolü geçti. Kullanıcı, v1.27 ile SAV-07/08/09
 kapsamındaki kayıt davranışlarının beklentisine uyduğunu bildirdi.
+
+### Radyo çarkında bekleyen istasyonu iptal etme
+
+Radyo kapalıyken çarktan bir istasyon seçip açılış beklemesi içinde
+Radio Off seçilince önceki istek kuyruğundan açılıyordu. Çark artık
+araçtaki mevcut ayar seçildiğinde bekleyen geçişi iptal ediyor. Başka
+istasyona geçiş klasik zamanlayıcıyı ve geçiş sesini kullanıyor.
+Kaynakta düzeltildi. Derleme ve oyun içi doğrulama bekliyor.
