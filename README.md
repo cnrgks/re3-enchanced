@@ -34,6 +34,8 @@ The Windows package includes x64 Ultimate ASI Loader and CLEO Redux. ASI plugins
 
 The [roadmap](ROADMAP.md) and [bug tracker](docs/BUGS.md) cover current work and gameplay verification.
 
+See [workspace recovery](docs/WORKSPACE-RECOVERY.md) for the maintained GitHub Actions and packaging setup.
+
 ## Building from Source  
 
 When using premake, you may want to point GTA_III_RE_DIR environment variable to GTA3 root folder if you want the executable to be moved there via post-build script.
