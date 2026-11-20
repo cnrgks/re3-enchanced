@@ -2825,6 +2825,26 @@ static int SniperWheelZoom(CPad *pad)
 	return wheel == rsMOUSEWHEELUPBUTTON ? -1 : 1;
 }
 
+static void UpdateSniperZoom(CPad *pad, float &fov, float &targetFov)
+{
+	const float rate = (255.0f * CTimer::GetTimeStep() + 10000.0f) / 10000.0f;
+	const int wheelZoom = SniperWheelZoom(pad);
+	if (wheelZoom != 0) {
+		// Each notch queues roughly three normal zoom ticks.
+		const float step = 1.0255f * 1.0255f * 1.0255f;
+		targetFov = Clamp(wheelZoom < 0 ? targetFov / step : targetFov * step, 15.0f, DefaultFOV);
+	} else if (pad->SniperZoomOut() || pad->SniperZoomIn()) {
+		fov = Clamp(pad->SniperZoomOut() ? fov * rate : fov / rate, 15.0f, DefaultFOV);
+		targetFov = fov;
+		return;
+	}
+
+	if (fov < targetFov)
+		fov = Min(fov * rate, targetFov);
+	else if (fov > targetFov)
+		fov = Max(fov / rate, targetFov);
+}
+
 void
 CCam::Process_1rstPersonPedOnPC(const CVector&, float TargetOrientation, float, float)
 {
@@ -2939,15 +2959,10 @@ CCam::Process_1rstPersonPedOnPC(const CVector&, float TargetOrientation, float, 
 		TheCamera.pTargetEntity->GetMatrix().UpdateRW();
 
 		if(Mode == MODE_SNIPER_RUNABOUT){
-			const int wheelZoom = SniperWheelZoom(CPad::GetPad(0));
-			if(wheelZoom != 0)
-				FOV += 10.0f * wheelZoom;
-			else if(CPad::GetPad(0)->SniperZoomIn() || CPad::GetPad(0)->SniperZoomOut()){
-				if(CPad::GetPad(0)->SniperZoomOut())
-					FOV *= (255.0f*CTimer::GetTimeStep() + 10000.0f) / 10000.0f;
-				else
-					FOV /= (255.0f*CTimer::GetTimeStep() + 10000.0f) / 10000.0f;
-			}
+			static float targetFov = DefaultFOV;
+			if(ResetStatics)
+				targetFov = FOV;
+			UpdateSniperZoom(CPad::GetPad(0), FOV, targetFov);
 
 			TheCamera.SetMotionBlur(180, 255, 180, 120, MOTION_BLUR_SNIPER);
 
@@ -3025,25 +3040,7 @@ CCam::Process_Sniper(const CVector &CameraTarget, float TargetOrientation, float
 	TargetCoors.y = 3.0f * Cos(Alpha) * Sin(Beta) + Source.y;
 	TargetCoors.z = 3.0f * Sin(Alpha) + Source.z;
 
-	const int wheelZoom = SniperWheelZoom(CPad::GetPad(0));
-	if(wheelZoom != 0)
-		TargetFOV = Clamp(TargetFOV + 10.0f * wheelZoom, 15.0f, DefaultFOV);
-	if(wheelZoom == 0 && (CPad::GetPad(0)->SniperZoomIn() || CPad::GetPad(0)->SniperZoomOut())){
-		if(CPad::GetPad(0)->SniperZoomOut()){
-			FOV *= (255.0f*CTimer::GetTimeStep() + 10000.0f) / 10000.0f;
-			TargetFOV = FOV;
-			FOVSpeed = 0.0f;
-		}else{
-			FOV /= (255.0f*CTimer::GetTimeStep() + 10000.0f) / 10000.0f;
-			TargetFOV = FOV;
-			FOVSpeed = 0.0f;
-		}
-	}else{
-		if(Abs(TargetFOV - FOV) > 0.5f)
-			WellBufferMe(TargetFOV, &FOV, &FOVSpeed, 0.5f, 0.25f, false);
-		else
-			FOVSpeed = 0.0f;
-	}
+	UpdateSniperZoom(CPad::GetPad(0), FOV, TargetFOV);
 
 	TheCamera.SetMotionBlur(180, 255, 180, 120, MOTION_BLUR_SNIPER);
 

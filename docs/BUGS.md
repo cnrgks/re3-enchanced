@@ -1217,3 +1217,7 @@ sniper kamera modu etkinken veya devreye girerken açılmıyor. Dürbünden
 Sniper ateş ve kurma sırasında dürbün kontrol durumunda kalır. Silah
 çarkı bu durumu da kontrol ediyor. Dürbünde varsayılan olarak scroll
 yukarı yakınlaştırıyor, aşağı uzaklaştırıyor. Mevcut zoom tuşları korunuyor.
+
+v1.30 geri bildiriminde scroll adımları büyük ve hızlıydı. Artık küçük
+adımlar sıraya alınıyor ve dürbünün normal zoom hızıyla uygulanıyor.
+Derleme ve oyun içi doğrulama bekliyor.

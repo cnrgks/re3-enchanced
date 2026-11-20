@@ -50,8 +50,7 @@ CStoredShadow    CShadows::asShadowsStored  [MAX_EXTENDED_STORED_SHADOWS];
 
 static bool UseDistantTrafficShadows()
 {
-	return Enhanced::DistantCrowdedWorld && Enhanced::DistantVehiclePedShadows &&
-	       !CCutsceneMgr::IsRunning();
+	return Enhanced::DistantVehiclePedShadows && !CCutsceneMgr::IsRunning();
 }
 CPolyBunch       CShadows::aPolyBunches     [MAX_POLYBUNCHES];
 CStaticShadow    CShadows::aStaticShadows   [MAX_STATICSHADOWS];
@@ -467,16 +466,16 @@ CShadows::StoreShadowForCar(CAutomobile *pCar)
 	if ( CTimeCycle::GetShadowStrength() != 0 )
 	{
 		CVector CarPos = pCar->GetPosition();
-		const bool distant = UseDistantTrafficShadows();
-		const CVector cameraOffset = CarPos - TheCamera.GetPosition();
-		float fDistToCamSqr = distant ? cameraOffset.MagnitudeSqr() : cameraOffset.MagnitudeSqr2D();
+		const bool distant = UseDistantTrafficShadows() && pCar->IsVisible() &&
+		                     CVisibilityPlugins::IsClumpVisible(pCar->GetClump());
+		float fDistToCamSqr = (CarPos - TheCamera.GetPosition()).MagnitudeSqr2D();
 
 		if ( CCutsceneMgr::IsRunning() )
 			fDistToCamSqr /= SQR(TheCamera.LODDistMultiplier) * 4.0f;
 
-		const float fDrawDistance = distant ? Sqrt(CVisibilityPlugins::ms_vehicleLod1Dist) : 18.0f;
+		const float fDrawDistance = 18.0f;
 
-		if ( fDistToCamSqr < SQR(fDrawDistance) )
+		if ( distant || fDistToCamSqr < SQR(fDrawDistance) )
 		{
 			float fDistToCam = Sqrt(fDistToCamSqr);
 			
@@ -486,7 +485,7 @@ CShadows::StoreShadowForCar(CAutomobile *pCar)
 
 			int32 nColorStrength;
 
-			if ( fDistToCam >= (fDrawDistance*(1.0f-(1.0f/4.0f))) )
+			if ( !distant && fDistToCam >= (fDrawDistance*(1.0f-(1.0f/4.0f))) )
 				nColorStrength = (int32)(CTimeCycle::GetShadowStrength() * fMult);
 			else
 				nColorStrength = CTimeCycle::GetShadowStrength();
@@ -598,14 +597,13 @@ CShadows::StoreShadowForPedObject(CEntity *pPedObject, float fDisplacementX, flo
 
 	CVector PedPos = pPedObject->GetPosition();
 
-	const bool distant = pPedObject->IsPed() && UseDistantTrafficShadows();
-	const CVector cameraOffset = PedPos - TheCamera.GetPosition();
-	const float fDistToCamSqr = distant ? cameraOffset.MagnitudeSqr() : cameraOffset.MagnitudeSqr2D();
-	const float fDrawDistance = distant ? 2.0f * Sqrt(CVisibilityPlugins::ms_pedLod1Dist) : 26.0f;
+	const bool distant = pPedObject->IsPed() && UseDistantTrafficShadows() && pPedObject->IsVisible();
+	const float fDistToCamSqr = (PedPos - TheCamera.GetPosition()).MagnitudeSqr2D();
+	const float fDrawDistance = 26.0f;
 
-	if ( fDistToCamSqr < SQR(fDrawDistance*0.5f)/*?*/ )
+	if ( distant || fDistToCamSqr < SQR(fDrawDistance*0.5f)/*?*/ )
 	{
-		if ( pPedObject == FindPlayerPed() || TheCamera.IsSphereVisible(PedPos, 2.0f) != false )
+		if ( distant || pPedObject == FindPlayerPed() || TheCamera.IsSphereVisible(PedPos, 2.0f) != false )
 		{
 			float fDistToCam = Sqrt(fDistToCamSqr);
 
@@ -614,7 +612,7 @@ CShadows::StoreShadowForPedObject(CEntity *pPedObject, float fDisplacementX, flo
 			float fMult = 1.0f - (4.0f / fDrawDistance) * (fDistToCam - (fDrawDistance*(1.0f/4.0f))); // BUG ? negative
 			int32 nColorStrength;
 
-			if ( fDistToCam >= (fDrawDistance*(1.0f/4.0f)) ) // BUG ? negative
+			if ( !distant && fDistToCam >= (fDrawDistance*(1.0f/4.0f)) ) // BUG ? negative
 				nColorStrength = (int32)(CTimeCycle::GetShadowStrength() * fMult);
 			else
 				nColorStrength = CTimeCycle::GetShadowStrength();

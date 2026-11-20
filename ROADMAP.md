@@ -9,8 +9,9 @@ geri bildirimlerine ait değişiklikleri kullanıcı v1.27 ile oyun içinde onay
 
 Graphics menüsünde **Distant Vehicle and Pedestrian Shadows**, **Distant
 and Crowded World** seçeneğinin altında ve varsayılan olarak kapalı.
-İkisi de açıkken araç ve yaya gölgeleri mevcut görünürlük sınırlarına kadar
-çizilir. Menüde yerleşim, gölge mesafesi ve yoğun trafikte performans için
+Bu seçenek açıkken gölgeler görünür araç ve yayaları takip eder. Distant
+and Crowded World kapalıyken normal görünürlük, açıkken uzatılmış
+görünürlük geçerlidir. Menüde yerleşim, gölge mesafesi ve yoğun trafikte performans için
 derleme ve oyun içi doğrulama bekliyor.
 
 ### RM-01 — Liberty City Trainer

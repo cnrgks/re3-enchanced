@@ -1,4 +1,4 @@
-RE3 ENHANCED v1.30 - OPENGL x64
+RE3 ENHANCED v1.31 - OPENGL x64
 
 KURULUM
 Oyunu kapat ve mevcut re3.exe/re3.pdb ciftini yedekle. Paketin game
@@ -6,6 +6,12 @@ klasorunun icerigini GTA III kurulumuna kopyala. Oyun verileri dahil
 degildir. Mevcut ini ve kayitlari koru. Gerekli runtime kutuphaneleri
 pakete dahildir. ASI Loader ve CLEO Redux istege baglidir. Resmi indirme
 baglantilari ve kurulum adimlari ENHANCED.md icinde.
+
+v1.31 DENEMELERI
+Sniper durbununde scroll ile zoom hizini klavye ile karsilastir.
+Distant Vehicle and Pedestrian Shadows acikken Distant and Crowded
+World ayarini kapali ve acik olarak ayri ayri dene. Gorunur arac ve
+yayalarin golgelerini kontrol et.
 
 v1.30 DENEMELERI
 Durbun acikken scroll yukari yakinlastirir, asagi uzaklastirir.
